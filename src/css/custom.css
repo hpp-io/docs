@@ -4,27 +4,32 @@
  * work well for content-centric websites.
  */
 
-/* You can override the default Infima variables here. */
+/*
+ * HPP brand palette — PLACEHOLDER (neutral indigo).
+ * TODO: replace with the official HPP brand palette once brand assets
+ * (logo, brand color HEX) are provided. Only the --ifm-color-primary*
+ * variables below need to change.
+ */
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-color-primary: #4f46e5;
+  --ifm-color-primary-dark: #3f37cf;
+  --ifm-color-primary-darker: #3b34c4;
+  --ifm-color-primary-darkest: #312aa1;
+  --ifm-color-primary-light: #635bea;
+  --ifm-color-primary-lighter: #6f67eb;
+  --ifm-color-primary-lightest: #918bf0;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 }
 
-/* For readability concerns, you should choose a lighter palette in dark mode. */
+/* Lighter palette in dark mode for readability. */
 [data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
+  --ifm-color-primary: #918bf0;
+  --ifm-color-primary-dark: #6f67eb;
+  --ifm-color-primary-darker: #635bea;
+  --ifm-color-primary-darkest: #4f46e5;
+  --ifm-color-primary-light: #a7a2f3;
+  --ifm-color-primary-lighter: #b3aef5;
+  --ifm-color-primary-lightest: #d2cff9;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
