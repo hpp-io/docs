@@ -1,0 +1,25 @@
+name: Test build
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build website
+        run: npm run build
+      # Fail the PR on high/critical advisories. The single known moderate
+      # (js-yaml, build-time only, via Docusaurus' own deps) is tolerated and
+      # documented in the README "Security" section.
+      - name: Security audit (high/critical)
+        run: npm audit --audit-level=high
