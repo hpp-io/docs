@@ -74,6 +74,10 @@ const config: Config = {
     },
     navbar: {
       title: 'HPP Docs',
+      logo: {
+        alt: 'HPP',
+        src: 'img/hpp-logo.png',
+      },
       items: [
         {
           href: 'https://github.com/hpp-io/docs',
