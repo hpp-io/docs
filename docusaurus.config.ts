@@ -12,11 +12,10 @@ const config: Config = {
     v4: true,
   },
 
-  // Phase 1: GitHub Pages project site.
-  // Phase 2 (docs.hpp.io): change `url` to 'https://docs.hpp.io' and `baseUrl` to '/',
-  // then add static/CNAME. See README "Custom domain" section.
-  url: 'https://hpp-io.github.io',
-  baseUrl: '/docs/',
+  // Served at the docs.hpp.io custom domain via GitHub Pages.
+  // The domain is pinned with static/CNAME; the github.io URL redirects here.
+  url: 'https://docs.hpp.io',
+  baseUrl: '/',
 
   organizationName: 'hpp-io',
   projectName: 'docs',
