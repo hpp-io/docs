@@ -1,4 +1,4 @@
-# HPP Docs
+# HPP Builders
 
 House Party Protocol official documentation — built with [Docusaurus](https://docusaurus.io/) and hosted on GitHub Pages at [docs.hpp.io](https://docs.hpp.io).
 
