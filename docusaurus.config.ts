@@ -55,6 +55,19 @@ const config: Config = {
     ],
   ],
 
+  themes: [
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true,
+        indexDocs: true,
+        docsRouteBasePath: '/',
+        highlightSearchTermsOnTargetPage: true,
+        language: ['en'],
+      },
+    ],
+  ],
+
   themeConfig: {
     colorMode: {
       respectPrefersColorScheme: true,
