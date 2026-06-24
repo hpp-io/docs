@@ -23,6 +23,24 @@ const sidebars: SidebarsConfig = {
         'getting-started/connect-to-hpp',
       ],
     },
+    {
+      type: 'category',
+      label: 'Ecosystem',
+      items: ['ecosystem/overview'],
+    },
+    {
+      type: 'category',
+      label: 'Community',
+      items: [
+        'community/official-links',
+        'community/tokenomics',
+        'community/hpp-dao',
+        'community/migration-guide',
+        'community/staking-guide',
+        'community/bridge',
+        'community/airdrop',
+      ],
+    },
   ],
 };
 
