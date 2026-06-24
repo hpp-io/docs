@@ -85,8 +85,20 @@ const config: Config = {
     footer: {
       style: 'dark',
       links: [
-        // NOTE: Docs/Community footer groups (internal links) are restored in the
-        // final integration step (Task 11) once all target pages exist.
+        {
+          title: 'Docs',
+          items: [
+            {label: 'Getting Started', to: '/getting-started/network-information'},
+            {label: 'Building on HPP', to: '/building-on-hpp/deploy-a-smart-contract'},
+          ],
+        },
+        {
+          title: 'Community',
+          items: [
+            {label: 'Official Links', to: '/community/official-links'},
+            {label: 'Tokenomics', to: '/community/tokenomics'},
+          ],
+        },
         {
           title: 'Tools',
           items: [

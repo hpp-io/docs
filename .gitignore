@@ -21,3 +21,6 @@ yarn-error.log*
 
 # Local design/planning docs — not part of the published site or repo
 specs/
+
+# Local verification artifacts (Playwright MCP snapshots)
+.playwright-mcp/
