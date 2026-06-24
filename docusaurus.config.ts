@@ -61,13 +61,27 @@ const config: Config = {
     ],
   ],
 
+  // Second docs instance for the standalone "HPP Hub" guide, served at /hub.
+  plugins: [
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'hub',
+        path: 'hub',
+        routeBasePath: 'hub',
+        sidebarPath: './sidebarsHub.ts',
+        editUrl: 'https://github.com/hpp-io/docs/tree/main/',
+      },
+    ],
+  ],
+
   themes: [
     [
       '@easyops-cn/docusaurus-search-local',
       {
         hashed: true,
         indexDocs: true,
-        docsRouteBasePath: '/',
+        docsRouteBasePath: ['/', 'hub'],
         highlightSearchTermsOnTargetPage: true,
         language: ['en'],
       },
@@ -85,6 +99,19 @@ const config: Config = {
         src: 'img/hpp-logo.png',
       },
       items: [
+        {
+          type: 'docSidebar',
+          sidebarId: 'docsSidebar',
+          label: 'Docs',
+          position: 'left',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'hubSidebar',
+          docsPluginId: 'hub',
+          label: 'HPP Hub',
+          position: 'left',
+        },
         {
           href: 'https://github.com/hpp-io/docs',
           label: 'GitHub',
