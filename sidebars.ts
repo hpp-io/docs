@@ -41,6 +41,27 @@ const sidebars: SidebarsConfig = {
         'community/airdrop',
       ],
     },
+    {
+      type: 'category',
+      label: 'Building on HPP',
+      items: [
+        'building-on-hpp/deploy-a-smart-contract',
+        'building-on-hpp/run-a-hpp-node',
+        'building-on-hpp/development-frameworks',
+        'building-on-hpp/web3-libraries-and-tools',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Tools',
+      items: [
+        {type: 'link', label: 'HPP Portal', href: 'https://portal.hpp.io/'},
+        {type: 'link', label: 'Arbitrum Bridge', href: 'https://bridge.arbitrum.io/?destinationChain=hpp-mainnet&sourceChain=ethereum'},
+        {type: 'link', label: 'Superbridge (HPP Sepolia)', href: 'https://hpp-sepolia-turdrv0107-c8a38bf8f82a8de2.testnets.rollbridge.app/'},
+        {type: 'link', label: 'Block Explorer', href: 'https://explorer.hpp.io/'},
+        {type: 'link', label: 'HPP Sepolia Faucet', href: 'https://faucet.hpp.io/'},
+      ],
+    },
   ],
 };
 
