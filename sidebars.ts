@@ -14,6 +14,15 @@ const sidebars: SidebarsConfig = {
         'readme/arenai',
       ],
     },
+    {
+      type: 'category',
+      label: 'Getting Started',
+      items: [
+        'getting-started/network-information',
+        'getting-started/hpp-contracts',
+        'getting-started/connect-to-hpp',
+      ],
+    },
   ],
 };
 
