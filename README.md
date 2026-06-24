@@ -2,7 +2,7 @@
 
 House Party Protocol official documentation — built with [Docusaurus](https://docusaurus.io/) and hosted on GitHub Pages.
 
-- **Live site:** https://hpp-io.github.io/docs/ (custom domain `docs.hpp.io` planned)
+- **Live site:** https://docs.hpp.io (the `hpp-io.github.io/docs` URL redirects here)
 - **Migrated from:** the previous GitBook site (`hpp-io/hpp-docs`)
 
 ## Prerequisites
@@ -15,9 +15,9 @@ House Party Protocol official documentation — built with [Docusaurus](https://
 ```bash
 npm install        # install dependencies (first time only)
 
-npm start          # dev server with hot reload -> http://localhost:3000/docs/
+npm start          # dev server with hot reload -> http://localhost:3000/
 npm run build      # production build (validates links + generates search index)
-npm run serve      # serve the production build -> http://localhost:3000/docs/
+npm run serve      # serve the production build -> http://localhost:3000/
 npm run typecheck  # TypeScript type check
 npm run clear      # clear the Docusaurus cache
 ```
@@ -25,7 +25,7 @@ npm run clear      # clear the Docusaurus cache
 > **Note**
 > - Local search only works after `npm run build && npm run serve`. The search
 >   index is generated at build time, so it is **not** available under `npm start`.
-> - The site is served under the `/docs/` base path until the custom domain is live.
+> - The production site is served at the `docs.hpp.io` custom domain (`baseUrl: '/'`).
 
 ## Content structure
 
@@ -46,14 +46,11 @@ deployment → Source). This can also be set via the API:
 gh api repos/hpp-io/docs/pages -X POST -f build_type=workflow
 ```
 
-## Custom domain (docs.hpp.io)
+## Custom domain
 
-To switch from the GitHub Pages URL to `docs.hpp.io`:
-
-1. In `docusaurus.config.ts`, set `url: 'https://docs.hpp.io'` and `baseUrl: '/'`.
-2. Create `static/CNAME` containing a single line: `docs.hpp.io`.
-3. Add a DNS `CNAME` record: `docs` → `hpp-io.github.io`.
-4. Confirm the custom domain under Settings → Pages.
+The site is served at `docs.hpp.io`. The domain is pinned via `static/CNAME`
+together with `url`/`baseUrl` in `docusaurus.config.ts`. DNS: a `CNAME` record
+points `docs.hpp.io` → `hpp-io.github.io`.
 
 ## Security
 
