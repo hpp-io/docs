@@ -23,12 +23,14 @@ const config: Config = {
   trailingSlash: false,
 
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
 
   // .md => CommonMark (lenient, safe for migrated content),
   // .mdx => MDX (used for pages that need Tabs/JSX).
   markdown: {
     format: 'detect',
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
   },
 
   i18n: {
@@ -70,20 +72,8 @@ const config: Config = {
     footer: {
       style: 'dark',
       links: [
-        {
-          title: 'Docs',
-          items: [
-            {label: 'Getting Started', to: '/getting-started/network-information'},
-            {label: 'Building on HPP', to: '/building-on-hpp/deploy-a-smart-contract'},
-          ],
-        },
-        {
-          title: 'Community',
-          items: [
-            {label: 'Official Links', to: '/community/official-links'},
-            {label: 'Tokenomics', to: '/community/tokenomics'},
-          ],
-        },
+        // NOTE: Docs/Community footer groups (internal links) are restored in the
+        // final integration step (Task 11) once all target pages exist.
         {
           title: 'Tools',
           items: [
