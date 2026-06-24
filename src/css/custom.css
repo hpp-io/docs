@@ -5,31 +5,36 @@
  */
 
 /*
- * HPP brand palette — PLACEHOLDER (neutral indigo).
- * TODO: replace with the official HPP brand palette once brand assets
- * (logo, brand color HEX) are provided. Only the --ifm-color-primary*
- * variables below need to change.
+ * HPP brand palette.
+ * HPP is a monochrome (black/white) brand with a green accent (#5df23f on
+ * hpp.io). The bright accent fails contrast as link text, so light mode uses
+ * an accessibility-adjusted green; dark mode uses a brighter green that reads
+ * well on dark backgrounds.
  */
 :root {
-  --ifm-color-primary: #4f46e5;
-  --ifm-color-primary-dark: #3f37cf;
-  --ifm-color-primary-darker: #3b34c4;
-  --ifm-color-primary-darkest: #312aa1;
-  --ifm-color-primary-light: #635bea;
-  --ifm-color-primary-lighter: #6f67eb;
-  --ifm-color-primary-lightest: #918bf0;
+  --ifm-color-primary: #16a34a;
+  --ifm-color-primary-dark: #15913f;
+  --ifm-color-primary-darker: #15803d;
+  --ifm-color-primary-darkest: #166534;
+  --ifm-color-primary-light: #1bb455;
+  --ifm-color-primary-lighter: #22c55e;
+  --ifm-color-primary-lightest: #4ade80;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 }
 
-/* Lighter palette in dark mode for readability. */
 [data-theme='dark'] {
-  --ifm-color-primary: #918bf0;
-  --ifm-color-primary-dark: #6f67eb;
-  --ifm-color-primary-darker: #635bea;
-  --ifm-color-primary-darkest: #4f46e5;
-  --ifm-color-primary-light: #a7a2f3;
-  --ifm-color-primary-lighter: #b3aef5;
-  --ifm-color-primary-lightest: #d2cff9;
+  --ifm-color-primary: #4ade80;
+  --ifm-color-primary-dark: #22c55e;
+  --ifm-color-primary-darker: #1bb455;
+  --ifm-color-primary-darkest: #16a34a;
+  --ifm-color-primary-light: #6ce98a;
+  --ifm-color-primary-lighter: #86efac;
+  --ifm-color-primary-lightest: #bbf7d0;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* The HPP logo is a black symbol; invert it to white in dark mode. */
+[data-theme='dark'] .navbar__logo img {
+  filter: invert(1);
 }

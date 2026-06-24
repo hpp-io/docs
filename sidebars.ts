@@ -54,6 +54,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Tools',
+      collapsible: false,
       items: [
         {type: 'link', label: 'HPP Portal', href: 'https://portal.hpp.io/'},
         {type: 'link', label: 'Arbitrum Bridge', href: 'https://bridge.arbitrum.io/?destinationChain=hpp-mainnet&sourceChain=ethereum'},
