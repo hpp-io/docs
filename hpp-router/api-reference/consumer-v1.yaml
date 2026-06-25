@@ -1,0 +1,432 @@
+openapi: 3.1.0
+info:
+  title: HPP Router Consumer API
+  version: 0.1.0
+  description: Consumer-facing API contract for HPP Router TypeScript SDK.
+servers:
+  - url: https://router.hpp.io
+    description: HPP Router production gateway.
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
+paths:
+  /llm/v1/chat/completions:
+    post:
+      operationId: createChatCompletion
+      summary: Create a chat completion
+      description: OpenAI-compatible chat completion endpoint with HPP smart-routing headers.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatCompletionRequest"
+      responses:
+        "200":
+          description: Chat completion response.
+          headers:
+            X-HPP-Router-Resolved-Model:
+              description: Resolved provider/model used for billing and routing.
+              schema:
+                type: string
+            X-HPP-Router-Basket:
+              description: Smart-routing basket when hpprouter/auto is used.
+              schema:
+                type: string
+            X-HPP-Router-Rule-Id:
+              description: Smart-routing rule id when hpprouter/auto is used.
+              schema:
+                type: string
+            X-HPP-Router-Rules-Version:
+              description: Smart-routing rules version when hpprouter/auto is used.
+              schema:
+                type: string
+            X-HPP-Router-Tier:
+              description: Smart-routing tier when available.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatCompletionResponse"
+            text/event-stream:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "429":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+  /llm/v1/models:
+    get:
+      operationId: listModels
+      summary: List available models
+      responses:
+        "200":
+          description: OpenAI-compatible model list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelListResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/images/generations:
+    post:
+      operationId: createImageGeneration
+      summary: Generate images
+      description: OpenAI-compatible image generation endpoint for gpt-image-1.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageGenerationRequest"
+      responses:
+        "200":
+          description: Generated image response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageGenerationResponse"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "429":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/usage:
+    get:
+      operationId: getUsage
+      summary: Get current consumer usage
+      responses:
+        "200":
+          description: Usage and quota summary for the authenticated consumer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/quota-check:
+    get:
+      operationId: checkQuota
+      summary: Check current consumer quota
+      responses:
+        "200":
+          description: Quota availability for the authenticated consumer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuotaCheckResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "503":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: apikey
+    BearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    ErrorResponse:
+      description: Error response.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+  schemas:
+    ChatCompletionRequest:
+      type: object
+      additionalProperties: true
+      required:
+        - model
+        - messages
+      properties:
+        model:
+          type: string
+          examples:
+            - hpprouter/auto
+            - openai/gpt-5
+            - anthropic/claude-sonnet-4
+            - moonshotai/kimi-k2.6
+            - ollama/gpt-oss:120b
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+        stream:
+          type: boolean
+        max_tokens:
+          type: integer
+          minimum: 1
+        max_completion_tokens:
+          type: integer
+          minimum: 1
+        temperature:
+          type: number
+        stream_options:
+          type: object
+          additionalProperties: true
+    ChatMessage:
+      type: object
+      additionalProperties: true
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - user
+            - assistant
+            - tool
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                $ref: "#/components/schemas/ChatContentPart"
+    ChatContentPart:
+      type: object
+      additionalProperties: true
+      required:
+        - type
+      properties:
+        type:
+          type: string
+        text:
+          type: string
+        image_url:
+          type: object
+          additionalProperties: true
+          properties:
+            url:
+              type: string
+            detail:
+              type: string
+    ChatCompletionResponse:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+        created:
+          type: integer
+        model:
+          type: string
+        choices:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        usage:
+          $ref: "#/components/schemas/TokenUsage"
+    TokenUsage:
+      type: object
+      additionalProperties: true
+      properties:
+        prompt_tokens:
+          type: integer
+        completion_tokens:
+          type: integer
+        total_tokens:
+          type: integer
+    ModelListResponse:
+      type: object
+      required:
+        - object
+        - data
+      properties:
+        object:
+          type: string
+          const: list
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Model"
+    Model:
+      type: object
+      additionalProperties: true
+      required:
+        - id
+        - object
+        - owned_by
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          const: model
+        owned_by:
+          type: string
+        pricing:
+          oneOf:
+            - $ref: "#/components/schemas/ModelPricing"
+            - type: "null"
+    ModelPricing:
+      type: object
+      properties:
+        input:
+          type: number
+        output:
+          type: number
+        cache_write:
+          oneOf:
+            - type: number
+            - type: "null"
+        cache_read:
+          oneOf:
+            - type: number
+            - type: "null"
+    ImageGenerationRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        model:
+          type: string
+          default: gpt-image-1
+        prompt:
+          type: string
+        n:
+          type: integer
+          minimum: 1
+          maximum: 4
+          default: 1
+        size:
+          type: string
+          enum:
+            - 1024x1024
+            - 1024x1536
+            - 1536x1024
+          default: 1024x1024
+        quality:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - auto
+          default: auto
+        background:
+          type: string
+        output_format:
+          type: string
+    ImageGenerationResponse:
+      type: object
+      additionalProperties: true
+      properties:
+        created:
+          type: integer
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            properties:
+              b64_json:
+                type: string
+              url:
+                type: string
+        usage:
+          type: object
+          additionalProperties: true
+    UsageResponse:
+      type: object
+      required:
+        - consumer_id
+        - quota
+        - used
+        - remaining
+        - requests
+        - total_tokens
+        - total_cost
+      properties:
+        consumer_id:
+          type: string
+        username:
+          oneOf:
+            - type: string
+            - type: "null"
+        custom_id:
+          oneOf:
+            - type: string
+            - type: "null"
+        quota:
+          type: number
+        used:
+          type: number
+        remaining:
+          type: number
+        requests:
+          type: integer
+        total_tokens:
+          type: integer
+        total_cost:
+          type: number
+    QuotaCheckResponse:
+      type: object
+      required:
+        - has_quota
+        - quota
+        - used
+        - remaining
+      properties:
+        has_quota:
+          type: boolean
+        quota:
+          type: number
+        used:
+          type: number
+        remaining:
+          type: number
+    ErrorEnvelope:
+      oneOf:
+        - type: object
+          required:
+            - error
+          properties:
+            error:
+              type: string
+            message:
+              type: string
+        - type: object
+          required:
+            - error
+          properties:
+            error:
+              type: object
+              additionalProperties: true
+              properties:
+                message:
+                  type: string
+                type:
+                  type: string
+                code:
+                  type: string
+                provider:
+                  type: string
+                upstream_status:
+                  type: integer
+                retryable:
+                  type: boolean

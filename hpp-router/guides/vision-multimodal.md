@@ -1,0 +1,61 @@
+---
+title: Vision / Multimodal
+description: Send images alongside text to vision-capable models through HPP Router.
+---
+
+# Vision / Multimodal
+
+Vision-capable models accept images alongside text in the same chat completion request. HPP Router uses the OpenAI `image_url` content-part format. For Anthropic routes, the gateway converts `image_url` parts into native image blocks before calling the provider.
+
+## Request
+
+Use an array of content parts in a message, mixing `text` and `image_url`:
+
+```bash
+curl -X POST https://router.hpp.io/llm/v1/chat/completions \
+  -H "apikey: $HPPROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4o",
+    "messages": [{
+      "role": "user",
+      "content": [
+        { "type": "text", "text": "What is in this image?" },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,BASE64_PNG",
+            "detail": "auto"
+          }
+        }
+      ]
+    }],
+    "max_tokens": 256
+  }'
+```
+
+## Content parts
+
+| Part type | Fields |
+| --- | --- |
+| `text` | `text` — the text segment. |
+| `image_url` | `image_url.url` (a data URL or HTTP URL) and optional `image_url.detail`. |
+
+You can include multiple `image_url` parts in a single message.
+
+## Using a data URL
+
+When embedding image bytes directly, use a data URL of the form `data:image/png;base64,<BASE64>`. Replace `BASE64_PNG` with the base64-encoded image bytes.
+
+## With smart routing
+
+You can use `hpprouter/auto` with multimodal content. Routing follows the same basket/tier rules, and the token estimate includes the image parts. See [Smart Routing](../smart-routing.md).
+
+## Important distinctions
+
+- **Vision is not image generation.** This endpoint is for *understanding* images in a chat. To *generate* images, use [Image Generation](./image-generation.md) (`gpt-image-1` at `/v1/images/generations`).
+- **Use a vision-capable model.** For example `openai/gpt-4o`.
+
+## Provider limits
+
+Provider attachment limits apply (for example, OpenAI ~20 MB per image, Anthropic ~5 MB per image). The gateway does **not** resize attachments — send images within the provider's limits.

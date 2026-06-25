@@ -1,0 +1,77 @@
+---
+title: Streaming
+description: Stream chat completions from HPP Router as Server-Sent Events.
+---
+
+# Streaming
+
+Set `stream: true` to receive the completion incrementally as **Server-Sent Events (SSE)** instead of waiting for the full response.
+
+```
+POST https://router.hpp.io/llm/v1/chat/completions
+Content-Type: application/json
+Accept: text/event-stream
+```
+
+## REST (curl)
+
+```bash
+curl -N -X POST https://router.hpp.io/llm/v1/chat/completions \
+  -H "apikey: $HPPROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5",
+    "messages": [{ "role": "user", "content": "Stream a short answer." }],
+    "stream": true
+  }'
+```
+
+The response is a stream of `data:` lines, each carrying a partial chunk, terminated by `data: [DONE]`:
+
+```
+data: {"choices":[{"delta":{"content":"He"}}]}
+
+data: {"choices":[{"delta":{"content":"llo"}}]}
+
+data: [DONE]
+```
+
+## TypeScript SDK
+
+```ts
+import { HppRouter } from '@hpprouter/sdk';
+
+const client = new HppRouter({
+  apiKey: process.env.HPPROUTER_API_KEY!,
+  baseURL: 'https://router.hpp.io',
+});
+
+const { stream, meta } = await client.chat.stream({
+  model: 'openai/gpt-5',
+  messages: [{ role: 'user', content: 'Stream a short answer.' }],
+});
+
+for await (const event of stream) {
+  console.log(event);
+}
+
+console.log(meta.resolvedModel);
+```
+
+## Streaming and smart routing
+
+Streaming has a special interaction with [`hpprouter/auto`](../smart-routing.md):
+
+> When `stream: true`, basket classification is **skipped** and the request always uses the configured **streaming fallback** model.
+
+This is intentional — it prioritizes the stability of the SSE pipeline over per-request model selection. If you need fine-grained model selection, send a non-streaming request, or specify an explicit `provider/model` instead of `hpprouter/auto`.
+
+## Usage accounting
+
+Token usage is captured from the streamed response and billed the same way as non-streaming requests. Because usage logging is asynchronous, it does not add latency to the stream.
+
+## Tips
+
+- Use the `-N` flag with curl (no buffering) to see chunks as they arrive.
+- Pass `stream_options` to forward provider-specific streaming options.
+- Very large or long-running streams are best consumed from a backend or the Playground rather than an interactive API explorer.

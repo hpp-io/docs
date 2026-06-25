@@ -61,7 +61,7 @@ const config: Config = {
     ],
   ],
 
-  // Second docs instance for the standalone "HPP Hub" guide, served at /hub.
+  // Standalone product guides (Hub at /hub, Router at /hpp-router).
   plugins: [
     [
       '@docusaurus/plugin-content-docs',
@@ -73,6 +73,16 @@ const config: Config = {
         editUrl: 'https://github.com/hpp-io/docs/tree/main/',
       },
     ],
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'router',
+        path: 'hpp-router',
+        routeBasePath: 'hpp-router',
+        sidebarPath: './sidebarsRouter.ts',
+        editUrl: 'https://github.com/hpp-io/docs/tree/main/',
+      },
+    ],
   ],
 
   themes: [
@@ -81,7 +91,7 @@ const config: Config = {
       {
         hashed: true,
         indexDocs: true,
-        docsRouteBasePath: ['/', 'hub'],
+        docsRouteBasePath: ['/', 'hub', 'hpp-router'],
         highlightSearchTermsOnTargetPage: true,
         language: ['en'],
       },
@@ -110,6 +120,13 @@ const config: Config = {
           sidebarId: 'hubSidebar',
           docsPluginId: 'hub',
           label: 'HPP Hub',
+          position: 'right',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'routerSidebar',
+          docsPluginId: 'router',
+          label: 'HPP Router',
           position: 'right',
         },
         {

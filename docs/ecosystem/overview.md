@@ -17,9 +17,11 @@ A secure operating space for AI agents in the HPP family. Autonomous agents run 
 
 ### HPP Router · The model router
 
-**Coming soon**
+**Live**
 
-An LLM inference router for the HPP ecosystem, sending each request to the right model across the network — including HPP Coder.
+An OpenAI-compatible LLM API gateway for the HPP ecosystem — route each request to the right model, enforce prepaid quota, and track usage from a single API key.
+
+→ [Developer docs](/hpp-router) · [router.hpp.io](https://router.hpp.io)
 
 ### HPP Coder · The coding LLM
 
