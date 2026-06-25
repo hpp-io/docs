@@ -125,3 +125,162 @@
 pre code {
   border-radius: var(--ifm-global-radius);
 }
+
+.theme-doc-markdown > .theme-code-block {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ifm-background-surface-color) !important;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+[data-theme='dark'] .theme-doc-markdown > .theme-code-block {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.theme-doc-markdown > .theme-code-block pre,
+.theme-doc-markdown > .theme-code-block code {
+  background: transparent !important;
+}
+
+.theme-doc-markdown > .theme-code-block [class*='codeLineNumber'] {
+  background: transparent !important;
+}
+
+/* ---- Tabbed code panel (HPP Router) ---- */
+.code-panel {
+  margin: 1.25rem 0 1.75rem;
+}
+
+.code-panel .tabs-container {
+  position: relative;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ifm-background-surface-color);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+[data-theme='dark'] .code-panel .tabs-container {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* Tab bar: monochrome, OpenRouter-style */
+.code-panel .tabs {
+  background: var(--ifm-color-emphasis-100);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  margin-bottom: 0;
+  padding: 0 5.25rem 0 1rem;
+}
+
+[data-theme='dark'] .code-panel .tabs {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.code-panel .tabs__item {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--ifm-color-emphasis-600);
+  margin: 0 1.5rem 0 0;
+  padding: 0.95rem 0.1rem 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  background: transparent;
+}
+
+.code-panel .margin-top--md {
+  margin-top: 0 !important;
+}
+
+.code-panel [role='tabpanel'] {
+  padding: 0.1rem 1.2rem 1.25rem;
+  outline: none;
+}
+
+.code-panel .theme-code-block {
+  margin: 0 !important;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent !important;
+}
+
+.code-panel .theme-code-block pre {
+  padding: 0 !important;
+  line-height: 1.55;
+  background: transparent !important;
+}
+
+.code-panel .theme-code-block code {
+  background: transparent !important;
+}
+
+.code-panel [class*='codeBlockLines'] {
+  padding-top: 0 !important;
+}
+
+.code-panel [class*='codeLineNumber'] {
+  background: transparent !important;
+}
+
+.code-panel [class*='codeBlockContainer'],
+.code-panel [class*='codeBlockContent'] {
+  position: static !important;
+}
+
+.code-panel [class*='buttonGroup'] {
+  position: absolute !important;
+  top: 0.55rem !important;
+  right: 0.85rem !important;
+  z-index: 2;
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.code-panel [class*='buttonGroup'] button {
+  display: inline-flex !important;
+  opacity: 0.72 !important;
+  visibility: visible !important;
+}
+
+.code-panel [class*='buttonGroup'] button:hover {
+  opacity: 1 !important;
+}
+
+.code-panel .tabs__item:hover {
+  color: var(--ifm-font-color-base);
+  background: transparent;
+}
+
+.code-panel .tabs__item--active {
+  border-bottom-color: var(--ifm-font-color-base);
+  color: var(--ifm-font-color-base);
+  font-weight: 700;
+}
+
+.code-panel .tabs__item--active .tabs__item__label {
+  color: var(--ifm-font-color-base);
+  font-weight: 700;
+}
+
+/* Keep any future highlighted lines subtle and aligned with Docusaurus line numbers. */
+.code-panel {
+  --docusaurus-highlighted-code-line-bg: transparent;
+}
+
+[data-theme='dark'] .code-panel {
+  --docusaurus-highlighted-code-line-bg: transparent;
+}
+
+.code-panel .theme-code-block-highlighted-line {
+  box-shadow: none;
+}

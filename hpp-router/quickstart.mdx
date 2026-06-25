@@ -1,0 +1,141 @@
+---
+title: Quickstart
+description: Make your first HPP Router request — TypeScript SDK, OpenAI SDK, cURL, or Python.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodePanel from '@site/src/components/CodePanel';
+
+# Quickstart
+
+Send the same chat completion request using the stack you prefer. All examples target the OpenAI-compatible gateway at `https://router.hpp.io`.
+
+## Prerequisites
+
+- An **HPP Router API key** from [HPP Hub](https://hub.hpp.io)
+- Base URL: `https://router.hpp.io`
+
+Store your key in an environment variable:
+
+```bash
+export HPPROUTER_API_KEY="your-api-key"
+```
+
+## Send a chat completion
+
+Install the package you need before running an SDK example:
+
+- TypeScript SDK: `npm install @hpprouter/sdk`
+- OpenAI SDK: `npm install openai`
+- Python: `pip install openai`
+
+<CodePanel>
+<Tabs groupId="hpp-router-quickstart" queryString>
+<TabItem value="ts-sdk" label="TypeScript SDK" default>
+
+```ts showLineNumbers
+import { HppRouter } from '@hpprouter/sdk';
+
+const client = new HppRouter({
+  apiKey: process.env.HPPROUTER_API_KEY!,
+  baseURL: 'https://router.hpp.io',
+});
+
+const completion = await client.chat.send({
+  model: 'hpprouter/auto',
+  messages: [{ role: 'user', content: 'Hello!' }],
+});
+
+console.log(completion.data.choices);
+console.log(completion.meta.resolvedModel);
+```
+
+</TabItem>
+<TabItem value="openai" label="OpenAI SDK">
+
+```ts showLineNumbers
+import OpenAI from 'openai';
+
+const client = new OpenAI({
+  apiKey: process.env.HPPROUTER_API_KEY!,
+  baseURL: 'https://router.hpp.io/llm/v1',
+});
+
+const completion = await client.chat.completions.create({
+  model: 'hpprouter/auto',
+  messages: [{ role: 'user', content: 'Hello!' }],
+});
+
+console.log(completion.choices[0].message);
+```
+
+</TabItem>
+<TabItem value="curl" label="cURL">
+
+```bash showLineNumbers
+curl -X POST https://router.hpp.io/llm/v1/chat/completions \
+  -H "apikey: $HPPROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "hpprouter/auto",
+    "messages": [
+      { "role": "user", "content": "Hello!" }
+    ],
+    "max_completion_tokens": 100
+  }'
+```
+
+</TabItem>
+<TabItem value="python" label="Python">
+
+```python showLineNumbers
+from openai import OpenAI
+import os
+
+client = OpenAI(
+    api_key=os.environ["HPPROUTER_API_KEY"],
+    base_url="https://router.hpp.io/llm/v1",
+)
+
+completion = client.chat.completions.create(
+    model="hpprouter/auto",
+    messages=[{"role": "user", "content": "Hello!"}],
+)
+
+print(completion.choices[0].message)
+```
+
+</TabItem>
+</Tabs>
+</CodePanel>
+
+See the [Client SDK](./client-sdk/typescript) and [OpenAI SDK (drop-in)](./guides/openai-sdk) guides for more examples.
+
+## Response
+
+A successful response includes `choices` and a `usage` block:
+
+```json showLineNumbers
+{
+  "id": "chatcmpl-...",
+  "object": "chat.completion",
+  "model": "openai/gpt-4o-mini",
+  "choices": [
+    { "message": { "role": "assistant", "content": "Hi there!" } }
+  ],
+  "usage": {
+    "prompt_tokens": 8,
+    "completion_tokens": 12,
+    "total_tokens": 20
+  }
+}
+```
+
+When you use `hpprouter/auto`, the model used for billing is returned in the `X-HPP-Router-Resolved-Model` response header. See [Smart Routing](./smart-routing).
+
+## Next steps
+
+- [Authentication](./authentication) — API key vs. Bearer token.
+- [Models & Pricing](./models-and-pricing) — discover available models.
+- [Guides](./guides/chat-completions) — chat, streaming, vision, images, quota, and errors.

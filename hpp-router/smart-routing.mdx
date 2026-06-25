@@ -1,0 +1,84 @@
+---
+title: Smart Routing
+description: How the hpprouter/auto virtual model classifies requests and routes them to a cost-appropriate model.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodePanel from '@site/src/components/CodePanel';
+
+# Smart Routing (`hpprouter/auto`)
+
+Smart routing answers one question:
+
+> **"Can this request be handled by a cheaper model without sacrificing quality?"**
+
+When you send `model: "hpprouter/auto"`, the gateway classifies the request and routes it to a real `provider/model` defined by rules — in the style of OpenRouter's virtual model IDs. Your client only ever specifies `hpprouter/auto`; the gateway does the rest.
+
+## Using it
+
+<CodePanel>
+<Tabs groupId="smart-routing-request" queryString>
+<TabItem value="curl" label="cURL" default>
+
+```bash showLineNumbers
+curl -sS -D /tmp/headers.txt -o /tmp/out.json \
+  -X POST https://router.hpp.io/llm/v1/chat/completions \
+  -H "apikey: $HPPROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "hpprouter/auto",
+    "messages": [{ "role": "user", "content": "Summarize this in one sentence." }],
+    "max_tokens": 128,
+    "stream": false
+  }'
+
+grep -i x-hpp-router /tmp/headers.txt
+# X-HPP-Router-Resolved-Model: openai/gpt-4o-mini   (example; depends on rules)
+```
+
+</TabItem>
+</Tabs>
+</CodePanel>
+
+You do not need to read the resolved model — server-side billing and logging handle it for you. The header is there for observability and optional logging.
+
+## How requests are classified
+
+Routing is **rule-based** (no ML scoring): a fixed set of rules plus configuration stored in the database. A request falls into one of three baskets, evaluated in order:
+
+| Basket | Matches when | Routes to |
+| --- | --- | --- |
+| **A — Tool** | the request has a `tools` array or `tool_choice` | the configured tool model |
+| **B — Simple** | a known keyword matches, **or** estimated input tokens ≤ a configured threshold | the configured simple-text model |
+| **C — Complex** | none of the above | a tier (T1/T2/T3) chosen by token bands |
+
+Token counts are estimated with a tokenizer (not raw character count), plus a configurable margin used for the complex token bands.
+
+### Streaming exception
+
+If `stream: true`, basket classification is **skipped** and the request always uses the configured **streaming fallback** model. This prioritizes the stability of the streaming (SSE) pipeline. See [Streaming](./guides/streaming).
+
+## Response metadata
+
+For direct API callers, smart-routing metadata is returned as HTTP response headers:
+
+| Header | Meaning |
+| --- | --- |
+| `X-HPP-Router-Resolved-Model` | The actual `provider/model` used for routing and billing. |
+| `X-HPP-Router-Basket` | The basket the request was classified into. |
+| `X-HPP-Router-Rule-Id` | The rule that matched. |
+| `X-HPP-Router-Rules-Version` | The active rules version (for auditing). |
+| `X-HPP-Router-Tier` | The tier (when applicable). |
+
+:::tip Reading headers in the browser
+To read `X-HPP-Router-*` headers from browser JavaScript, the gateway must expose them via CORS. The browser DevTools Network tab shows the headers regardless of CORS.
+:::
+
+## Billing
+
+Billing always uses the **resolved** model's pricing and the upstream `usage` — there is no separate price for `hpprouter/auto`. The resolved model is recorded in your [usage logs](./guides/quota-and-usage).
+
+## Notes for client apps
+
+To adopt smart routing, change the request `model` to `hpprouter/auto` — nothing else. Clients that only read `choices`/`usage` need no changes; extra metadata lives in headers and is optional to consume.
