@@ -9,7 +9,7 @@ This is a standalone Docusaurus docs plugin (same pattern as [HPP Hub](/hub)). C
 ```
 hpp-router/
 ├── intro.md                    # Landing page (slug: /) → /hpp-router
-├── quickstart.md
+├── quickstart.mdx
 ├── authentication.md
 ├── models-and-pricing.md
 ├── smart-routing.md

@@ -15,8 +15,8 @@ https://router.hpp.io
 ## Why HPP Router
 
 - **One API, many models.** Call OpenAI, Anthropic, Moonshot, or local Ollama models through one OpenAI-compatible endpoint. Switch models by changing a single `model` string.
-- **Smart routing.** Use the virtual model [`hpprouter/auto`](./smart-routing.md) and let the gateway pick a cost-appropriate model per request based on configurable rules.
-- **Prepaid quota & usage tracking.** Every request is checked against the consumer's remaining quota before it reaches a provider, and token usage is metered and billed against the [resolved model's pricing](./models-and-pricing.md).
+- **Smart routing.** Use the virtual model [`hpprouter/auto`](/hpp-router/smart-routing) and let the gateway pick a cost-appropriate model per request based on configurable rules.
+- **Prepaid quota & usage tracking.** Every request is checked against the consumer's remaining quota before it reaches a provider, and token usage is metered and billed against the [resolved model's pricing](/hpp-router/models-and-pricing).
 - **Drop-in compatibility.** Existing OpenAI SDK code works by pointing the base URL at `https://router.hpp.io` and using your HPP Router API key.
 
 ## How a request flows
@@ -42,8 +42,8 @@ HPP Router is the **model router** layer of the HPP stack — an AI-native L2 bu
 
 ## Next steps
 
-- **[Quickstart](./quickstart.md)** — make your first request via REST, the TypeScript SDK, or the OpenAI SDK.
-- **[Authentication](./authentication.md)** — how to send your API key.
-- **[Models & Pricing](./models-and-pricing.md)** — list models and understand token-based billing.
-- **[Smart Routing](./smart-routing.md)** — how `hpprouter/auto` chooses a model.
-- **[API Reference](./api-reference/consumer-api.md)** — the full Consumer API contract.
+- **[Quickstart](/hpp-router/quickstart)** — make your first request via REST, the TypeScript SDK, or the OpenAI SDK.
+- **[Authentication](/hpp-router/authentication)** — how to send your API key.
+- **[Models & Pricing](/hpp-router/models-and-pricing)** — list models and understand token-based billing.
+- **[Smart Routing](/hpp-router/smart-routing)** — how `hpprouter/auto` chooses a model.
+- **[API Reference](/hpp-router/api-reference/consumer-api)** — the full Consumer API contract.

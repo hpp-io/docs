@@ -3,6 +3,10 @@ title: Chat Completions
 description: Send OpenAI-compatible chat completion requests through HPP Router.
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodePanel from '@site/src/components/CodePanel';
+
 # Chat Completions
 
 The chat completions endpoint is the core of HPP Router. It is OpenAI-compatible, so request and response shapes match what you already know.
@@ -13,7 +17,11 @@ POST https://router.hpp.io/llm/v1/chat/completions
 
 ## Basic request
 
-```bash
+<CodePanel>
+<Tabs groupId="chat-completions-request" queryString>
+<TabItem value="curl" label="cURL" default>
+
+```bash showLineNumbers
 curl -X POST https://router.hpp.io/llm/v1/chat/completions \
   -H "apikey: $HPPROUTER_API_KEY" \
   -H "Content-Type: application/json" \
@@ -27,13 +35,17 @@ curl -X POST https://router.hpp.io/llm/v1/chat/completions \
   }'
 ```
 
+</TabItem>
+</Tabs>
+</CodePanel>
+
 ## Request fields
 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `model` | string | **Required.** `provider/model` (e.g. `openai/gpt-5`) or `hpprouter/auto`. |
 | `messages` | array | **Required.** Chat messages with `role` and `content`. |
-| `stream` | boolean | Stream tokens as Server-Sent Events. See [Streaming](./streaming.md). |
+| `stream` | boolean | Stream tokens as Server-Sent Events. See [Streaming](./streaming). |
 | `max_tokens` | integer | Maximum tokens to generate. |
 | `max_completion_tokens` | integer | Maximum completion tokens (newer OpenAI-style field). |
 | `temperature` | number | Sampling temperature. |
@@ -43,11 +55,11 @@ Additional provider-specific fields are passed through to the upstream model.
 
 ### Message roles
 
-`role` is one of `system`, `user`, `assistant`, or `tool`. The `content` is either a string or an array of content parts (used for [vision/multimodal](./vision-multimodal.md)).
+`role` is one of `system`, `user`, `assistant`, or `tool`. The `content` is either a string or an array of content parts (used for [vision/multimodal](./vision-multimodal)).
 
 ## Response
 
-```json
+```json showLineNumbers
 {
   "id": "chatcmpl-...",
   "object": "chat.completion",
@@ -68,7 +80,7 @@ Additional provider-specific fields are passed through to the upstream model.
 }
 ```
 
-The `usage` block drives [billing](../models-and-pricing.md). When you use `hpprouter/auto`, check the `X-HPP-Router-Resolved-Model` header to see which model was billed — see [Smart Routing](../smart-routing.md).
+The `usage` block drives [billing](../models-and-pricing). When you use `hpprouter/auto`, check the `X-HPP-Router-Resolved-Model` header to see which model was billed — see [Smart Routing](../smart-routing).
 
 ## Choosing a model
 
@@ -77,4 +89,4 @@ The `usage` block drives [billing](../models-and-pricing.md). When you use `hppr
 
 ## Errors
 
-Requests are checked against your quota before being forwarded. Insufficient quota returns **`429`**; auth failures return **`401`**. See [Errors](./errors.md).
+Requests are checked against your quota before being forwarded. Insufficient quota returns **`429`**; auth failures return **`401`**. See [Errors](./errors).

@@ -3,6 +3,10 @@ title: Image Generation
 description: Generate images with gpt-image-1 through HPP Router's OpenAI-compatible endpoint.
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodePanel from '@site/src/components/CodePanel';
+
 # Image Generation
 
 HPP Router supports image generation via OpenAI's `gpt-image-1` model through an OpenAI-compatible endpoint.
@@ -13,7 +17,11 @@ POST https://router.hpp.io/v1/images/generations
 
 ## Request
 
-```bash
+<CodePanel>
+<Tabs groupId="image-generation-request" queryString>
+<TabItem value="curl" label="cURL" default>
+
+```bash showLineNumbers
 curl -X POST https://router.hpp.io/v1/images/generations \
   -H "apikey: $HPPROUTER_API_KEY" \
   -H "Content-Type: application/json" \
@@ -25,6 +33,10 @@ curl -X POST https://router.hpp.io/v1/images/generations \
     "n": 1
   }'
 ```
+
+</TabItem>
+</Tabs>
+</CodePanel>
 
 ## Parameters
 
@@ -40,7 +52,7 @@ curl -X POST https://router.hpp.io/v1/images/generations \
 
 ## Response
 
-```json
+```json showLineNumbers
 {
   "created": 1732700000,
   "data": [
@@ -67,6 +79,6 @@ Higher `quality` settings consume more **output tokens** — for example, `auto`
 
 ## Quota management
 
-- Requests are checked against your [quota](./quota-and-usage.md) before being forwarded.
-- If quota is insufficient, the endpoint returns **`429`** (quota exceeded). See [Errors](./errors.md).
+- Requests are checked against your [quota](./quota-and-usage) before being forwarded.
+- If quota is insufficient, the endpoint returns **`429`** (quota exceeded). See [Errors](./errors).
 - Usage is tracked automatically and deducted from your quota.

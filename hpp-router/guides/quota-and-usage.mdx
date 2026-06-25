@@ -3,6 +3,10 @@ title: Quota & Usage
 description: Check remaining quota and review usage with HPP Router's prepaid quota model.
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodePanel from '@site/src/components/CodePanel';
+
 # Quota & Usage
 
 HPP Router uses a **prepaid quota** model: each consumer has a dollar-denominated quota, and every request is checked against the remaining balance *before* it reaches a provider. Token usage is then metered and deducted.
@@ -16,18 +20,26 @@ HPP Router uses a **prepaid quota** model: each consumer has a dollar-denominate
 | `remaining` | `quota − used` — headroom before the cap. |
 | `has_quota` | `true` when `remaining > 0`. |
 
-When a request arrives, the gateway verifies the consumer has quota. If not, the request is rejected with **`429`** before any provider is called (fail-fast). See [Errors](./errors.md).
+When a request arrives, the gateway verifies the consumer has quota. If not, the request is rejected with **`429`** before any provider is called (fail-fast). See [Errors](./errors).
 
 ## Check quota
 
 A lightweight pre-flight check for the authenticated consumer:
 
-```bash
+<CodePanel>
+<Tabs groupId="quota-check-request" queryString>
+<TabItem value="curl" label="cURL" default>
+
+```bash showLineNumbers
 curl https://router.hpp.io/api/quota-check \
   -H "apikey: $HPPROUTER_API_KEY"
 ```
 
-```json
+</TabItem>
+</Tabs>
+</CodePanel>
+
+```json showLineNumbers
 {
   "has_quota": true,
   "quota": 100,
@@ -42,12 +54,20 @@ If the quota state cannot be verified (e.g. a backend datastore is unavailable),
 
 A fuller summary of consumption for the authenticated consumer:
 
-```bash
+<CodePanel>
+<Tabs groupId="usage-summary-request" queryString>
+<TabItem value="curl" label="cURL" default>
+
+```bash showLineNumbers
 curl https://router.hpp.io/api/usage \
   -H "apikey: $HPPROUTER_API_KEY"
 ```
 
-```json
+</TabItem>
+</Tabs>
+</CodePanel>
+
+```json showLineNumbers
 {
   "consumer_id": "....",
   "username": "alice",
@@ -74,10 +94,10 @@ curl https://router.hpp.io/api/usage \
 
 1. The response from the provider is captured asynchronously (no added latency).
 2. Token usage is extracted from the response `usage` block.
-3. Cost is computed from the [resolved model's pricing](../models-and-pricing.md).
+3. Cost is computed from the [resolved model's pricing](../models-and-pricing).
 4. The consumer's `used` value is updated and the request is logged.
 
-For `hpprouter/auto`, cost uses the **resolved** model's pricing, not a price for `auto`. See [Smart Routing](../smart-routing.md).
+For `hpprouter/auto`, cost uses the **resolved** model's pricing, not a price for `auto`. See [Smart Routing](../smart-routing).
 
 ## Performance note
 

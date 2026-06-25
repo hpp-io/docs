@@ -28,7 +28,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'API Reference',
       collapsed: false,
-      items: ['api-reference/consumer-api'],
+      items: [{type: 'doc', id: 'api-reference/consumer-api', label: 'Overview'}],
     },
     {
       type: 'category',

@@ -3,6 +3,10 @@ title: Streaming
 description: Stream chat completions from HPP Router as Server-Sent Events.
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodePanel from '@site/src/components/CodePanel';
+
 # Streaming
 
 Set `stream: true` to receive the completion incrementally as **Server-Sent Events (SSE)** instead of waiting for the full response.
@@ -15,7 +19,11 @@ Accept: text/event-stream
 
 ## REST (curl)
 
-```bash
+<CodePanel>
+<Tabs groupId="streaming-curl" queryString>
+<TabItem value="curl" label="cURL" default>
+
+```bash showLineNumbers
 curl -N -X POST https://router.hpp.io/llm/v1/chat/completions \
   -H "apikey: $HPPROUTER_API_KEY" \
   -H "Content-Type: application/json" \
@@ -25,6 +33,10 @@ curl -N -X POST https://router.hpp.io/llm/v1/chat/completions \
     "stream": true
   }'
 ```
+
+</TabItem>
+</Tabs>
+</CodePanel>
 
 The response is a stream of `data:` lines, each carrying a partial chunk, terminated by `data: [DONE]`:
 
@@ -38,7 +50,11 @@ data: [DONE]
 
 ## TypeScript SDK
 
-```ts
+<CodePanel>
+<Tabs groupId="streaming-typescript" queryString>
+<TabItem value="typescript" label="TypeScript SDK" default>
+
+```ts showLineNumbers
 import { HppRouter } from '@hpprouter/sdk';
 
 const client = new HppRouter({
@@ -58,9 +74,13 @@ for await (const event of stream) {
 console.log(meta.resolvedModel);
 ```
 
+</TabItem>
+</Tabs>
+</CodePanel>
+
 ## Streaming and smart routing
 
-Streaming has a special interaction with [`hpprouter/auto`](../smart-routing.md):
+Streaming has a special interaction with [`hpprouter/auto`](../smart-routing):
 
 > When `stream: true`, basket classification is **skipped** and the request always uses the configured **streaming fallback** model.
 

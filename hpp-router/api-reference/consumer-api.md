@@ -1,20 +1,29 @@
 ---
-title: Consumer API
-description: The HPP Router Consumer API contract — endpoints, request/response schemas, and authentication.
+title: API Reference
+description: HPP Router Consumer API — OpenAI-compatible endpoints, schemas, and authentication.
 ---
 
-# Consumer API
+# API Reference
 
-The **single source of truth** for the HPP Router Consumer API is the OpenAPI specification:
+HPP Router's request and response schemas are **OpenAI-compatible**, with HPP-specific extensions for smart routing headers and prepaid quota. At a high level, you use the same patterns as the OpenAI Chat API — point your client at `https://router.hpp.io` and authenticate with your API key.
 
-- [`consumer-v1.yaml`](./consumer-v1.yaml)
+## OpenAPI Specification
 
-:::info OpenAPI rendering
-This page summarizes the contract in Markdown. The bundled [`consumer-v1.yaml`](./consumer-v1.yaml) can later be wired into an interactive "try-it" reference (e.g. OpenAPI/Scalar plugin) if needed.
-:::
+The complete Consumer API is documented using **OpenAPI 3.1**. The spec is the single source of truth for request/response shapes and auth schemes:
+
+| Format | Location |
+| --- | --- |
+| **YAML (bundled)** | [`consumer-v1.yaml`](./consumer-v1.yaml) in this repo |
+| **YAML (source)** | [`hpp-router/openapi/consumer-v1.yaml`](https://github.com/hpp-io/hpp-router/blob/main/openapi/consumer-v1.yaml) |
+
+Import the spec into [Swagger UI](https://swagger.io/tools/swagger-ui/), [Postman](https://www.postman.com/), or an OpenAPI code generator to explore endpoints or produce client stubs.
+
+For live requests, use the [Router Playground](https://router.hpp.io/playground/) or follow the [Quickstart](../quickstart) — streaming and image responses are easier to test there than in a static reference page.
+
+## Base URL & auth
 
 - **Base URL:** `https://router.hpp.io`
-- **Auth:** `apikey` header **or** `Authorization: Bearer <key>`. See [Authentication](../authentication.md).
+- **Auth:** `apikey` header **or** `Authorization: Bearer <key>`. See [Authentication](../authentication).
 - **Version:** Consumer API `0.1.0`.
 
 ## Endpoints
@@ -52,7 +61,7 @@ Additional properties are allowed and passed through.
 - `200` — `ChatCompletionResponse` (`application/json`) or an SSE stream (`text/event-stream`). Response headers include `X-HPP-Router-Resolved-Model`, `X-HPP-Router-Basket`, `X-HPP-Router-Rule-Id`, `X-HPP-Router-Rules-Version`, and `X-HPP-Router-Tier`.
 - `400`, `401`, `429`, `500` — error envelope.
 
-See [Chat Completions](../guides/chat-completions.md) and [Smart Routing](../smart-routing.md).
+See [Chat Completions](../guides/chat-completions) and [Smart Routing](../smart-routing).
 
 ---
 
@@ -62,7 +71,7 @@ Lists available models (OpenAI-compatible). Each `Model` has `id`, `object` (`"m
 
 **Responses:** `200` — `ModelListResponse`; `401`, `500` — error envelope.
 
-See [Models & Pricing](../models-and-pricing.md).
+See [Models & Pricing](../models-and-pricing).
 
 ---
 
@@ -84,7 +93,7 @@ OpenAI-compatible image generation for `gpt-image-1`.
 
 **Responses:** `200` — `ImageGenerationResponse` (`data[]` with `b64_json`/`url`, plus `usage`); `400`, `401`, `429`, `500` — error envelope.
 
-See [Image Generation](../guides/image-generation.md).
+See [Image Generation](../guides/image-generation).
 
 ---
 
@@ -106,7 +115,7 @@ Quota availability for the authenticated consumer.
 
 **Errors:** `401`, `503`, `500`.
 
-See [Quota & Usage](../guides/quota-and-usage.md).
+See [Quota & Usage](../guides/quota-and-usage).
 
 ---
 
@@ -114,11 +123,11 @@ See [Quota & Usage](../guides/quota-and-usage.md).
 
 Errors use one of two shapes (`ErrorEnvelope`):
 
-```json
+```json showLineNumbers
 { "error": "string", "message": "string" }
 ```
 
-```json
+```json showLineNumbers
 {
   "error": {
     "message": "string",
@@ -131,7 +140,7 @@ Errors use one of two shapes (`ErrorEnvelope`):
 }
 ```
 
-See [Errors](../guides/errors.md) for handling guidance.
+See [Errors](../guides/errors) for handling guidance.
 
 ## Security schemes
 

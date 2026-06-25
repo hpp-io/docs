@@ -3,6 +3,10 @@ title: Vision / Multimodal
 description: Send images alongside text to vision-capable models through HPP Router.
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodePanel from '@site/src/components/CodePanel';
+
 # Vision / Multimodal
 
 Vision-capable models accept images alongside text in the same chat completion request. HPP Router uses the OpenAI `image_url` content-part format. For Anthropic routes, the gateway converts `image_url` parts into native image blocks before calling the provider.
@@ -11,7 +15,11 @@ Vision-capable models accept images alongside text in the same chat completion r
 
 Use an array of content parts in a message, mixing `text` and `image_url`:
 
-```bash
+<CodePanel>
+<Tabs groupId="vision-request" queryString>
+<TabItem value="curl" label="cURL" default>
+
+```bash showLineNumbers
 curl -X POST https://router.hpp.io/llm/v1/chat/completions \
   -H "apikey: $HPPROUTER_API_KEY" \
   -H "Content-Type: application/json" \
@@ -34,6 +42,10 @@ curl -X POST https://router.hpp.io/llm/v1/chat/completions \
   }'
 ```
 
+</TabItem>
+</Tabs>
+</CodePanel>
+
 ## Content parts
 
 | Part type | Fields |
@@ -49,11 +61,11 @@ When embedding image bytes directly, use a data URL of the form `data:image/png;
 
 ## With smart routing
 
-You can use `hpprouter/auto` with multimodal content. Routing follows the same basket/tier rules, and the token estimate includes the image parts. See [Smart Routing](../smart-routing.md).
+You can use `hpprouter/auto` with multimodal content. Routing follows the same basket/tier rules, and the token estimate includes the image parts. See [Smart Routing](../smart-routing).
 
 ## Important distinctions
 
-- **Vision is not image generation.** This endpoint is for *understanding* images in a chat. To *generate* images, use [Image Generation](./image-generation.md) (`gpt-image-1` at `/v1/images/generations`).
+- **Vision is not image generation.** This endpoint is for *understanding* images in a chat. To *generate* images, use [Image Generation](./image-generation) (`gpt-image-1` at `/v1/images/generations`).
 - **Use a vision-capable model.** For example `openai/gpt-4o`.
 
 ## Provider limits

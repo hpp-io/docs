@@ -3,6 +3,10 @@ title: Smart Routing
 description: How the hpprouter/auto virtual model classifies requests and routes them to a cost-appropriate model.
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodePanel from '@site/src/components/CodePanel';
+
 # Smart Routing (`hpprouter/auto`)
 
 Smart routing answers one question:
@@ -13,7 +17,11 @@ When you send `model: "hpprouter/auto"`, the gateway classifies the request and 
 
 ## Using it
 
-```bash
+<CodePanel>
+<Tabs groupId="smart-routing-request" queryString>
+<TabItem value="curl" label="cURL" default>
+
+```bash showLineNumbers
 curl -sS -D /tmp/headers.txt -o /tmp/out.json \
   -X POST https://router.hpp.io/llm/v1/chat/completions \
   -H "apikey: $HPPROUTER_API_KEY" \
@@ -28,6 +36,10 @@ curl -sS -D /tmp/headers.txt -o /tmp/out.json \
 grep -i x-hpp-router /tmp/headers.txt
 # X-HPP-Router-Resolved-Model: openai/gpt-4o-mini   (example; depends on rules)
 ```
+
+</TabItem>
+</Tabs>
+</CodePanel>
 
 You do not need to read the resolved model — server-side billing and logging handle it for you. The header is there for observability and optional logging.
 
@@ -45,7 +57,7 @@ Token counts are estimated with a tokenizer (not raw character count), plus a co
 
 ### Streaming exception
 
-If `stream: true`, basket classification is **skipped** and the request always uses the configured **streaming fallback** model. This prioritizes the stability of the streaming (SSE) pipeline. See [Streaming](./guides/streaming.md).
+If `stream: true`, basket classification is **skipped** and the request always uses the configured **streaming fallback** model. This prioritizes the stability of the streaming (SSE) pipeline. See [Streaming](./guides/streaming).
 
 ## Response metadata
 
@@ -65,7 +77,7 @@ To read `X-HPP-Router-*` headers from browser JavaScript, the gateway must expos
 
 ## Billing
 
-Billing always uses the **resolved** model's pricing and the upstream `usage` — there is no separate price for `hpprouter/auto`. The resolved model is recorded in your [usage logs](./guides/quota-and-usage.md).
+Billing always uses the **resolved** model's pricing and the upstream `usage` — there is no separate price for `hpprouter/auto`. The resolved model is recorded in your [usage logs](./guides/quota-and-usage).
 
 ## Notes for client apps
 

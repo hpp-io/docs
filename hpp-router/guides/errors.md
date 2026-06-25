@@ -12,8 +12,8 @@ HPP Router returns standard HTTP status codes and a JSON error envelope. Handle 
 | Code | Meaning | Typical cause |
 | --- | --- | --- |
 | `400` | Bad Request | Malformed body, or an unroutable/unsupported model. |
-| `401` | Unauthorized | Missing or invalid API key. See [Authentication](../authentication.md). |
-| `429` | Too Many Requests / Quota Exceeded | Rate limit hit, or insufficient [quota](./quota-and-usage.md). |
+| `401` | Unauthorized | Missing or invalid API key. See [Authentication](../authentication). |
+| `429` | Too Many Requests / Quota Exceeded | Rate limit hit, or insufficient [quota](./quota-and-usage). |
 | `500` | Internal Server Error | Unexpected gateway or upstream error. |
 | `503` | Service Unavailable | Quota state could not be verified (fail-closed). |
 
@@ -23,7 +23,7 @@ Errors are returned as JSON. Two shapes are possible.
 
 ### Simple form
 
-```json
+```json showLineNumbers
 {
   "error": "unauthorized",
   "message": "Invalid API key"
@@ -32,7 +32,7 @@ Errors are returned as JSON. Two shapes are possible.
 
 ### Structured form (upstream/provider errors)
 
-```json
+```json showLineNumbers
 {
   "error": {
     "message": "The model is overloaded.",
@@ -56,7 +56,7 @@ Errors are returned as JSON. Two shapes are possible.
 
 ## Smart-routing errors
 
-When using [`hpprouter/auto`](../smart-routing.md), you may encounter:
+When using [`hpprouter/auto`](../smart-routing), you may encounter:
 
 | Error | Cause |
 | --- | --- |

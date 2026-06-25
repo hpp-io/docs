@@ -3,22 +3,34 @@ title: Models & Pricing
 description: Discover available models and understand HPP Router's token-based, prepaid billing.
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodePanel from '@site/src/components/CodePanel';
+
 # Models & Pricing
 
-HPP Router exposes models from multiple providers behind one OpenAI-compatible API. Billing is **token-based** and deducted from your prepaid [quota](./guides/quota-and-usage.md).
+HPP Router exposes models from multiple providers behind one OpenAI-compatible API. Billing is **token-based** and deducted from your prepaid [quota](./guides/quota-and-usage).
 
 ## Listing models
 
 Use the OpenAI-compatible models endpoint to discover what's available, including the virtual `hpprouter/auto` model:
 
-```bash
+<CodePanel>
+<Tabs groupId="models-list-request" queryString>
+<TabItem value="curl" label="cURL" default>
+
+```bash showLineNumbers
 curl https://router.hpp.io/llm/v1/models \
   -H "apikey: $HPPROUTER_API_KEY"
 ```
 
+</TabItem>
+</Tabs>
+</CodePanel>
+
 The response is an OpenAI-style list. Each model may include a `pricing` object:
 
-```json
+```json showLineNumbers
 {
   "object": "list",
   "data": [
@@ -55,7 +67,7 @@ Specify a model as **`provider/model`**, or use the virtual smart-routing model:
 
 | Example `model` | Description |
 | --- | --- |
-| `hpprouter/auto` | [Smart routing](./smart-routing.md) — the gateway resolves an actual model per request. |
+| `hpprouter/auto` | [Smart routing](./smart-routing) — the gateway resolves an actual model per request. |
 | `openai/gpt-5` | OpenAI GPT-5. |
 | `openai/gpt-4o` | OpenAI GPT-4o (vision-capable). |
 | `anthropic/claude-sonnet-4` | Anthropic Claude Sonnet 4. |
@@ -76,15 +88,15 @@ Specify a model as **`provider/model`**, or use the virtual smart-routing model:
 | `openai/gpt-5` | $1.25 | $10 |
 | `gpt-image-1` (image generation) | $10 | $40 |
 
-See [Image Generation](./guides/image-generation.md) for how image quality affects output-token usage.
+See [Image Generation](./guides/image-generation) for how image quality affects output-token usage.
 
 ## Billing with smart routing
 
-When you request `hpprouter/auto`, billing uses the **resolved** model's pricing — not a price for `auto` itself. The resolved model is returned in the `X-HPP-Router-Resolved-Model` response header and recorded in your usage logs. See [Smart Routing](./smart-routing.md) for details.
+When you request `hpprouter/auto`, billing uses the **resolved** model's pricing — not a price for `auto` itself. The resolved model is returned in the `X-HPP-Router-Resolved-Model` response header and recorded in your usage logs. See [Smart Routing](./smart-routing) for details.
 
 ## Checking your quota and usage
 
 - `GET /api/quota-check` — remaining quota for the authenticated consumer.
 - `GET /api/usage` — usage summary (requests, total tokens, total cost, remaining quota).
 
-See [Quota & Usage](./guides/quota-and-usage.md).
+See [Quota & Usage](./guides/quota-and-usage).

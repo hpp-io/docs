@@ -3,27 +3,49 @@ title: TypeScript (@hpprouter/sdk)
 description: The official TypeScript client SDK for the HPP Router Consumer API.
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodePanel from '@site/src/components/CodePanel';
+
 # TypeScript SDK — `@hpprouter/sdk`
 
 `@hpprouter/sdk` is the official TypeScript client for the HPP Router Consumer API. It wraps every consumer endpoint with typed helpers and surfaces HPP Router-specific smart-routing metadata alongside each response.
 
 ## Installation
 
+<CodePanel>
+<Tabs groupId="typescript-sdk-install" queryString>
+<TabItem value="npm" label="npm" default>
+
 ```bash
 npm install @hpprouter/sdk
 ```
+
+</TabItem>
+<TabItem value="yarn" label="Yarn">
 
 ```bash
 yarn add @hpprouter/sdk
 ```
 
+</TabItem>
+<TabItem value="pnpm" label="pnpm">
+
 ```bash
 pnpm add @hpprouter/sdk
 ```
 
+</TabItem>
+</Tabs>
+</CodePanel>
+
 ## Creating a client
 
-```ts
+<CodePanel>
+<Tabs groupId="typescript-sdk-client" queryString>
+<TabItem value="typescript" label="TypeScript" default>
+
+```ts showLineNumbers
 import { HppRouter } from '@hpprouter/sdk';
 
 const client = new HppRouter({
@@ -32,9 +54,17 @@ const client = new HppRouter({
 });
 ```
 
+</TabItem>
+</Tabs>
+</CodePanel>
+
 ## Chat completions
 
-```ts
+<CodePanel>
+<Tabs groupId="typescript-sdk-chat" queryString>
+<TabItem value="typescript" label="TypeScript" default>
+
+```ts showLineNumbers
 const completion = await client.chat.send({
   model: 'hpprouter/auto',
   messages: [{ role: 'user', content: 'Hello!' }],
@@ -44,6 +74,10 @@ console.log(completion.data.choices);
 console.log(completion.meta.resolvedModel); // smart-routing metadata
 ```
 
+</TabItem>
+</Tabs>
+</CodePanel>
+
 Responses expose two parts:
 
 - `data` — the OpenAI-compatible response body (`choices`, `usage`, …).
@@ -51,7 +85,11 @@ Responses expose two parts:
 
 ## Streaming
 
-```ts
+<CodePanel>
+<Tabs groupId="typescript-sdk-streaming" queryString>
+<TabItem value="typescript" label="TypeScript" default>
+
+```ts showLineNumbers
 const { stream, meta } = await client.chat.stream({
   model: 'openai/gpt-5',
   messages: [{ role: 'user', content: 'Stream a short answer.' }],
@@ -64,18 +102,34 @@ for await (const event of stream) {
 console.log(meta.resolvedModel);
 ```
 
-See [Streaming](../guides/streaming.md) for the streaming-fallback behavior of `hpprouter/auto`.
+</TabItem>
+</Tabs>
+</CodePanel>
+
+See [Streaming](../guides/streaming) for the streaming-fallback behavior of `hpprouter/auto`.
 
 ## Models
 
-```ts
+<CodePanel>
+<Tabs groupId="typescript-sdk-models" queryString>
+<TabItem value="typescript" label="TypeScript" default>
+
+```ts showLineNumbers
 const models = await client.models.list();
 console.log(models.data.data);
 ```
 
+</TabItem>
+</Tabs>
+</CodePanel>
+
 ## Usage and quota
 
-```ts
+<CodePanel>
+<Tabs groupId="typescript-sdk-usage" queryString>
+<TabItem value="typescript" label="TypeScript" default>
+
+```ts showLineNumbers
 const usage = await client.usage.get();
 const quota = await client.quota.check();
 
@@ -83,11 +137,19 @@ console.log(usage.data.remaining);
 console.log(quota.data.has_quota);
 ```
 
-See [Quota & Usage](../guides/quota-and-usage.md).
+</TabItem>
+</Tabs>
+</CodePanel>
+
+See [Quota & Usage](../guides/quota-and-usage).
 
 ## Image generation
 
-```ts
+<CodePanel>
+<Tabs groupId="typescript-sdk-images" queryString>
+<TabItem value="typescript" label="TypeScript" default>
+
+```ts showLineNumbers
 const image = await client.images.generate({
   model: 'gpt-image-1',
   prompt: 'A serene mountain landscape at sunset',
@@ -98,15 +160,19 @@ const image = await client.images.generate({
 console.log(image.data.data);
 ```
 
-See [Image Generation](../guides/image-generation.md).
+</TabItem>
+</Tabs>
+</CodePanel>
+
+See [Image Generation](../guides/image-generation).
 
 ## Choosing between the SDK and the OpenAI SDK
 
 | Use case | Recommended |
 | --- | --- |
 | First-class smart-routing metadata, typed usage/quota/image helpers | `@hpprouter/sdk` |
-| Minimal-change migration of existing OpenAI SDK code | [OpenAI SDK (drop-in)](../guides/openai-sdk.md) |
+| Minimal-change migration of existing OpenAI SDK code | [OpenAI SDK (drop-in)](../guides/openai-sdk) |
 
 ## Reference
 
-The SDK is generated against the [Consumer API](../api-reference/consumer-api.md) OpenAPI contract.
+The SDK is generated against the [Consumer API](../api-reference/consumer-api) OpenAPI contract.
