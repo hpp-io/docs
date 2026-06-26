@@ -46,7 +46,7 @@ OpenAI-compatible chat completion endpoint with HPP smart-routing headers.
 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
-| `model` | string | ✅ | e.g. `hpprouter/auto`, `openai/gpt-5`, `anthropic/claude-sonnet-4`, `moonshotai/kimi-k2.6`, `ollama/gpt-oss:120b`. |
+| `model` | string | ✅ | e.g. `hpprouter/auto`, `openai/gpt-5`, `anthropic/claude-sonnet-4`, `moonshotai/kimi-k2.6`, `ollama/gpt-oss:120b`, `ollama/solidity-master:2`. |
 | `messages` | `ChatMessage[]` | ✅ | Each has `role` (`system`/`user`/`assistant`/`tool`) and `content` (string or content parts). |
 | `stream` | boolean | | Stream as SSE. |
 | `max_tokens` | integer (≥1) | | |
