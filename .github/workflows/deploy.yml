@@ -46,3 +46,25 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+      # Post a deploy notification to Slack. Only runs after a successful deploy.
+      # Credentials live in repo secrets; the commit message is passed via env
+      # (not inline ${{ }}) and escaped by jq to avoid script injection.
+      - name: Notify Slack
+        if: success()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -n \
+            --arg ch "$SLACK_CHANNEL_ID" \
+            --arg msg "${COMMIT_MESSAGE:-(manual run — no commit message)}" \
+            --arg url "$COMMIT_URL" \
+            '{channel: $ch, text: ("[Docs] docs.hpp.io deployed successfully\n\n```\n" + $msg + "\n```\n\n" + $url)}')
+          curl -sSf -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            --data "$payload" | jq -e '.ok' >/dev/null
