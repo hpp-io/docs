@@ -83,6 +83,15 @@ const config: Config = {
         editUrl: 'https://github.com/hpp-io/docs/tree/main/',
       },
     ],
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'coder',
+        path: 'hpp-coder',
+        routeBasePath: 'hpp-coder',
+        sidebarPath: false,
+      },
+    ],
   ],
   themes: [
     [
