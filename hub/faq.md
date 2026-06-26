@@ -23,8 +23,14 @@ available on the production Hub.
 
 ### Which AI models can I use?
 
-A wide range, including Claude, GPT, Llama, and Qwen models. The full list and pricing is
-on the **Wallets** page in the Hub.
+A wide range, including Claude, GPT, and Kimi models, plus free open models. The full list
+and pricing is on the **[API Keys](./api-keys)** page in the Hub — these models are served
+by [HPP Router](/hpp-router).
+
+### Can I use the AI models from my own code?
+
+Yes. Create an API key on the **[API Keys](./api-keys)** page and call the models through
+[HPP Router](/hpp-router), HPP's OpenAI-compatible gateway.
 
 ### Are my conversations private?
 

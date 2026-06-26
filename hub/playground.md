@@ -24,8 +24,8 @@ Your projects save automatically — continue from **Home** or the project list.
 
 ## Chat with AI models
 
-The Playground is also a chat with AI models provided through **HPP Router**. Pick a model
-from the selector at the top:
+The Playground is also a chat with AI models provided through **[HPP Router](/hpp-router)**.
+Pick a model from the selector at the top:
 
 - **Claude Sonnet 4.6** — latest Claude Sonnet, excellent coder
 - **Claude Haiku 4.5** — fast and efficient
@@ -33,7 +33,7 @@ from the selector at the top:
 - **GPT-5 Mini** — lightweight but intelligent
 - **GPT-OSS 120B** — open-source model
 
-…and more. See the full list and pricing in [Wallets](./wallets#available-models).
+…and more. See the full list and pricing on the [API Keys](./api-keys) page.
 
 ## Verify a response on-chain
 

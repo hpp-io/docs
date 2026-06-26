@@ -24,8 +24,10 @@ preview you can test and publish.
 ## What's inside
 
 - **Playground** — describe what to build, preview and publish it, and chat with leading
-  AI models (Claude, GPT, Llama, Qwen).
-- **Wallets** — your Credit balance, a built-in wallet on HPP Mainnet, and API keys.
+  AI models (Claude, GPT, Kimi, and more).
+- **Wallets** — your Credit balance and your on-chain wallets on HPP Mainnet.
+- **API Keys** — issue keys for [HPP Router](/hpp-router) and call HPP's AI models from
+  your own code.
 - **Credits** — pay-as-you-go, topped up with USDC.e on HPP Mainnet.
 
 ## Verifiable by design
