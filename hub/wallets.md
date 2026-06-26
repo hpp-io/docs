@@ -6,7 +6,7 @@ title: Wallets
 
 The **Wallets** page is where you manage your **Credits** and your on-chain wallets.
 
-> **Looking for API keys?** They now have their own [API Keys](./api-keys) page.
+> **Note:** API keys are managed on the [API Keys](./api-keys) page.
 
 ## Credits
 

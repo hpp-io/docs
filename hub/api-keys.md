@@ -7,9 +7,6 @@ title: API Keys
 The **API Keys** page is where you create keys for **HPP Router** — HPP's AI model
 gateway — and browse the models you can call from your own code.
 
-> **Moved here:** API keys used to live on the Wallets page. They now have their own
-> **API Keys** menu item, next to a full model and pricing list.
-
 ## Create an API key
 
 1. Open **API Keys** from the left sidebar.

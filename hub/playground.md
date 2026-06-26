@@ -24,8 +24,8 @@ Your projects save automatically — continue from **Home** or the project list.
 
 ## Chat with AI models
 
-The Playground is also a chat with AI models provided through **[HPP Router](/hpp-router)**.
-Pick a model from the selector at the top:
+The Playground is also a place to **chat with leading AI models**. Pick a model from the
+selector at the top:
 
 - **Claude Sonnet 4.6** — latest Claude Sonnet, excellent coder
 - **Claude Haiku 4.5** — fast and efficient
