@@ -1,0 +1,87 @@
+---
+title: Networks & Token
+sidebar_label: Networks & Token
+description: HPP Mainnet and Sepolia network parameters and the USDC.e settlement token used by x402.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Networks & Token
+
+x402 on HPP runs on two networks. Both are recognized natively by the `@x402` SDK using their
+[CAIP-2](https://chainagnostic.org/CAIPs/caip-2) identifiers (`eip155:<chainId>`), and both settle in
+the same **USDC.e** stablecoin.
+
+## Networks
+
+<Tabs>
+<TabItem value="mainnet" label="HPP Mainnet">
+
+| Field | Value |
+| --- | --- |
+| Network name | HPP Mainnet |
+| CAIP-2 (x402 `network`) | `eip155:190415` |
+| Chain ID | `190415` |
+| RPC endpoint | `https://mainnet.hpp.io` |
+| Block explorer | https://explorer.hpp.io/ |
+| Gas token | ETH |
+| Facilitator | `https://facilitator.hpp.io` |
+
+</TabItem>
+<TabItem value="sepolia" label="HPP Sepolia">
+
+| Field | Value |
+| --- | --- |
+| Network name | HPP Sepolia (testnet) |
+| CAIP-2 (x402 `network`) | `eip155:181228` |
+| Chain ID | `181228` |
+| RPC endpoint | `https://sepolia.hpp.io` |
+| Block explorer | https://sepolia-explorer.hpp.io/ |
+| Gas token | ETH |
+| Facilitator | `https://facilitator-sepolia.hpp.io` |
+
+Get testnet ETH from the [HPP Sepolia Faucet](https://faucet.hpp.io/).
+
+</TabItem>
+</Tabs>
+
+See [Network Information](/getting-started/network-information) for WSS endpoints and Chainlist links.
+
+## Token: USDC.e
+
+All x402 payments on HPP settle in **USDC.e** (Bridged USDC). The contract address is the **same on
+both networks**:
+
+| Field | Value |
+| --- | --- |
+| Symbol | USDC.e |
+| Address (Mainnet & Sepolia) | `0x401eCb1D350407f13ba348573E5630B83638E30D` |
+| Decimals | `6` |
+| EIP-712 domain name | `Bridged USDC` |
+| EIP-712 domain version | `2` |
+
+Because USDC.e has **6 decimals**, prices in the x402 `accepts` are expressed as integer base units:
+
+| Human price | `amount` (base units) |
+| --- | --- |
+| `$0.01` | `10000` |
+| `$0.10` | `100000` |
+| `$1.00` | `1000000` |
+
+> The EIP-712 domain (`Bridged USDC` / version `2`) matters for `exact` (EIP-3009) signatures. Register
+> USDC.e as HPP's default asset in the SDK so it is filled in automatically — see the
+> [Quickstart: Sellers](./quickstart-sellers.mdx#2-register-usdce) snippet.
+
+## Funding
+
+Because every payment is denominated in **USDC.e**, a buyer needs a USDC.e balance before it can pay —
+ETH alone only covers gas (and `upto` can be made gasless, needing no ETH at all).
+
+- **Gas (ETH).** On testnet, get HPP Sepolia ETH from the [HPP Sepolia Faucet](https://faucet.hpp.io/).
+- **USDC.e.** USDC.e is Bridged USDC. Bring it onto HPP by bridging from the parent chain — see the
+  [Bridge guide](/community/bridge). For testnet USDC.e to run the quickstarts, reach out through
+  [Official Links](/community/official-links).
+
+Verify a balance any time on the [block explorer](https://explorer.hpp.io/) (mainnet) or
+[Sepolia explorer](https://sepolia-explorer.hpp.io/) by looking up the USDC.e contract above.

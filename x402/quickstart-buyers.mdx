@@ -1,0 +1,215 @@
+---
+title: 'Quickstart: Buyers'
+sidebar_label: 'Quickstart: Buyers'
+description: Pay for an x402 endpoint on HPP from a client or AI agent using the @x402 SDK and a USDC.e wallet.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Quickstart: Buyers
+
+Pay for any x402 endpoint on HPP by wrapping `fetch`. The SDK reads the `402` challenge, signs a
+USDC.e authorization with your wallet, and retries automatically — your code just sees a `200`.
+
+### Prerequisites
+
+- A wallet (private key) holding **USDC.e** on the target network — payments are denominated in USDC.e,
+  not ETH. See [Networks & Token → Funding](./networks-and-token.mdx#funding) for how to acquire it.
+- For the **`exact`** scheme, the wallet also needs a little **ETH** for gas.
+- For **`upto`**, the buyer normally needs a one-time Permit2 approval. On HPP this approval can be
+  gas-sponsored via EIP-2612, so a wallet with **only USDC.e and zero ETH** can pay — see
+  [Facilitator → Gasless settlement](./facilitator.mdx#gasless-settlement-upto).
+
+:::caution
+Use a dedicated test wallet on **HPP Sepolia** while integrating. Never hard-code a mainnet private
+key — load it from a secret manager or environment variable, and treat any key in `process.env` as
+production-sensitive.
+:::
+
+## 1. Install
+
+```bash
+npm install @x402/core @x402/evm @x402/fetch viem
+```
+
+## 2. Wrap fetch with payment
+
+Build a scheme client backed by your wallet, hand it to an `x402Client`, and wrap `fetch`. The buyer
+needs **USDC.e** to pay; for `exact` it also needs a little ETH for gas, while `upto` can be made
+[gasless](./facilitator.mdx#gasless-settlement-upto).
+
+<Tabs>
+<TabItem value="mainnet" label="HPP Mainnet">
+
+```ts
+import { createPublicClient, defineChain, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { ExactEvmScheme } from "@x402/evm/exact/client";
+import { UptoEvmScheme } from "@x402/evm/upto/client";
+import { x402Client } from "@x402/core/client";
+import { wrapFetchWithPayment, decodePaymentResponseHeader } from "@x402/fetch";
+
+const RPC = "https://mainnet.hpp.io";
+const NETWORK = "eip155:190415";                // CAIP-2 id used by x402
+const SCHEME = "upto";                          // or "exact"
+
+// HPP is not a viem built-in chain, so define it. The scheme client needs a
+// chain-configured public client for its on-chain reads (balances, allowances).
+const hppMainnet = defineChain({
+  id: 190415,
+  name: "HPP Mainnet",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: [RPC] } },
+});
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
+const pub = createPublicClient({ chain: hppMainnet, transport: http(RPC) });
+
+// The scheme client signs typed data with your wallet and reads chain state.
+const signer = {
+  address: account.address,
+  signTypedData: (msg: any) => account.signTypedData(msg),
+  readContract: (args: any) => pub.readContract(args),
+};
+
+const schemeClient =
+  SCHEME === "upto"
+    ? new UptoEvmScheme(signer, { rpcUrl: RPC })
+    : new ExactEvmScheme(signer, { rpcUrl: RPC });
+
+const client = x402Client.fromConfig({
+  schemes: [{ network: NETWORK, client: schemeClient }],
+  // Pick the accept matching the network + scheme you want from the 402.
+  paymentRequirementsSelector: (_v, accepts) =>
+    accepts.find((a) => a.network === NETWORK && a.scheme === SCHEME) ?? accepts[0],
+});
+
+const fetchWithPay = wrapFetchWithPayment(fetch, client);
+```
+
+</TabItem>
+<TabItem value="sepolia" label="HPP Sepolia">
+
+```ts
+import { createPublicClient, defineChain, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { ExactEvmScheme } from "@x402/evm/exact/client";
+import { UptoEvmScheme } from "@x402/evm/upto/client";
+import { x402Client } from "@x402/core/client";
+import { wrapFetchWithPayment, decodePaymentResponseHeader } from "@x402/fetch";
+
+const RPC = "https://sepolia.hpp.io";
+const NETWORK = "eip155:181228";                // CAIP-2 id used by x402
+const SCHEME = "upto";                          // or "exact"
+
+// HPP is not a viem built-in chain, so define it. The scheme client needs a
+// chain-configured public client for its on-chain reads (balances, allowances).
+const hppSepolia = defineChain({
+  id: 181228,
+  name: "HPP Sepolia",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: [RPC] } },
+});
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
+const pub = createPublicClient({ chain: hppSepolia, transport: http(RPC) });
+
+const signer = {
+  address: account.address,
+  signTypedData: (msg: any) => account.signTypedData(msg),
+  readContract: (args: any) => pub.readContract(args),
+};
+
+const schemeClient =
+  SCHEME === "upto"
+    ? new UptoEvmScheme(signer, { rpcUrl: RPC })
+    : new ExactEvmScheme(signer, { rpcUrl: RPC });
+
+const client = x402Client.fromConfig({
+  schemes: [{ network: NETWORK, client: schemeClient }],
+  paymentRequirementsSelector: (_v, accepts) =>
+    accepts.find((a) => a.network === NETWORK && a.scheme === SCHEME) ?? accepts[0],
+});
+
+const fetchWithPay = wrapFetchWithPayment(fetch, client);
+```
+
+</TabItem>
+</Tabs>
+
+## 3. Call the paid endpoint
+
+```ts
+const res = await fetchWithPay("https://seller.example.com/paid/hello", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ hi: 1 }),
+});
+
+console.log(res.status);              // 200
+console.log(await res.json());        // the resource
+
+// Onchain settlement receipt, if the server returned one.
+const header = res.headers.get("x-payment-response");
+if (header) {
+  const receipt = decodePaymentResponseHeader(header);
+  // { success, transaction, network, payer, amount?, ... }
+  console.log("settled tx:", receipt.transaction, "on", receipt.network);
+  // For `upto`, `receipt.amount` is the ACTUAL amount charged (≤ the authorized max).
+}
+```
+
+The first call to an unpaid URL returns `402`; `wrapFetchWithPayment` signs the authorization and
+re-sends it transparently, so you only observe the final `200`. Use `receipt.transaction` to link the
+settlement on the [block explorer](./networks-and-token.mdx).
+
+## Handling failures
+
+A payment can fail in two distinct places.
+
+**Before sending.** If the client can't build a payment — no registered scheme matches any offered
+`(network, scheme)`, or the wallet can't sign — `wrapFetchWithPayment` throws a plain `Error`:
+
+```ts
+try {
+  const res = await fetchWithPay(url, { method: "POST" /* … */ });
+  // … use res …
+} catch (err) {
+  // e.g. "Failed to create payment payload: …" when no registered scheme matches
+  // the seller's accepts, or "Payment already attempted" after a retry is exhausted.
+  console.error("payment not sent:", (err as Error).message);
+}
+```
+
+So make sure your registered schemes overlap with what the seller advertises in the `402` — otherwise
+the client has nothing valid to sign.
+
+**After sending.** The resource server verifies and settles the payment. If it rejects the payment
+(bad or expired authorization, insufficient USDC.e) or settlement fails onchain, you receive a
+**non-2xx HTTP response** — not a thrown error. Check the status:
+
+```ts
+if (!res.ok) {
+  console.error("server rejected payment:", res.status, await res.text());
+}
+```
+
+The verify/settle decision happens on the resource server via the facilitator; the typed `VerifyError`
+/ `SettleError` are raised *there*, not on the buyer — see
+[Facilitator → Verify and settle](./facilitator.mdx#verify-and-settle).
+
+> **Use the SDK client to encode payments.** The `X-PAYMENT` header has a specific encoding that the
+> resource-server middleware validates. Hand-rolling the header will be rejected — always pay through
+> `wrapFetchWithPayment` (or the MCP/agent wrappers built on the same client).
+
+## Agents and MCP
+
+The same `x402Client` powers higher-level wrappers — for example a payment-aware MCP client — so an AI
+agent can discover a price from a `402` and pay it without any human step. Selecting between `exact`
+and `upto` is automatic: the seller lists schemes in priority order and the client honors that order.
+
+## Next
+
+- [Facilitator](./facilitator.mdx) — how settlement works and how to go gasless.
+- [SDK & reference](./sdk.md) — packages, network aliases, and upstream links.

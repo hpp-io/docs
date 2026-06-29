@@ -1,0 +1,155 @@
+---
+title: HPP Facilitator
+sidebar_label: Facilitator
+description: HPP's hosted x402 facilitator — verify and settle USDC.e payments on HPP Mainnet and Sepolia, with gasless upto settlement.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# HPP Facilitator
+
+A **facilitator** is the service an x402 resource server delegates payment **verification** and
+**onchain settlement** to. HPP operates production facilitators for both its Mainnet and Sepolia
+networks, so sellers never have to run an RPC node, manage a settlement key, or hold buyer funds —
+the facilitator only verifies signatures and submits the settlement transaction.
+
+## Endpoints
+
+| Network | Base URL |
+| --- | --- |
+| HPP Mainnet (`eip155:190415`) | `https://facilitator.hpp.io` |
+| HPP Sepolia (`eip155:181228`) | `https://facilitator-sepolia.hpp.io` |
+
+Each facilitator exposes the standard x402 facilitator API:
+
+| Route | Method | Purpose |
+| --- | --- | --- |
+| `/supported` | `GET` | Lists the `(scheme, network)` pairs and extensions the facilitator supports. |
+| `/verify` | `POST` | Verifies a signed payment payload without settling. |
+| `/settle` | `POST` | Submits the payment onchain and returns a settlement receipt. |
+
+**CORS is enabled**, so browser-based clients can call the facilitator directly.
+
+You can confirm what a facilitator supports at any time:
+
+```bash
+curl https://facilitator.hpp.io/supported
+```
+
+```json
+{
+  "kinds": [
+    { "x402Version": 2, "scheme": "exact", "network": "eip155:190415" },
+    { "x402Version": 2, "scheme": "upto", "network": "eip155:190415",
+      "extra": { "facilitatorAddress": "0xaA03c7BD2fAf554db507D78CD3bF126a3DD2E033" } }
+  ],
+  "extensions": ["eip2612GasSponsoring"],
+  "signers": { "eip155:*": ["0xaA03c7BD2fAf554db507D78CD3bF126a3DD2E033"] }
+}
+```
+
+The Sepolia facilitator (`https://facilitator-sepolia.hpp.io/supported`) returns the same shape with
+`network: "eip155:181228"` and its own signer `0x420bd05aB1103b0F4A02B39Ca07C92677b5CFD9d`.
+
+## Supported schemes
+
+| Scheme | Standard | Notes |
+| --- | --- | --- |
+| `exact` | EIP-3009 (`transferWithAuthorization`) | Fixed-price payments. |
+| `upto` | Permit2 | Authorize a maximum, settle the actual amount. Supports gasless settlement. |
+
+Both schemes settle in **USDC.e** (`0x401eCb1D350407f13ba348573E5630B83638E30D`, 6 decimals) on both
+networks. See [How it works → Payment schemes](./how-it-works.md#payment-schemes).
+
+## Connecting to it
+
+You don't call the facilitator directly in normal use — your resource server does. Point a
+facilitator client at the right base URL:
+
+```ts
+import { HTTPFacilitatorClient } from "@x402/core/server";
+
+// HPP Mainnet
+const facilitator = new HTTPFacilitatorClient({ url: "https://facilitator.hpp.io" });
+// HPP Sepolia
+// const facilitator = new HTTPFacilitatorClient({ url: "https://facilitator-sepolia.hpp.io" });
+```
+
+Then register your schemes against it — see [Quickstart: Sellers](./quickstart-sellers.mdx). Buyers
+never configure the facilitator at all; they discover it implicitly from the seller's `402` challenge.
+
+## Verify and settle
+
+`HTTPFacilitatorClient` wraps the two POST endpoints. Both take the same body — the buyer's signed
+`paymentPayload` plus the `paymentRequirements` it is paying — and the SDK calls them for you during
+`paymentMiddleware`. The shapes:
+
+```jsonc
+// POST /verify  and  POST /settle  request
+{
+  "x402Version": 2,
+  "paymentPayload": { /* the decoded X-PAYMENT payload the buyer signed */ },
+  "paymentRequirements": { /* the matching accept from the 402 */ }
+}
+```
+
+```jsonc
+// POST /verify  response — checks the signature WITHOUT moving funds
+{ "isValid": true, "payer": "0x…" }
+// on failure: { "isValid": false, "invalidReason": "...", "invalidMessage": "..." }
+```
+
+```jsonc
+// POST /settle  response — submits the payment onchain
+{
+  "success": true,
+  "transaction": "0x…",          // settlement tx hash
+  "network": "eip155:190415",
+  "payer": "0x…",
+  "amount": "10000"               // actual amount settled (for `upto`, ≤ the max)
+}
+// on failure: { "success": false, "errorReason": "...", "errorMessage": "...", "transaction": "0x…" }
+```
+
+In the SDK, a failed `/verify` or `/settle` surfaces **to the resource server** as `VerifyError` or
+`SettleError` (exported from `@x402/core`), carrying `invalidReason` / `errorReason` for branching.
+Buyers don't see these types — they get a non-2xx response instead (see
+[Quickstart: Buyers → Handling failures](./quickstart-buyers.mdx#handling-failures)).
+
+## Gasless settlement (`upto`)
+
+For the `upto` scheme, HPP's facilitator advertises the **`eip2612GasSponsoring`** extension. This
+lets the facilitator sponsor the buyer's one-time Permit2 approval via
+[EIP-2612](https://eips.ethereum.org/EIPS/eip-2612), so a paying agent needs **only USDC.e and zero
+native ETH** to transact.
+
+The **sponsoring signer** — the facilitator's onchain address that pays gas and submits settlement —
+is the same value shown as `signers` and as the `upto` `facilitatorAddress` in `/supported`:
+
+| Network | Sponsoring signer (`facilitatorAddress`) |
+| --- | --- |
+| HPP Mainnet | `0xaA03c7BD2fAf554db507D78CD3bF126a3DD2E033` |
+| HPP Sepolia | `0x420bd05aB1103b0F4A02B39Ca07C92677b5CFD9d` |
+
+When a seller offers an `upto` route, the SDK surfaces the `facilitatorAddress` and the
+`eip2612GasSponsoring` extension in the `402` challenge automatically, and a compatible buyer signs
+the gasless approval path with no extra configuration.
+
+## Self-hosting
+
+HPP's facilitator is a deployment of the standard open-source x402 facilitator, so you are not locked
+in: you can run your own and point your resource server at it instead. Use HPP's hosted endpoints to
+get started, and self-host if you need custom signing keys, private RPC, or independent operations.
+See the [x402 SDK & reference](./sdk.md) for the upstream packages.
+
+## Quick reference
+
+| Field | HPP Mainnet | HPP Sepolia |
+| --- | --- | --- |
+| Facilitator URL | `https://facilitator.hpp.io` | `https://facilitator-sepolia.hpp.io` |
+| Network (CAIP-2) | `eip155:190415` | `eip155:181228` |
+| Token (USDC.e) | `0x401eCb1D350407f13ba348573E5630B83638E30D` | `0x401eCb1D350407f13ba348573E5630B83638E30D` |
+| Schemes | `exact`, `upto` | `exact`, `upto` |
+| Gasless extension | `eip2612GasSponsoring` | `eip2612GasSponsoring` |
+| Sponsor signer | `0xaA03c7BD2fAf554db507D78CD3bF126a3DD2E033` | `0x420bd05aB1103b0F4A02B39Ca07C92677b5CFD9d` |

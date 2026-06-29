@@ -92,6 +92,18 @@ const config: Config = {
         sidebarPath: false,
       },
     ],
+    // x402 payment-protocol docs — a standalone product section served at /x402
+    // (modeled on docs.cdp.coinbase.com/x402), independent of the main HPP docs.
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'x402',
+        path: 'x402',
+        routeBasePath: 'x402',
+        sidebarPath: './sidebarsX402.ts',
+        editUrl: 'https://github.com/hpp-io/docs/tree/main/',
+      },
+    ],
   ],
   themes: [
     [
@@ -99,7 +111,7 @@ const config: Config = {
       {
         hashed: true,
         indexDocs: true,
-        docsRouteBasePath: ['/', 'hub', 'hpp-router'],
+        docsRouteBasePath: ['/', 'hub', 'hpp-router', 'x402'],
         highlightSearchTermsOnTargetPage: true,
         language: ['en'],
       },
@@ -135,6 +147,13 @@ const config: Config = {
           sidebarId: 'routerSidebar',
           docsPluginId: 'router',
           label: 'HPP Router',
+          position: 'right',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'x402Sidebar',
+          docsPluginId: 'x402',
+          label: 'x402',
           position: 'right',
         },
         {
