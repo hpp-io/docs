@@ -17,8 +17,10 @@ Once you're signed in, the left sidebar has everything you need:
 
 - **Home** — start a new build or pick a guided prompt
 - **Playground** — build apps and games, and chat with AI models
-- **Wallets** — your Credits, wallet, and API keys
+- **Wallets** — your Credits and on-chain wallets
+- **API Keys** — issue keys for HPP Router and browse available models
 - **Settings** — account, security, and invites
+- **Support** — get help from the HPP team
 
 A secure wallet on HPP Mainnet is created for you automatically — no setup required.
 

@@ -9,6 +9,7 @@ const sidebars: SidebarsConfig = {
     'getting-started',
     'playground',
     'wallets',
+    'api-keys',
     'settings',
     'faq',
   ],

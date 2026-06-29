@@ -4,38 +4,25 @@ title: Wallets
 
 # Wallets
 
-The **Wallets** page is where you manage Credits, your on-chain wallet, and API keys.
+The **Wallets** page is where you manage your **Credits** and your on-chain wallets.
+
+> **Note:** API keys are managed on the [API Keys](./api-keys) page.
 
 ## Credits
 
 Your **Credit balance** powers everything you do in HPP Hub — building, previews, and AI
 chat. Usage is pay-as-you-go.
 
-To add Credits, select **Buy Credit** and pay with **USDC.e on HPP Mainnet**. <!-- TODO: confirm the Buy Credit steps against the live site -->
+To add Credits, select **Buy Credit** and pay with **USDC.e on HPP Mainnet**.
 
-## Your wallet
+## Personal Wallet (EOA)
 
-HPP Hub gives every member a secure, non-custodial **wallet on HPP Mainnet** — created
-automatically, with no setup required. You can view its address and any NFTs you've minted
-from the Wallets page.
+Connecting a personal wallet is **optional**. Use **Connect Wallet** to link your own
+EVM-compatible wallet — this lets you link your address and view your **staked HPP**
+amount.
 
-### Connect a personal wallet (optional)
+## MPC Wallet
 
-You can also connect your own EVM-compatible wallet to link your address and view your
-staked HPP. <!-- TODO: confirm staking details against the live site -->
-
-## API keys
-
-Create an **API key** on the Wallets page to use HPP Hub's AI models from your own code.
-Keep your keys secret; you can create and revoke them at any time.
-
-## Available models
-
-HPP Hub offers a wide range of AI models, provided through **HPP Router** — dozens of text
-models and image models, each with its own per-use pricing.
-
-The **full, always-current list of models and prices** is shown on the **Wallets** page in
-the Hub.
-
-> **Note:** a dedicated **HPP Router** guide — covering the API and the complete model
-> catalog — is coming soon.
+Every member gets a secure **MPC wallet on HPP Mainnet**, created automatically with no
+setup required. From the Wallets page you can view its address (with a link to the block
+explorer) and any NFTs you've minted.
