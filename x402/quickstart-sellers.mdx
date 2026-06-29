@@ -1,0 +1,138 @@
+---
+title: 'Quickstart: Sellers'
+sidebar_label: 'Quickstart: Sellers'
+description: Charge for an HTTP endpoint on HPP with x402 — Express resource server, USDC.e pricing, and HPP's hosted facilitator.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Quickstart: Sellers
+
+Put a price on an HTTP route and let HPP's facilitator handle verification and onchain settlement.
+This example uses the `@x402/express` middleware, but the same pieces apply to any HTTP framework
+the SDK supports.
+
+## 1. Install
+
+```bash
+npm install @x402/express @x402/core @x402/evm express
+```
+
+## 2. Register USDC.e
+
+HPP's USDC.e is registered in the SDK's default-asset map so the `exact` (EIP-3009) domain
+(`Bridged USDC` / version `2` / 6 decimals) is filled in automatically. Run this once at startup,
+before constructing the resource server:
+
+```ts
+import { DEFAULT_STABLECOINS } from "@x402/evm";
+
+const USDC_E = {
+  address: "0x401eCb1D350407f13ba348573E5630B83638E30D",
+  name: "Bridged USDC",
+  version: "2",
+  decimals: 6,
+};
+DEFAULT_STABLECOINS["eip155:190415"] = USDC_E; // HPP Mainnet
+DEFAULT_STABLECOINS["eip155:181228"] = USDC_E; // HPP Sepolia
+```
+
+## 3. Build the resource server
+
+Point a facilitator client at HPP's hosted facilitator and register the schemes you want to accept
+on each network.
+
+<Tabs>
+<TabItem value="mainnet" label="HPP Mainnet">
+
+```ts
+import { x402ResourceServer } from "@x402/express";
+import { ExactEvmScheme } from "@x402/evm/exact/server";
+import { UptoEvmScheme } from "@x402/evm/upto/server";
+import { HTTPFacilitatorClient } from "@x402/core/server";
+
+const facilitator = new HTTPFacilitatorClient({ url: "https://facilitator.hpp.io" });
+
+const resourceServer = new x402ResourceServer([facilitator]);
+resourceServer.register("eip155:190415", new ExactEvmScheme());
+resourceServer.register("eip155:190415", new UptoEvmScheme());
+```
+
+</TabItem>
+<TabItem value="sepolia" label="HPP Sepolia">
+
+```ts
+import { x402ResourceServer } from "@x402/express";
+import { ExactEvmScheme } from "@x402/evm/exact/server";
+import { UptoEvmScheme } from "@x402/evm/upto/server";
+import { HTTPFacilitatorClient } from "@x402/core/server";
+
+const facilitator = new HTTPFacilitatorClient({ url: "https://facilitator-sepolia.hpp.io" });
+
+const resourceServer = new x402ResourceServer([facilitator]);
+resourceServer.register("eip155:181228", new ExactEvmScheme());
+resourceServer.register("eip155:181228", new UptoEvmScheme());
+```
+
+</TabItem>
+</Tabs>
+
+> **Only register what the facilitator supports.** The resource server throws if you advertise a
+> `(network, scheme)` pair that the facilitator does not return from `/supported`. `exact` and `upto`
+> are supported on both HPP networks. You can pass multiple facilitator clients to
+> `x402ResourceServer([...])` to serve more than one network from a single process.
+
+## 4. Price your routes and mount the middleware
+
+Each route lists one or more `accepts` (one per `(network, scheme)`), priced in USDC.e base units.
+
+```ts
+import express from "express";
+import { paymentMiddleware } from "@x402/express";
+import type { RoutesConfig } from "@x402/core/server";
+
+const PAY_TO = "0xYourReceivingAddress"; // where settled USDC.e lands
+
+const routes: RoutesConfig = {
+  "POST /paid/hello": {
+    description: "A paid hello-world endpoint.",
+    accepts: [
+      {
+        scheme: "exact",
+        network: "eip155:190415",
+        payTo: PAY_TO,
+        price: {
+          amount: "10000", // 0.01 USDC.e (6 decimals)
+          asset: "0x401eCb1D350407f13ba348573E5630B83638E30D",
+          extra: { name: "Bridged USDC", version: "2" },
+        },
+        maxTimeoutSeconds: 600,
+      },
+    ],
+  },
+};
+
+const app = express();
+app.use(paymentMiddleware(routes, resourceServer));
+
+app.post("/paid/hello", (_req, res) => {
+  res.json({ message: "Thanks for paying — here is your resource." });
+});
+
+app.listen(4021, () => console.log("x402 resource server on :4021"));
+```
+
+That's it. An unpaid `POST /paid/hello` now returns `402` with your terms; a request carrying a valid
+`X-PAYMENT` header is verified, served, and settled onchain — and the handler returns the resource.
+
+## Accepting both schemes
+
+To offer `exact` and `upto` on the same route, list both in `accepts` (priority order — the buyer's
+SDK picks the first it supports) and register both schemes on the network. `upto` routes can also
+advertise gasless settlement; see [Facilitator → Gasless settlement](./facilitator.mdx#gasless-settlement-upto).
+
+## Next
+
+- [Quickstart: Buyers](./quickstart-buyers.mdx) — pay this endpoint from a client or agent.
+- [Facilitator](./facilitator.mdx) — endpoints, supported schemes, and self-hosting.
