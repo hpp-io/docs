@@ -138,6 +138,8 @@ approval, and a buyer without a standing allowance is rejected with `permit2_all
 ```ts
 import { declareEip2612GasSponsoringExtension } from "@x402/extensions";
 
+// Replaces the route from step 4. `PAY_TO` and the `price` object are the same
+// as before (here `price` is the { amount, asset, extra } object shown above).
 const routes: RoutesConfig = {
   "POST /paid/hello": {
     description: "A paid hello-world endpoint.",

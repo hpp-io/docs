@@ -99,8 +99,9 @@ HPP supports two upstream-standard schemes:
 ### `exact`
 
 Pay an **exact** amount using [EIP-3009](https://eips.ethereum.org/EIPS/eip-3009)
-(`transferWithAuthorization`). The buyer signs a transfer for the precise price; the facilitator
-submits it. Simple and final — best when the price is known up front.
+(`transferWithAuthorization`). The buyer only signs a transfer for the precise price; the facilitator
+submits it onchain and pays the gas, so the buyer needs no ETH. Simple and final — best when the price
+is known up front.
 
 ### `upto`
 
@@ -108,9 +109,11 @@ Authorize **up to** a maximum using [Permit2](https://github.com/Uniswap/permit2
 actual amount consumed (which may be less than the cap). This fits metered or usage-based pricing
 where the final cost isn't known until the work runs.
 
-On HPP, `upto` also supports **gasless settlement**: the one-time Permit2 approval can be sponsored
-via [EIP-2612](https://eips.ethereum.org/EIPS/eip-2612), so a paying agent needs **zero native ETH** —
-only USDC.e. See [Facilitator → Gasless settlement](./facilitator.mdx#gasless-settlement-upto).
+Like `exact`, the settlement itself is relayed by the facilitator. The one extra cost is `upto`'s
+**one-time Permit2 approval** — and on HPP that approval is sponsored via
+[EIP-2612](https://eips.ethereum.org/EIPS/eip-2612) **when the seller enables it**, so a paying agent
+needs **zero native ETH**, only USDC.e. See
+[Facilitator → Gasless settlement](./facilitator.mdx#gasless-settlement-upto).
 
 > Both schemes are part of the standard x402 specification. A facilitator advertises exactly which
 > `(network, scheme)` pairs it supports at its `/supported` endpoint, and the seller's accepts must be
