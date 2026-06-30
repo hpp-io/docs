@@ -111,7 +111,7 @@ const config: Config = {
       {
         hashed: true,
         indexDocs: true,
-        docsRouteBasePath: ['/', 'hub', 'hpp-router', 'x402'],
+        docsRouteBasePath: ['/', 'hub', 'hpp-router', 'x402', 'hpp-coder'],
         highlightSearchTermsOnTargetPage: true,
         language: ['en'],
       },
@@ -154,6 +154,13 @@ const config: Config = {
           sidebarId: 'x402Sidebar',
           docsPluginId: 'x402',
           label: 'x402',
+          position: 'right',
+        },
+        {
+          type: 'doc',
+          docId: 'solidity-master-2',
+          docsPluginId: 'coder',
+          label: 'HPP Coder',
           position: 'right',
         },
         {

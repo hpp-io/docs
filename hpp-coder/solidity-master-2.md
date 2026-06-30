@@ -1,3 +1,7 @@
+---
+slug: /
+---
+
 # Solidity-Master 2
 
 ## Overview
@@ -15,6 +19,17 @@ To keep pace with the rapidly evolving Ethereum ecosystem, Solidity-Master 2 is 
 - Optimized for Solidity smart contract generation and completion
 - Trained using verified Ethereum Mainnet contracts and high-quality open-source GitHub repositories
 - Updated monthly through continual fine-tuning with newly collected datasets
+
+---
+
+## Availability
+
+Solidity-Master 2 is available across HPP's products:
+
+- **HPP Router** — call it by the model id `ollama/solidity-master:2` (currently free).
+  See [HPP Router](/hpp-router) and [Models & Pricing](/hpp-router/models-and-pricing).
+- **HPP Hub Playground** — pick **solidity-master:2** in the model selector to chat with it.
+  See the [Playground guide](/hub/playground).
 
 ---
 
