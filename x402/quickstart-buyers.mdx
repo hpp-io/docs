@@ -16,10 +16,12 @@ USDC.e authorization with your wallet, and retries automatically — your code j
 
 - A wallet (private key) holding **USDC.e** on the target network — payments are denominated in USDC.e,
   not ETH. See [Networks & Token → Funding](./networks-and-token.mdx#funding) for how to acquire it.
-- For the **`exact`** scheme, the wallet also needs a little **ETH** for gas.
-- For **`upto`**, the buyer normally needs a one-time Permit2 approval. On HPP this approval can be
-  gas-sponsored via EIP-2612, so a wallet with **only USDC.e and zero ETH** can pay — see
-  [Facilitator → Gasless settlement](./facilitator.mdx#gasless-settlement-upto).
+- The facilitator submits the settlement transaction and pays the gas, so the buyer **does not need ETH**:
+  - **`exact`** — the buyer only signs an EIP-3009 authorization; the facilitator relays it. Zero ETH.
+  - **`upto`** — also relayed, but it needs a one-time Permit2 approval. On HPP that approval is
+    gas-sponsored via EIP-2612 when the seller enables it, so the buyer still needs **zero ETH** (see
+    [Facilitator → Gasless settlement](./facilitator.mdx#gasless-settlement-upto)). Only against a seller
+    or chain *without* sponsoring does the buyer pay a little ETH for that first approval.
 
 :::caution
 Use a dedicated test wallet on **HPP Sepolia** while integrating. Never hard-code a mainnet private
@@ -36,8 +38,8 @@ npm install @x402/core @x402/evm @x402/fetch viem
 ## 2. Wrap fetch with payment
 
 Build a scheme client backed by your wallet, hand it to an `x402Client`, and wrap `fetch`. The buyer
-needs **USDC.e** to pay; for `exact` it also needs a little ETH for gas, while `upto` can be made
-[gasless](./facilitator.mdx#gasless-settlement-upto).
+needs **USDC.e** to pay; the facilitator submits settlement and pays the gas, so the buyer needs no
+ETH for `exact` and — with seller-enabled sponsoring — none for [`upto`](./facilitator.mdx#gasless-settlement-upto) either.
 
 <Tabs>
 <TabItem value="mainnet" label="HPP Mainnet">
@@ -151,12 +153,13 @@ console.log(res.status);              // 200
 console.log(await res.json());        // the resource
 
 // Onchain settlement receipt, if the server returned one.
-const header = res.headers.get("x-payment-response");
+const header = res.headers.get("payment-response");
 if (header) {
   const receipt = decodePaymentResponseHeader(header);
   // { success, transaction, network, payer, amount?, ... }
   console.log("settled tx:", receipt.transaction, "on", receipt.network);
-  // For `upto`, `receipt.amount` is the ACTUAL amount charged (≤ the authorized max).
+  // `receipt.amount`, when present, is the actual amount charged — for `upto`
+  // this can be less than the authorized maximum.
 }
 ```
 
@@ -199,9 +202,9 @@ The verify/settle decision happens on the resource server via the facilitator; t
 / `SettleError` are raised *there*, not on the buyer — see
 [Facilitator → Verify and settle](./facilitator.mdx#verify-and-settle).
 
-> **Use the SDK client to encode payments.** The `X-PAYMENT` header has a specific encoding that the
-> resource-server middleware validates. Hand-rolling the header will be rejected — always pay through
-> `wrapFetchWithPayment` (or the MCP/agent wrappers built on the same client).
+> **Use the SDK client to encode payments.** The `payment-signature` header has a specific encoding
+> that the resource-server middleware validates. Hand-rolling the header will be rejected — always pay
+> through `wrapFetchWithPayment` (or the MCP/agent wrappers built on the same client).
 
 ## Agents and MCP
 

@@ -18,6 +18,7 @@ recognizes Base, Polygon, and other EVM chains.
 | `@x402/core` | both | `x402Client`, `HTTPFacilitatorClient`, `RoutesConfig` types. |
 | `@x402/evm` | both | EVM scheme clients (`exact`, `upto`) and the `DEFAULT_STABLECOINS` asset map. |
 | `@x402/express` | sellers | `paymentMiddleware` and `x402ResourceServer` for Express. |
+| `@x402/extensions` | sellers | Route extensions, e.g. `declareEip2612GasSponsoringExtension()` for gasless `upto`. |
 | `@x402/fetch` | buyers | `wrapFetchWithPayment` to make a paying `fetch`. |
 | `viem` | buyers | Wallet account and chain utilities (`privateKeyToAccount`, `defineChain`). |
 

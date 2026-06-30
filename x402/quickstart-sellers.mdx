@@ -16,7 +16,7 @@ the SDK supports.
 ## 1. Install
 
 ```bash
-npm install @x402/express @x402/core @x402/evm express
+npm install @x402/express @x402/core @x402/evm @x402/extensions express
 ```
 
 ## 2. Register USDC.e
@@ -124,13 +124,38 @@ app.listen(4021, () => console.log("x402 resource server on :4021"));
 ```
 
 That's it. An unpaid `POST /paid/hello` now returns `402` with your terms; a request carrying a valid
-`X-PAYMENT` header is verified, served, and settled onchain — and the handler returns the resource.
+`payment-signature` header is verified, served, and settled onchain — and the handler returns the resource.
 
-## Accepting both schemes
+## Accepting `upto` and gasless payments
 
-To offer `exact` and `upto` on the same route, list both in `accepts` (priority order — the buyer's
-SDK picks the first it supports) and register both schemes on the network. `upto` routes can also
-advertise gasless settlement; see [Facilitator → Gasless settlement](./facilitator.mdx#gasless-settlement-upto).
+To also accept the `upto` scheme, list it in the route's `accepts` (in priority order — the buyer's
+SDK picks the first it supports) and register it on the network alongside `exact`.
+
+For **gasless `upto`** — letting a buyer with **zero native ETH** pay — the route must declare the
+**EIP-2612 gas-sponsoring extension**. Without it, the facilitator cannot sponsor the buyer's Permit2
+approval, and a buyer without a standing allowance is rejected with `permit2_allowance_required`.
+
+```ts
+import { declareEip2612GasSponsoringExtension } from "@x402/extensions";
+
+// Replaces the route from step 4. `PAY_TO` and the `price` object are the same
+// as before (here `price` is the { amount, asset, extra } object shown above).
+const routes: RoutesConfig = {
+  "POST /paid/hello": {
+    description: "A paid hello-world endpoint.",
+    accepts: [
+      { scheme: "exact", network: "eip155:190415", payTo: PAY_TO, price, maxTimeoutSeconds: 600 },
+      { scheme: "upto",  network: "eip155:190415", payTo: PAY_TO, price, maxTimeoutSeconds: 600 },
+    ],
+    // Required for gasless `upto`: lets the facilitator sponsor the buyer's
+    // one-time Permit2 approval via EIP-2612 (so a 0-ETH wallet can pay).
+    extensions: { ...declareEip2612GasSponsoringExtension() },
+  },
+};
+```
+
+The facilitator must advertise `eip2612GasSponsoring` for the network (HPP Mainnet and Sepolia both
+do — see [Facilitator → Gasless settlement](./facilitator.mdx#gasless-settlement-upto)).
 
 ## Next
 

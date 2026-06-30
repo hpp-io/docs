@@ -16,7 +16,7 @@ until a valid payment is attached.
   When an unpaid request arrives, it replies with `402` and a list of acceptable payment terms
   (`accepts`). When a paid request arrives, it verifies and settles the payment, then returns the resource.
 - **Client (the buyer).** A browser, a backend, or an AI agent that wants the resource. It reads the
-  `402`, signs a stablecoin authorization for one of the offered terms, and retries with an `X-PAYMENT` header.
+  `402`, signs a stablecoin authorization for one of the offered terms, and retries with a `payment-signature` header.
 - **Facilitator.** A service that the resource server delegates two jobs to: **verify** a payment
   signature, and **settle** it onchain. HPP operates the facilitators so sellers never run an RPC node
   or hold a settlement key. See [Facilitator](./facilitator.mdx).
@@ -39,7 +39,7 @@ until a valid payment is attached.
        │     (EIP-3009 / Permit2)         │                                 │
        │                                  │                                 │
        │  4. GET /paid/resource           │                                 │
-       │     X-PAYMENT: <signed payload>  │                                 │
+       │     payment-signature: <signed>  │                                 │
        │ ───────────────────────────────► │  5. verify(payload)             │
        │                                  │ ──────────────────────────────► │
        │                                  │ ◄────────────────────────────── │
@@ -48,13 +48,13 @@ until a valid payment is attached.
        │                                  │ ──────────────────────────────► │ ──► onchain tx
        │                                  │ ◄────────────────────────────── │
        │  8. 200 OK + resource            │                                 │
-       │     X-PAYMENT-RESPONSE: <receipt>│                                 │
+       │     payment-response: <receipt>  │                                 │
        │ ◄─────────────────────────────── │                                 │
 ```
 
 HPP's resource-server middleware uses **serve-then-settle**: it verifies the payment first, serves the
 response, and settles after a successful result (`status < 400`). The buyer gets a settlement receipt
-back in the `X-PAYMENT-RESPONSE` header.
+back in the `payment-response` header.
 
 ## The 402 challenge
 
@@ -87,7 +87,7 @@ The body of the `402` response (x402 version 2) tells the buyer exactly how it m
 - `extra` carries the EIP-712 domain the buyer needs to sign (`exact`), and scheme-specific data such
   as the `facilitatorAddress` for gas-sponsored `upto`.
 - A multi-network or multi-scheme seller returns several `accepts`; the buyer's SDK selects one (next
-  section). The settlement receipt comes back base64-encoded in the `X-PAYMENT-RESPONSE` header and
+  section). The settlement receipt comes back base64-encoded in the `payment-response` header and
   decodes to `{ success, transaction, network, payer, amount? }`.
 
 ## Payment schemes
@@ -99,8 +99,9 @@ HPP supports two upstream-standard schemes:
 ### `exact`
 
 Pay an **exact** amount using [EIP-3009](https://eips.ethereum.org/EIPS/eip-3009)
-(`transferWithAuthorization`). The buyer signs a transfer for the precise price; the facilitator
-submits it. Simple and final — best when the price is known up front.
+(`transferWithAuthorization`). The buyer only signs a transfer for the precise price; the facilitator
+submits it onchain and pays the gas, so the buyer needs no ETH. Simple and final — best when the price
+is known up front.
 
 ### `upto`
 
@@ -108,17 +109,19 @@ Authorize **up to** a maximum using [Permit2](https://github.com/Uniswap/permit2
 actual amount consumed (which may be less than the cap). This fits metered or usage-based pricing
 where the final cost isn't known until the work runs.
 
-On HPP, `upto` also supports **gasless settlement**: the one-time Permit2 approval can be sponsored
-via [EIP-2612](https://eips.ethereum.org/EIPS/eip-2612), so a paying agent needs **zero native ETH** —
-only USDC.e. See [Facilitator → Gasless settlement](./facilitator.mdx#gasless-settlement-upto).
+Like `exact`, the settlement itself is relayed by the facilitator. The one extra cost is `upto`'s
+**one-time Permit2 approval** — and on HPP that approval is sponsored via
+[EIP-2612](https://eips.ethereum.org/EIPS/eip-2612) **when the seller enables it**, so a paying agent
+needs **zero native ETH**, only USDC.e. See
+[Facilitator → Gasless settlement](./facilitator.mdx#gasless-settlement-upto).
 
 > Both schemes are part of the standard x402 specification. A facilitator advertises exactly which
 > `(network, scheme)` pairs it supports at its `/supported` endpoint, and the seller's accepts must be
 > a subset of that.
 
 Each payment authorization is **single-use**: it carries a unique nonce and a validity window, so a
-captured `X-PAYMENT` header cannot be replayed for a second charge, and the buyer signs a fresh
-authorization for every request.
+captured `payment-signature` header cannot be replayed for a second charge, and the buyer signs a
+fresh authorization for every request.
 
 ## Next
 
