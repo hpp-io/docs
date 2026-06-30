@@ -75,13 +75,15 @@ Because USDC.e has **6 decimals**, prices in the x402 `accepts` are expressed as
 
 ## Funding
 
-Because every payment is denominated in **USDC.e**, a buyer needs a USDC.e balance before it can pay —
-ETH alone only covers gas (and `upto` can be made gasless, needing no ETH at all).
+Because every payment is denominated in **USDC.e**, a buyer needs a USDC.e balance before it can pay.
+The facilitator submits the settlement transaction and pays the gas, so a **buyer normally needs no ETH**.
 
-- **Gas (ETH).** On testnet, get HPP Sepolia ETH from the [HPP Sepolia Faucet](https://faucet.hpp.io/).
 - **USDC.e.** USDC.e is Bridged USDC. Bring it onto HPP by bridging from the parent chain — see the
   [Bridge guide](/community/bridge). For testnet USDC.e to run the quickstarts, reach out through
   [Official Links](/community/official-links).
+- **ETH (rarely needed).** Only a buyer paying `upto` against a seller *without* EIP-2612 sponsoring
+  needs a little ETH, for the one-time Permit2 approval. Get testnet ETH from the
+  [HPP Sepolia Faucet](https://faucet.hpp.io/). Sellers/operators also need ETH to deploy contracts.
 
 Verify a balance any time on the [block explorer](https://explorer.hpp.io/) (mainnet) or
 [Sepolia explorer](https://sepolia-explorer.hpp.io/) by looking up the USDC.e contract above.
