@@ -151,12 +151,13 @@ console.log(res.status);              // 200
 console.log(await res.json());        // the resource
 
 // Onchain settlement receipt, if the server returned one.
-const header = res.headers.get("x-payment-response");
+const header = res.headers.get("payment-response");
 if (header) {
   const receipt = decodePaymentResponseHeader(header);
   // { success, transaction, network, payer, amount?, ... }
   console.log("settled tx:", receipt.transaction, "on", receipt.network);
-  // For `upto`, `receipt.amount` is the ACTUAL amount charged (≤ the authorized max).
+  // `receipt.amount`, when present, is the actual amount charged — for `upto`
+  // this can be less than the authorized maximum.
 }
 ```
 
@@ -199,9 +200,9 @@ The verify/settle decision happens on the resource server via the facilitator; t
 / `SettleError` are raised *there*, not on the buyer — see
 [Facilitator → Verify and settle](./facilitator.mdx#verify-and-settle).
 
-> **Use the SDK client to encode payments.** The `X-PAYMENT` header has a specific encoding that the
-> resource-server middleware validates. Hand-rolling the header will be rejected — always pay through
-> `wrapFetchWithPayment` (or the MCP/agent wrappers built on the same client).
+> **Use the SDK client to encode payments.** The `payment-signature` header has a specific encoding
+> that the resource-server middleware validates. Hand-rolling the header will be rejected — always pay
+> through `wrapFetchWithPayment` (or the MCP/agent wrappers built on the same client).
 
 ## Agents and MCP
 

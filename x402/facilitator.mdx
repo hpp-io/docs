@@ -89,7 +89,7 @@ never configure the facilitator at all; they discover it implicitly from the sel
 // POST /verify  and  POST /settle  request
 {
   "x402Version": 2,
-  "paymentPayload": { /* the decoded X-PAYMENT payload the buyer signed */ },
+  "paymentPayload": { /* the decoded payment payload the buyer signed */ },
   "paymentRequirements": { /* the matching accept from the 402 */ }
 }
 ```
@@ -135,6 +135,13 @@ is the same value shown as `signers` and as the `upto` `facilitatorAddress` in `
 When a seller offers an `upto` route, the SDK surfaces the `facilitatorAddress` and the
 `eip2612GasSponsoring` extension in the `402` challenge automatically, and a compatible buyer signs
 the gasless approval path with no extra configuration.
+
+:::note
+Gasless `upto` requires the **seller** to declare the EIP-2612 extension on the route
+(`declareEip2612GasSponsoringExtension()`). Without it the facilitator can't sponsor the buyer's
+Permit2 approval, and a 0-ETH buyer is rejected with `permit2_allowance_required` — see
+[Quickstart: Sellers → Accepting `upto` and gasless payments](./quickstart-sellers.mdx#accepting-upto-and-gasless-payments).
+:::
 
 ## Self-hosting
 

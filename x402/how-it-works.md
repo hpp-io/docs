@@ -16,7 +16,7 @@ until a valid payment is attached.
   When an unpaid request arrives, it replies with `402` and a list of acceptable payment terms
   (`accepts`). When a paid request arrives, it verifies and settles the payment, then returns the resource.
 - **Client (the buyer).** A browser, a backend, or an AI agent that wants the resource. It reads the
-  `402`, signs a stablecoin authorization for one of the offered terms, and retries with an `X-PAYMENT` header.
+  `402`, signs a stablecoin authorization for one of the offered terms, and retries with a `payment-signature` header.
 - **Facilitator.** A service that the resource server delegates two jobs to: **verify** a payment
   signature, and **settle** it onchain. HPP operates the facilitators so sellers never run an RPC node
   or hold a settlement key. See [Facilitator](./facilitator.mdx).
@@ -39,7 +39,7 @@ until a valid payment is attached.
        │     (EIP-3009 / Permit2)         │                                 │
        │                                  │                                 │
        │  4. GET /paid/resource           │                                 │
-       │     X-PAYMENT: <signed payload>  │                                 │
+       │     payment-signature: <signed>  │                                 │
        │ ───────────────────────────────► │  5. verify(payload)             │
        │                                  │ ──────────────────────────────► │
        │                                  │ ◄────────────────────────────── │
@@ -48,13 +48,13 @@ until a valid payment is attached.
        │                                  │ ──────────────────────────────► │ ──► onchain tx
        │                                  │ ◄────────────────────────────── │
        │  8. 200 OK + resource            │                                 │
-       │     X-PAYMENT-RESPONSE: <receipt>│                                 │
+       │     payment-response: <receipt>  │                                 │
        │ ◄─────────────────────────────── │                                 │
 ```
 
 HPP's resource-server middleware uses **serve-then-settle**: it verifies the payment first, serves the
 response, and settles after a successful result (`status < 400`). The buyer gets a settlement receipt
-back in the `X-PAYMENT-RESPONSE` header.
+back in the `payment-response` header.
 
 ## The 402 challenge
 
@@ -87,7 +87,7 @@ The body of the `402` response (x402 version 2) tells the buyer exactly how it m
 - `extra` carries the EIP-712 domain the buyer needs to sign (`exact`), and scheme-specific data such
   as the `facilitatorAddress` for gas-sponsored `upto`.
 - A multi-network or multi-scheme seller returns several `accepts`; the buyer's SDK selects one (next
-  section). The settlement receipt comes back base64-encoded in the `X-PAYMENT-RESPONSE` header and
+  section). The settlement receipt comes back base64-encoded in the `payment-response` header and
   decodes to `{ success, transaction, network, payer, amount? }`.
 
 ## Payment schemes
@@ -117,8 +117,8 @@ only USDC.e. See [Facilitator → Gasless settlement](./facilitator.mdx#gasless-
 > a subset of that.
 
 Each payment authorization is **single-use**: it carries a unique nonce and a validity window, so a
-captured `X-PAYMENT` header cannot be replayed for a second charge, and the buyer signs a fresh
-authorization for every request.
+captured `payment-signature` header cannot be replayed for a second charge, and the buyer signs a
+fresh authorization for every request.
 
 ## Next
 
