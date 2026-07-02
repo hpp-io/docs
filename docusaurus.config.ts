@@ -89,7 +89,7 @@ const config: Config = {
         id: 'coder',
         path: 'hpp-coder',
         routeBasePath: 'hpp-coder',
-        sidebarPath: false,
+        sidebarPath: './sidebarsCoder.ts',
       },
     ],
     // x402 payment-protocol docs — a standalone product section served at /x402
@@ -157,8 +157,8 @@ const config: Config = {
           position: 'right',
         },
         {
-          type: 'doc',
-          docId: 'solidity-master-2',
+          type: 'docSidebar',
+          sidebarId: 'coderSidebar',
           docsPluginId: 'coder',
           label: 'HPP Coder',
           position: 'right',
