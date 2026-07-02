@@ -89,7 +89,7 @@ const config: Config = {
         id: 'coder',
         path: 'hpp-coder',
         routeBasePath: 'hpp-coder',
-        sidebarPath: false,
+        sidebarPath: './sidebarsCoder.ts',
       },
     ],
     // x402 payment-protocol docs — a standalone product section served at /x402
@@ -111,7 +111,7 @@ const config: Config = {
       {
         hashed: true,
         indexDocs: true,
-        docsRouteBasePath: ['/', 'hub', 'hpp-router', 'x402'],
+        docsRouteBasePath: ['/', 'hub', 'hpp-router', 'x402', 'hpp-coder'],
         highlightSearchTermsOnTargetPage: true,
         language: ['en'],
       },
@@ -154,6 +154,13 @@ const config: Config = {
           sidebarId: 'x402Sidebar',
           docsPluginId: 'x402',
           label: 'x402',
+          position: 'right',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'coderSidebar',
+          docsPluginId: 'coder',
+          label: 'HPP Coder',
           position: 'right',
         },
         {
