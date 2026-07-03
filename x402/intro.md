@@ -38,8 +38,8 @@ monetize an API — or pay for one — using **USDC.e** with a few lines of code
 
 ## Where to go next
 
+- **[Quickstart: Sellers](./quickstart-sellers.mdx)** — charge for an HTTP endpoint.
+- **[Quickstart: Buyers](./quickstart-buyers.mdx)** — pay for an x402 endpoint from a client or 
 - **[How it works](./how-it-works.md)** — the `402` flow, the three roles, and the payment schemes.
 - **[Networks & Token](./networks-and-token.mdx)** — chain IDs, RPC endpoints, and the USDC.e asset.
-- **[Quickstart: Sellers](./quickstart-sellers.mdx)** — charge for an HTTP endpoint.
-- **[Quickstart: Buyers](./quickstart-buyers.mdx)** — pay for an x402 endpoint from a client or agent.
 - **[Facilitator](./facilitator.mdx)** — endpoints, supported schemes, gasless settlement, and self-hosting.
