@@ -5,7 +5,7 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 // under `hpp-router/` (the id is the file path without the extension).
 const sidebars: SidebarsConfig = {
   routerSidebar: [
-    {type: 'doc', id: 'intro', label: 'Introduction'},
+    {type: 'doc', id: 'intro', label: 'Overview'},
     'quickstart',
     'authentication',
     'models-and-pricing',

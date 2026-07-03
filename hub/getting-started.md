@@ -1,8 +1,8 @@
 ---
-title: Getting Started
+title: Quickstart
 ---
 
-# Getting Started
+# Quickstart
 
 HPP Hub is members-only, so the first step is to create an account.
 
