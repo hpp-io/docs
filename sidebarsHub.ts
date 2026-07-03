@@ -6,7 +6,7 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 const sidebars: SidebarsConfig = {
   hubSidebar: [
     {type: 'doc', id: 'intro', label: 'Overview'},
-    'getting-started',
+    'quickstart',
     'playground',
     'wallets',
     'api-keys',
