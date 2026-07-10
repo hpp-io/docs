@@ -15,6 +15,11 @@ payment terms, pays by signing a stablecoin authorization, and retries. Settleme
 HPP runs **production x402 facilitators on both its Mainnet and Sepolia networks**, so you can
 monetize an API — or pay for one — using **USDC.e** with a few lines of code.
 
+It's built for **agentic payments**: an AI agent can discover a price and pay it autonomously —
+keyless, wallet-less, and non-custodial. The fastest way to see that is
+[**Pay from an AI agent**](./agents.mdx), which gives Claude, Cursor, or any MCP host a capped
+wallet with no code.
+
 ## Why x402
 
 - **Built for agents and machines.** Payment is a single signed message on a standard HTTP
@@ -36,10 +41,27 @@ monetize an API — or pay for one — using **USDC.e** with a few lines of code
 | **Token** | USDC.e (Bridged USDC) at `0x401eCb1D350407f13ba348573E5630B83638E30D` on both chains. |
 | **Schemes** | `exact` (EIP-3009) and `upto` (Permit2 with optional gasless settlement). See [How it works](./how-it-works.md). |
 
-## Where to go next
+## Choose your path
 
-- **[Quickstart: Sellers](./quickstart-sellers.mdx)** — charge for an HTTP endpoint.
-- **[Quickstart: Buyers](./quickstart-buyers.mdx)** — pay for an x402 endpoint from a client or agent.
+Pick your side of the payment.
+
+### 💸 I want to pay for services (buyer)
+
+| From… | Start here |
+| --- | --- |
+| an **AI agent** — Claude, Cursor, … (no code) | **[Pay from an AI agent](./agents.mdx)** |
+| my **own code** | **[Quickstart: Buyers](./quickstart-buyers.mdx)** |
+
+### 🏷️ I want to charge for my service (seller)
+
+| How | Start here |
+| --- | --- |
+| Put a price on an HTTP endpoint (SDK) | **[Quickstart: Sellers](./quickstart-sellers.mdx)** |
+| One command, no server code | `hpp-x402 serve` — see the [agent guide](./agents.mdx#sell-from-the-cli) |
+
+### 📖 Learn the concepts
+
 - **[How it works](./how-it-works.md)** — the `402` flow, the three roles, and the payment schemes.
+- **[Service directory](./directory.mdx)** — the curated catalog buyers and agents discover.
 - **[Networks & Token](./networks-and-token.mdx)** — chain IDs, RPC endpoints, and the USDC.e asset.
 - **[Facilitator](./facilitator.mdx)** — endpoints, supported schemes, gasless settlement, and self-hosting.

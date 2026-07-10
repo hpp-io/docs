@@ -27,6 +27,7 @@ const config: Config = {
   // .mdx => MDX (used for pages that need Tabs/JSX).
   markdown: {
     format: 'detect',
+    mermaid: true,
     hooks: {
       onBrokenMarkdownLinks: 'warn',
     },
@@ -106,6 +107,7 @@ const config: Config = {
     ],
   ],
   themes: [
+    '@docusaurus/theme-mermaid',
     [
       '@easyops-cn/docusaurus-search-local',
       {

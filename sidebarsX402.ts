@@ -6,13 +6,15 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 const sidebars: SidebarsConfig = {
   x402Sidebar: [
     {type: 'doc', id: 'intro', label: 'Overview'},
+    'agents',
     {
       type: 'category',
-      label: 'Quickstart',
+      label: 'Build with the SDK',
       collapsed: false,
       items: ['quickstart-sellers', 'quickstart-buyers'],
     },
     'how-it-works',
+    'directory',
     'networks-and-token',
     'facilitator',
     'sdk',

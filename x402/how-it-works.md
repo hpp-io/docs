@@ -23,34 +23,27 @@ until a valid payment is attached.
 
 ## The payment flow
 
-```text
-  Buyer (client)                 Seller (resource server)            HPP Facilitator
-       │                                  │                                 │
-       │  1. GET /paid/resource           │                                 │
-       │ ───────────────────────────────► │                                 │
-       │                                  │                                 │
-       │  2. 402 Payment Required         │                                 │
-       │     { accepts: [ {scheme,        │                                 │
-       │       network, asset, amount,    │                                 │
-       │       payTo, … } ] }             │                                 │
-       │ ◄─────────────────────────────── │                                 │
-       │                                  │                                 │
-       │  3. sign payment authorization   │                                 │
-       │     (EIP-3009 / Permit2)         │                                 │
-       │                                  │                                 │
-       │  4. GET /paid/resource           │                                 │
-       │     payment-signature: <signed>  │                                 │
-       │ ───────────────────────────────► │  5. verify(payload)             │
-       │                                  │ ──────────────────────────────► │
-       │                                  │ ◄────────────────────────────── │
-       │                                  │  6. run the work / serve         │
-       │                                  │  7. settle(payload)             │
-       │                                  │ ──────────────────────────────► │ ──► onchain tx
-       │                                  │ ◄────────────────────────────── │
-       │  8. 200 OK + resource            │                                 │
-       │     payment-response: <receipt>  │                                 │
-       │ ◄─────────────────────────────── │                                 │
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as 🧑‍💻 Buyer (client / agent)
+    participant S as 🏷️ Seller (resource server)
+    participant F as ⚙️ HPP Facilitator
+    B->>S: GET /paid/resource  (no payment)
+    S-->>B: 402 Payment Required<br/>accepts: scheme · price · payTo · asset
+    Note over B: Sign a USDC.e authorization<br/>(EIP-3009 or Permit2) — no gas
+    B->>S: GET /paid/resource<br/>payment-signature: «signed»
+    S->>F: verify(payment)
+    F-->>S: valid ✓
+    Note over S: Run the work / serve the resource
+    S->>F: settle(payment)
+    F->>F: Onchain tx: USDC.e → seller's payTo
+    F-->>S: settled ✓
+    S-->>B: 200 OK + resource<br/>payment-response: «receipt»
 ```
+
+The **buyer** never touches the facilitator directly — it just signs and retries. The **seller**
+delegates verify + settle to the **facilitator**, so it never runs a node or holds a settlement key.
 
 HPP's resource-server middleware uses **serve-then-settle**: it verifies the payment first, serves the
 response, and settles after a successful result (`status < 400`). The buyer gets a settlement receipt
