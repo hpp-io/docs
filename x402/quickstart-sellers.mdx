@@ -157,6 +157,80 @@ const routes: RoutesConfig = {
 The facilitator must advertise `eip2612GasSponsoring` for the network (HPP Mainnet and Sepolia both
 do — see [Facilitator → Gasless settlement](./facilitator.mdx#gasless-settlement-upto)).
 
+## Settling the actual amount (metered billing)
+
+Advertising `upto` (above) only sets the **maximum**. The point of `upto` is that you settle **only
+what was actually used**, computed **after** the work runs — which is what makes it the right scheme
+for **usage-based pricing**: LLM token counts, compute time, bytes served. The advertised `price` is
+the cap; the final charge is always **≤ the authorized max**, and settling `0` costs **no onchain
+transaction at all**.
+
+After your handler runs, tell the middleware how much to actually charge with
+**`setSettlementOverrides`** (exported from `@x402/express`) — it settles that amount instead of the
+advertised max:
+
+```ts
+import { setSettlementOverrides } from "@x402/express";
+
+// A metered route: charge for what the model actually used.
+app.post("/paid/llm", async (req, res) => {
+  // The `upto` payment is already verified by the middleware;
+  // settlement runs AFTER this handler returns.
+  const result = await runModel(req.body); // do the metered work
+
+  // Your usage → USDC.e atomic units, as a STRING, always ≤ the advertised max.
+  const chargeAtomic = usageToUsdcE(result.usage); // e.g. "1000" = 0.001 USDC.e
+
+  // Settle the actual amount instead of the max. Pass "0" and nothing settles onchain.
+  setSettlementOverrides(res, { amount: chargeAtomic });
+
+  res.json(result); // 200 → the facilitator settles `chargeAtomic` (≤ max) onchain
+});
+```
+
+`amount` is a **string** of atomic USDC.e units. The SDK also accepts **percentage** and **dollar-price**
+override forms, and there's more to the scheme semantics — for those we point at the upstream docs
+rather than duplicate them (they track the SDK, which changes often):
+
+- **[x402 seller quickstart — Payment Schemes](https://docs.x402.org/getting-started/quickstart-for-sellers)** — `setSettlementOverrides` forms.
+- **[x402 Payment Schemes overview](https://docs.x402.org/schemes/overview)** — scheme semantics.
+
+**What's HPP-specific:** both HPP facilitators support `upto` with variable settlement
+(`settled ≤ max`) on HPP Mainnet (`eip155:190415`) and HPP Sepolia (`eip155:181228`) — you can
+confirm it live at `GET https://facilitator.hpp.io/supported` (and `…-sepolia`). Once the SDK is
+pointed at the HPP facilitator + USDC.e (steps 2–3), the upstream `upto` recipe settles onchain on
+HPP unchanged.
+
+:::note Gateway / non-Node sellers
+Building the seller on an API gateway (Kong/Lua) or another language? The metering lives in whatever
+layer counts usage. Two paths:
+- **Sidecar (recommended)** — run the `@x402` resource-server middleware as a Node sidecar behind
+  your gateway and reuse its `upto` settlement as-is (nothing to reimplement).
+- **Native** — call the facilitator's `/verify` and `/settle` HTTP endpoints directly from your
+  language. The wire contract is the standard x402 protocol; see [Facilitator](./facilitator.mdx).
+:::
+
+## Reacting to settlement
+
+`res.json()` returns right away, but the middleware sends the response **only after it settles** (and
+only on success — `status < 400`). Your handler can't see the settle result inline. To run logic
+after settlement — record usage, credit an account, emit a webhook — register hooks on the resource
+server:
+
+```ts
+resourceServer.onAfterSettle(async (ctx) => {
+  // ctx.result carries the settlement outcome (success, onchain tx, payer).
+  // e.g. record the charge or emit a webhook.
+});
+
+resourceServer.onSettleFailure(async (ctx) => {
+  // The work ran but settlement failed — the buyer got an error, not the resource.
+  // e.g. log it for reconciliation.
+});
+```
+
+The full hook set is in the upstream [lifecycle hooks](https://docs.x402.org/advanced-concepts/lifecycle-hooks) reference.
+
 ## Next
 
 - [Quickstart: Buyers](./quickstart-buyers.mdx) — pay this endpoint from a client or agent.

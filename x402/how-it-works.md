@@ -49,6 +49,13 @@ HPP's resource-server middleware uses **serve-then-settle**: it verifies the pay
 response, and settles after a successful result (`status < 400`). The buyer gets a settlement receipt
 back in the `payment-response` header.
 
+Settlement is **synchronous with the response** — the seller's reply is held until the facilitator
+settles, then sent. So a `200` (carrying a `payment-response` receipt) means the payment **settled
+onchain**; if settlement fails, the buyer receives an error instead of the resource. Because the seller
+does the work *before* settling, a failed settlement means the work was performed but not delivered or
+charged. On HPP the facilitator waits for onchain confirmation before returning, so a paid call
+includes the settlement time (settle p50 ~1.3s).
+
 ## The 402 challenge
 
 The body of the `402` response (x402 version 2) tells the buyer exactly how it may pay. Each entry in
