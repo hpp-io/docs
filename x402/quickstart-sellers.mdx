@@ -210,6 +210,27 @@ layer counts usage. Two paths:
   language. The wire contract is the standard x402 protocol; see [Facilitator](./facilitator.mdx).
 :::
 
+## Reacting to settlement
+
+`res.json()` returns right away, but the middleware sends the response **only after it settles** (and
+only on success — `status < 400`). Your handler can't see the settle result inline. To run logic
+after settlement — record usage, credit an account, emit a webhook — register hooks on the resource
+server:
+
+```ts
+resourceServer.onAfterSettle(async (ctx) => {
+  // ctx.result carries the settlement outcome (success, onchain tx, payer).
+  // e.g. record the charge or emit a webhook.
+});
+
+resourceServer.onSettleFailure(async (ctx) => {
+  // The work ran but settlement failed — the buyer got an error, not the resource.
+  // e.g. log it for reconciliation.
+});
+```
+
+The full hook set is in the upstream [lifecycle hooks](https://docs.x402.org/advanced-concepts/lifecycle-hooks) reference.
+
 ## Next
 
 - [Quickstart: Buyers](./quickstart-buyers.mdx) — pay this endpoint from a client or agent.
