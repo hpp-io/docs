@@ -169,6 +169,7 @@ components:
             - anthropic/claude-sonnet-4
             - moonshotai/kimi-k2.6
             - ollama/gpt-oss:120b
+            - ollama/solidity-master:2
         messages:
           type: array
           items:
