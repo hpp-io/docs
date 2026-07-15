@@ -19,13 +19,18 @@ Accept: text/event-stream
 
 ## REST (curl)
 
+### Wallet (with API key)
+
+Include both the payment rail header and your API key:
+
 <CodePanel>
 <Tabs groupId="streaming-curl" queryString>
-<TabItem value="curl" label="cURL" default>
+<TabItem value="curl" label="curl" default>
 
 ```bash showLineNumbers
 curl -N -X POST https://router.hpp.io/llm/v1/chat/completions \
   -H "apikey: $HPPROUTER_API_KEY" \
+  -H "X-HPP-Payment-Rail: wallet" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-5",
@@ -50,9 +55,13 @@ data: [DONE]
 
 ## TypeScript SDK
 
+### Wallet (with API key)
+
+Include both the payment rail header and your API key:
+
 <CodePanel>
 <Tabs groupId="streaming-typescript" queryString>
-<TabItem value="typescript" label="TypeScript SDK" default>
+<TabItem value="typescript" label="TypeScript SDK (default)" default>
 
 ```ts showLineNumbers
 import { HppRouter } from '@hpprouter/sdk';
@@ -65,6 +74,31 @@ const client = new HppRouter({
 const { stream, meta } = await client.chat.stream({
   model: 'openai/gpt-5',
   messages: [{ role: 'user', content: 'Stream a short answer.' }],
+});
+
+for await (const event of stream) {
+  console.log(event);
+}
+
+console.log(meta.resolvedModel);
+```
+
+</TabItem>
+<TabItem value="typescript-wallet" label="TypeScript SDK (Wallet)">
+
+```ts showLineNumbers
+import { HppRouter } from '@hpprouter/sdk';
+
+// For wallet payments, include apikey for Kong auth and x402Rail option
+const client = new HppRouter({
+  apiKey: process.env.HPPROUTER_API_KEY!,
+  baseURL: 'https://router.hpp.io',
+});
+
+const { stream, meta } = await client.chat.stream({
+  model: 'openai/gpt-5',
+  messages: [{ role: 'user', content: 'Stream a short answer.' }],
+  x402Rail: 'wallet', // Sets X-HPP-Payment-Rail header
 });
 
 for await (const event of stream) {

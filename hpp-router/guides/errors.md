@@ -5,7 +5,7 @@ description: HTTP status codes and the error envelope returned by HPP Router.
 
 # Errors
 
-HPP Router returns standard HTTP status codes and a JSON error envelope. Handle these in your client to distinguish auth, quota, and upstream failures.
+HPP Router returns standard HTTP status codes and a JSON error envelope. Handle these in your client to distinguish auth, wallet balance, and upstream failures.
 
 ## Status codes
 
@@ -13,9 +13,9 @@ HPP Router returns standard HTTP status codes and a JSON error envelope. Handle 
 | --- | --- | --- |
 | `400` | Bad Request | Malformed body, or an unroutable/unsupported model. |
 | `401` | Unauthorized | Missing or invalid API key. See [Authentication](../authentication). |
-| `429` | Too Many Requests / Quota Exceeded | Rate limit hit, or insufficient [quota](./quota-and-usage). |
+| `429` | Too Many Requests / Insufficient Funds | Rate limit hit, or insufficient wallet balance. See [Wallet Payments](../authentication#x402-wallet) for details. |
 | `500` | Internal Server Error | Unexpected gateway or upstream error. |
-| `503` | Service Unavailable | Quota state could not be verified (fail-closed). |
+| `503` | Service Unavailable | Wallet settlement could not be verified (fail-closed). |
 
 ## Error envelope
 
@@ -66,6 +66,6 @@ When using [`hpprouter/auto`](../smart-routing), you may encounter:
 ## Handling guidance
 
 - **`401`** — fix your API key; do not retry blindly.
-- **`429`** — back off and retry; if it's a quota issue, top up via [HPP Hub](https://hub.hpp.io).
+- **`429`** — back off and retry; if it's an insufficient funds issue, top up your wallet via the x402 protocol.
 - **`5xx`** with `retryable: true` — retry with exponential backoff.
 - **`5xx`** with `retryable: false` — surface the error; retrying will not help.

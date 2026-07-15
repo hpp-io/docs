@@ -7,28 +7,21 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CodePanel from '@site/src/components/CodePanel';
 
-# Quota & Usage
+---
 
-HPP Router uses a **prepaid quota** model: each consumer has a dollar-denominated quota, and every request is checked against the remaining balance *before* it reaches a provider. Token usage is then metered and deducted.
+# Usage & Settlement
 
-## Quota model
+HPP Router uses **on-chain USDC payments** via x402 wallet. All requests require authentication with an API key for consumer identification.
 
-| Term | Meaning |
-| --- | --- |
-| `quota` | Total dollar allowance for the consumer. |
-| `used` | Dollars already accrued from usage. |
-| `remaining` | `quota − used` — headroom before the cap. |
-| `has_quota` | `true` when `remaining > 0`. |
+Token usage is metered and billed on-chain after usage settlement.
 
-When a request arrives, the gateway verifies the consumer has quota. If not, the request is rejected with **`429`** before any provider is called (fail-fast). See [Errors](./errors).
-
-## Check quota
+## Usage summary
 
 A lightweight pre-flight check for the authenticated consumer:
 
 <CodePanel>
 <Tabs groupId="quota-check-request" queryString>
-<TabItem value="curl" label="cURL" default>
+<TabItem value="curl" label="curl" default>
 
 ```bash showLineNumbers
 curl https://router.hpp.io/api/quota-check \
@@ -52,11 +45,13 @@ If the quota state cannot be verified (e.g. a backend datastore is unavailable),
 
 ## Usage summary
 
-A fuller summary of consumption for the authenticated consumer:
+A summary of consumption for the authenticated consumer.
+
+### x402 Wallet (default)
 
 <CodePanel>
 <Tabs groupId="usage-summary-request" queryString>
-<TabItem value="curl" label="cURL" default>
+<TabItem value="curl" label="curl" default>
 
 ```bash showLineNumbers
 curl https://router.hpp.io/api/usage \
@@ -72,9 +67,9 @@ curl https://router.hpp.io/api/usage \
   "consumer_id": "....",
   "username": "alice",
   "custom_id": "user-001",
-  "quota": 100,
-  "used": 12.5,
-  "remaining": 87.5,
+  "spent_usdc_micro": 2500000,
+  "settle_success_count": 3,
+  "settle_failed_count": 0,
   "requests": 42,
   "total_tokens": 18500,
   "total_cost": 12.5
@@ -85,10 +80,12 @@ curl https://router.hpp.io/api/usage \
 | --- | --- |
 | `consumer_id` | The authenticated consumer's id. |
 | `username` / `custom_id` | Optional identifiers (may be `null`). |
-| `quota` / `used` / `remaining` | The quota balance (see above). |
+| `spent_usdc_micro` | Total USDC spent on-chain (in micro units). |
+| `settle_success_count` | Number of successful on-chain settlements. |
+| `settle_failed_count` | Number of failed settlements. |
 | `requests` | Number of requests recorded. |
 | `total_tokens` | Total tokens consumed. |
-| `total_cost` | Total dollar cost accrued. |
+| `total_cost` | Total dollar cost (from resolved model pricing). |
 
 ## How usage is metered
 
@@ -101,7 +98,9 @@ For `hpprouter/auto`, cost uses the **resolved** model's pricing, not a price fo
 
 ## Performance note
 
-The quota-check path is backed by a short-lived in-memory cache to reduce database load under bursts of traffic, with concurrent lookups for the same consumer collapsed into a single read. Cached values are kept fresh for a few seconds and invalidated immediately when an admin changes a consumer's quota, so the figures you read stay accurate.
+## Performance note
+
+The usage endpoint is backed by a short-lived in-memory cache to reduce database load under bursts of traffic, with concurrent lookups for the same consumer collapsed into a single read. Cached values are kept fresh for a few seconds and invalidated immediately when an admin changes a consumer's quota, so the figures you read stay accurate.
 
 ## Local models
 

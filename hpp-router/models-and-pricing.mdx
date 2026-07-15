@@ -9,41 +9,64 @@ import CodePanel from '@site/src/components/CodePanel';
 
 # Models & Pricing
 
-HPP Router exposes models from multiple providers behind one OpenAI-compatible API. Billing is **token-based** and deducted from your prepaid [quota](./guides/quota-and-usage).
+HPP Router exposes models from multiple providers behind one OpenAI-compatible API. Billing is **token-based** and settled on-chain via x402 wallet (USDC).
 
 ## Listing models
 
-Use the OpenAI-compatible models endpoint to discover what's available, including the virtual `hpprouter/auto` model:
+Use the OpenAI-compatible models endpoint to discover what's available, including the virtual `hpprouter/auto` model. **No API key is required** for this endpoint.
 
 <CodePanel>
 <Tabs groupId="models-list-request" queryString>
-<TabItem value="curl" label="cURL" default>
+<TabItem value="curl" label="curl" default>
 
 ```bash showLineNumbers
-curl https://router.hpp.io/llm/v1/models \
-  -H "apikey: $HPPROUTER_API_KEY"
+curl https://router.hpp.io/llm/v1/models
 ```
 
 </TabItem>
 </Tabs>
 </CodePanel>
 
-The response is an OpenAI-style list. Each model may include a `pricing` object:
+The response is an OpenAI-style list with pricing and capability metadata. `pricing.*` values are **USD per token** (multiply by `1_000_000` for the familiar $/1M figure):
 
 ```json showLineNumbers
 {
   "object": "list",
   "data": [
     {
+      "id": "hpprouter/auto",
+      "object": "model",
+      "owned_by": "hpprouter",
+      "name": "Auto",
+      "description": "Smart routing picks a provider and model based on your request.",
+      "pricing": null,
+      "context": null,
+      "max_output": null,
+      "tool": null,
+      "structured": null,
+      "knowledge_cutoff": null,
+      "input_modalities": [],
+      "output_modalities": []
+    },
+    {
       "id": "openai/gpt-5",
       "object": "model",
       "owned_by": "openai",
+      "name": "GPT-5",
+      "description": null,
       "pricing": {
-        "input": 1.25,
-        "output": 10,
+        "input": 0.00000125,
+        "output": 0.00001,
         "cache_write": null,
-        "cache_read": null
-      }
+        "cache_read": 1.25e-7
+      },
+      "context": 272000,
+      "max_output": 128000,
+      "tool": true,
+      "structured": true,
+      "knowledge_cutoff": null,
+      "input_modalities": ["text", "image"],
+      "output_modalities": ["text"]
     }
   ]
 }
@@ -53,12 +76,18 @@ The response is an OpenAI-style list. Each model may include a `pricing` object:
 | --- | --- |
 | `id` | Model identifier — use this as the request `model`. |
 | `owned_by` | Provider that owns the model. |
-| `pricing.input` | Price per 1M input tokens (USD). |
-| `pricing.output` | Price per 1M output tokens (USD). |
-| `pricing.cache_write` / `cache_read` | Cache pricing per 1M tokens, when applicable (may be `null`). |
+| `name` / `description` | Display name and short description (may be `null`). |
+| `pricing` | `null` for `hpprouter/auto` (billed at the resolved model). |
+| `pricing.input` | USD **per input token**. |
+| `pricing.output` | USD **per output token**. |
+| `pricing.cache_write` / `cache_read` | USD **per cache token**, when applicable (may be `null`). |
+| `context` / `max_output` | Context window and max output tokens, when known. |
+| `tool` / `structured` | Tool calling / structured output support (may be `null`). |
+| `knowledge_cutoff` | Knowledge cutoff date string, when known. |
+| `input_modalities` / `output_modalities` | Accepted / produced modalities (e.g. `text`, `image`). |
 
 :::note
-The models list is the source of truth for what is currently enabled. The examples below are illustrative pricing taken from the gateway documentation and may change.
+The models list is the source of truth for what is currently enabled. The example rates below are illustrative and may change.
 :::
 
 ## Model identifiers
@@ -77,8 +106,10 @@ Specify a model as **`provider/model`**, or use the virtual smart-routing model:
 
 ## How billing works
 
-- Pricing is **per million tokens**, split into **input** (prompt) and **output** (completion) rates.
-- Cost for a request ≈ `(prompt_tokens × input_rate + completion_tokens × output_rate) / 1,000,000`.
+- API `pricing.*` values are **USD per token**. Human-readable $/1M ≈ `pricing.input × 1_000_000`.
+- When using **$/1M** rates from the table below, cost ≈ `(prompt_tokens × input_rate + completion_tokens × output_rate) / 1,000,000`.
+- When plugging API `pricing.*` values directly, omit the `/ 1,000,000` and also include cache tokens when present:  
+  `(prompt_tokens × input) + (completion_tokens × output) + (cache_write_tokens × cache_write) + (cache_read_tokens × cache_read)`.
 - The `usage` block in each response reports the token counts used for billing.
 - Local models (e.g. `ollama/*`) are tracked at **$0 cost**, but token usage is still logged.
 
@@ -87,17 +118,17 @@ Specify a model as **`provider/model`**, or use the virtual smart-routing model:
 | Model | Input (per 1M) | Output (per 1M) |
 | --- | --- | --- |
 | `openai/gpt-5` | $1.25 | $10 |
-| `gpt-image-1` (image generation) | $10 | $40 |
+| `openai/gpt-image-1` (image generation) | $5 | $40 |
 
 See [Image Generation](./guides/image-generation) for how image quality affects output-token usage.
 
 ## Billing with smart routing
 
-When you request `hpprouter/auto`, billing uses the **resolved** model's pricing — not a price for `auto` itself. The resolved model is returned in the `X-HPP-Router-Resolved-Model` response header and recorded in your usage logs. See [Smart Routing](./smart-routing) for details.
+When you request `hpprouter/auto`, billing uses the **resolved** model's pricing — not a price for `auto` itself (`pricing` is `null` on the models list). The resolved model is returned in the `X-HPP-Router-Resolved-Model` response header and recorded in your usage logs. See [Smart Routing](./smart-routing) for details.
 
-## Checking your quota and usage
+## Checking your usage
 
-- `GET /api/quota-check` — remaining quota for the authenticated consumer.
-- `GET /api/usage` — usage summary (requests, total tokens, total cost, remaining quota).
+- `GET /api/quota-check` — check remaining balance for the authenticated consumer.
+- `GET /api/usage` — usage summary (requests, total tokens, total cost).
 
 See [Quota & Usage](./guides/quota-and-usage).

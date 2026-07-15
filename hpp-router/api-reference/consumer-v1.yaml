@@ -64,6 +64,10 @@ paths:
     get:
       operationId: listModels
       summary: List available models
+      description: >
+        OpenAI-compatible model catalog with pricing and capability metadata.
+        Authentication is optional for this endpoint.
+      security: []
       responses:
         "200":
           description: OpenAI-compatible model list.
@@ -71,8 +75,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ModelListResponse"
-        "401":
-          $ref: "#/components/responses/ErrorResponse"
         "500":
           $ref: "#/components/responses/ErrorResponse"
   /v1/images/generations:
@@ -167,7 +169,6 @@ components:
             - anthropic/claude-sonnet-4
             - moonshotai/kimi-k2.6
             - ollama/gpt-oss:120b
-            - ollama/solidity-master:2
         messages:
           type: array
           items:
@@ -280,25 +281,66 @@ components:
           const: model
         owned_by:
           type: string
+        name:
+          oneOf:
+            - type: string
+            - type: "null"
+        description:
+          oneOf:
+            - type: string
+            - type: "null"
         pricing:
           oneOf:
             - $ref: "#/components/schemas/ModelPricing"
             - type: "null"
+        context:
+          oneOf:
+            - type: number
+            - type: "null"
+        max_output:
+          oneOf:
+            - type: number
+            - type: "null"
+        tool:
+          oneOf:
+            - type: boolean
+            - type: "null"
+        structured:
+          oneOf:
+            - type: boolean
+            - type: "null"
+        knowledge_cutoff:
+          oneOf:
+            - type: string
+            - type: "null"
+        input_modalities:
+          type: array
+          items:
+            type: string
+        output_modalities:
+          type: array
+          items:
+            type: string
     ModelPricing:
       type: object
+      description: USD rates per token (multiply by 1_000_000 for $/1M).
       properties:
         input:
           type: number
+          description: USD per input token.
         output:
           type: number
+          description: USD per output token.
         cache_write:
           oneOf:
             - type: number
             - type: "null"
+          description: USD per cache-write token, when applicable.
         cache_read:
           oneOf:
             - type: number
             - type: "null"
+          description: USD per cache-read token, when applicable.
     ImageGenerationRequest:
       type: object
       required:

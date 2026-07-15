@@ -110,12 +110,18 @@ See [Streaming](../guides/streaming) for the streaming-fallback behavior of `hpp
 
 ## Models
 
+`models.list()` does **not** require an API key.
+
 <CodePanel>
 <Tabs groupId="typescript-sdk-models" queryString>
 <TabItem value="typescript" label="TypeScript" default>
 
 ```ts showLineNumbers
-const models = await client.models.list();
+const catalogClient = new HppRouter({
+  baseURL: 'https://router.hpp.io',
+});
+
+const models = await catalogClient.models.list();
 console.log(models.data.data);
 ```
 
@@ -123,7 +129,7 @@ console.log(models.data.data);
 </Tabs>
 </CodePanel>
 
-## Usage and quota
+## Usage
 
 <CodePanel>
 <Tabs groupId="typescript-sdk-usage" queryString>
@@ -131,17 +137,15 @@ console.log(models.data.data);
 
 ```ts showLineNumbers
 const usage = await client.usage.get();
-const quota = await client.quota.check();
 
-console.log(usage.data.remaining);
-console.log(quota.data.has_quota);
+console.log(usage.data);
 ```
 
 </TabItem>
 </Tabs>
 </CodePanel>
 
-See [Quota & Usage](../guides/quota-and-usage).
+See [Usage & Settlement](../guides/quota-and-usage) for more details.
 
 ## Image generation
 

@@ -5,7 +5,7 @@ description: HPP Router Consumer API — OpenAI-compatible endpoints, schemas, a
 
 # API Reference
 
-HPP Router's request and response schemas are **OpenAI-compatible**, with HPP-specific extensions for smart routing headers and prepaid quota. At a high level, you use the same patterns as the OpenAI Chat API — point your client at `https://router.hpp.io` and authenticate with your API key.
+HPP Router's request and response schemas are **OpenAI-compatible**, with HPP-specific extensions for smart routing headers and wallet payments (on-chain USDC). At a high level, you use the same patterns as the OpenAI Chat API — point your client at `https://router.hpp.io` and authenticate with your API key.
 
 ## OpenAPI Specification
 
@@ -23,7 +23,8 @@ For live requests, use the [Router Playground](https://router.hpp.io/playground/
 ## Base URL & auth
 
 - **Base URL:** `https://router.hpp.io`
-- **Auth:** `apikey` header **or** `Authorization: Bearer <key>`. See [Authentication](../authentication).
+- **Auth:** `apikey` header **or** `Authorization: Bearer <key>` for billed endpoints. `GET /llm/v1/models` does not require a key.
+  - For x402 wallet payments, set `X-HPP-Payment-Rail: wallet` and use PAYMENT-SIGNATURE headers instead of API keys. See [Authentication](../authentication).
 - **Version:** Consumer API `0.1.0`.
 
 ## Endpoints
@@ -34,7 +35,7 @@ For live requests, use the [Router Playground](https://router.hpp.io/playground/
 | `GET` | `/llm/v1/models` | [List available models](#get-llmv1models) |
 | `POST` | `/v1/images/generations` | [Generate images](#post-v1imagesgenerations) |
 | `GET` | `/api/usage` | [Get current consumer usage](#get-apiusage) |
-| `GET` | `/api/quota-check` | [Check current consumer quota](#get-apiquota-check) |
+| `GET` | `/api/user/audit/:logId` | [Get user audit log](#get-apiuserauditlogid) |
 
 ---
 
@@ -56,10 +57,16 @@ OpenAI-compatible chat completion endpoint with HPP smart-routing headers.
 
 Additional properties are allowed and passed through.
 
+**Authentication:** Required. Use `apikey` header or `Authorization: Bearer <key>` for billing/usage tracking.
+
+For x402 wallet payments, append the `X-HPP-Payment-Rail: wallet` header and sign payments using the x402 protocol.
+
 **Responses:**
 
 - `200` — `ChatCompletionResponse` (`application/json`) or an SSE stream (`text/event-stream`). Response headers include `X-HPP-Router-Resolved-Model`, `X-HPP-Router-Basket`, `X-HPP-Router-Rule-Id`, `X-HPP-Router-Rules-Version`, and `X-HPP-Router-Tier`.
-- `400`, `401`, `429`, `500` — error envelope.
+- `401` — Authentication required.
+- `402` — Payment required (for wallet rail). Response includes `PAYMENT-REQUIRED` header with payment specifications.
+- `429`, `500` — error envelope.
 
 See [Chat Completions](../guides/chat-completions) and [Smart Routing](../smart-routing).
 
@@ -67,9 +74,13 @@ See [Chat Completions](../guides/chat-completions) and [Smart Routing](../smart-
 
 ## `GET /llm/v1/models`
 
-Lists available models (OpenAI-compatible). Each `Model` has `id`, `object` (`"model"`), `owned_by`, and an optional `pricing` object (`input`, `output`, `cache_write`, `cache_read`).
+Lists available models (OpenAI-compatible). **Authentication is optional.**
 
-**Responses:** `200` — `ModelListResponse`; `401`, `500` — error envelope.
+Each `Model` includes `id`, `object` (`"model"`), `owned_by`, optional catalog fields (`name`, `description`, `context`, `max_output`, `tool`, `structured`, `knowledge_cutoff`, `input_modalities`, `output_modalities`), and an optional `pricing` object.
+
+`pricing.input` / `pricing.output` / `pricing.cache_write` / `pricing.cache_read` are **USD per token** (may be `null`). For `hpprouter/auto`, `pricing` is `null` — billing uses the resolved model.
+
+**Responses:** `200` — `ModelListResponse`; `500` — error envelope.
 
 See [Models & Pricing](../models-and-pricing).
 
@@ -99,23 +110,59 @@ See [Image Generation](../guides/image-generation).
 
 ## `GET /api/usage`
 
-Usage and quota summary for the authenticated consumer.
+Usage summary for the authenticated consumer.
 
-**Response `200`** (`UsageResponse`): `consumer_id`, `username`, `custom_id`, `quota`, `used`, `remaining`, `requests`, `total_tokens`, `total_cost`.
+**Response `200`** (`UsageResponse`): `consumer_id`, `username`, `custom_id`, `requests`, `total_tokens`, `total_cost`.
 
 **Errors:** `401`, `404`, `500`.
 
----
 
-## `GET /api/quota-check`
+## `GET /api/user/audit/:logId`
 
-Quota availability for the authenticated consumer.
+Get a single audit log entry for the authenticated consumer.
 
-**Response `200`** (`QuotaCheckResponse`): `has_quota`, `quota`, `used`, `remaining`.
+Access control:
+- Personal consumers can only access their own logs
+- Organization members can access any log from their organization's consumers
 
-**Errors:** `401`, `503`, `500`.
+**Path params:**
+- `logId` — The audit log ID (UUID)
 
-See [Quota & Usage](../guides/quota-and-usage).
+**Query params:**
+- `consumerId` — Filter by consumer (organization members only, must have access permission via `organization_members` table)
+
+**Response `200`:**
+
+```json
+{
+  "id": "log-xyz",
+  "consumer_id": "cons-123",
+  "provider": "openai",
+  "model": "gpt-4",
+  "prompt_tokens": 100,
+  "completion_tokens": 50,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 0,
+  "total_tokens": 150,
+  "cost": 0.002,
+  "status": "success",
+  "blockchain_tx_hash": "0x...",
+  "payment_rail": "wallet",
+  "settle_status": "settled",
+  "settle_amount_micro": 25000,
+  "scope": "organization",
+  "organization": {
+    "id": "org-abc",
+    "name": "My Organization",
+    "consumerId": "cons-org-123",
+    "role": "admin"
+  }
+}
+```
+
+**Errors:** `401` (not authenticated), `403` (no access to consumer), `404` (log not found), `500`.
+
+See [Usage & Activity Logs](../guides/quota-and-usage) for more details.
 
 ---
 

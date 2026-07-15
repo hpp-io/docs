@@ -9,7 +9,7 @@ import CodePanel from '@site/src/components/CodePanel';
 
 # Authentication
 
-Every request to HPP Router must be authenticated. The gateway uses the API key to identify the **consumer**, enforce per-consumer rate limits, and check the prepaid [quota](./guides/quota-and-usage) before forwarding the request to a provider.
+HPP Router uses **on-chain USDC payments** via x402 wallet. All requests require authentication with an API key for consumer identification.
 
 ## Getting an API key
 
@@ -23,11 +23,13 @@ HPP Router accepts two authentication schemes. Use whichever fits your client.
 
 <CodePanel>
 <Tabs groupId="auth-apikey" queryString>
-<TabItem value="curl" label="cURL" default>
+<TabItem value="curl" label="curl" default>
 
 ```bash showLineNumbers
-curl https://router.hpp.io/llm/v1/models \
-  -H "apikey: $HPPROUTER_API_KEY"
+curl https://router.hpp.io/llm/v1/chat/completions \
+  -H "apikey: $HPPROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
 </TabItem>
@@ -38,11 +40,13 @@ curl https://router.hpp.io/llm/v1/models \
 
 <CodePanel>
 <Tabs groupId="auth-bearer" queryString>
-<TabItem value="curl" label="cURL" default>
+<TabItem value="curl" label="curl" default>
 
 ```bash showLineNumbers
-curl https://router.hpp.io/llm/v1/models \
-  -H "Authorization: Bearer $HPPROUTER_API_KEY"
+curl https://router.hpp.io/llm/v1/chat/completions \
+  -H "Authorization: Bearer $HPPROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
 </TabItem>
@@ -53,15 +57,26 @@ The Bearer scheme is what most OpenAI-compatible SDKs send by default, which is 
 
 ## Which endpoints require auth
 
-All consumer endpoints are authenticated:
+| Endpoint | Auth | Purpose |
+| --- | --- | --- |
+| `GET /llm/v1/models` | Optional | [List models](./models-and-pricing) |
+| `POST /llm/v1/chat/completions` | Required (wallet: also `X-HPP-Payment-Rail: wallet`) | [Chat completions](./guides/chat-completions) |
+| `POST /v1/images/generations` | Required (wallet: also `X-HPP-Payment-Rail: wallet`) | [Image generation](./guides/image-generation) |
+| `GET /api/usage` | Required | [Usage summary](./guides/quota-and-usage) |
 
-| Endpoint | Purpose |
-| --- | --- |
-| `POST /llm/v1/chat/completions` | [Chat completions](./guides/chat-completions) |
-| `GET /llm/v1/models` | [List models](./models-and-pricing) |
-| `POST /v1/images/generations` | [Image generation](./guides/image-generation) |
-| `GET /api/usage` | [Usage summary](./guides/quota-and-usage) |
-| `GET /api/quota-check` | [Quota check](./guides/quota-and-usage) |
+All requests to HPP Router require authentication with an API key. The API key identifies the consumer and is required for both wallet payments (via Kong).
+
+For wallet payments, also include the `X-HPP-Payment-Rail: wallet` header. See [Chat Completions](./guides/chat-completions) for examples.
+
+## x402 Wallet
+
+HPP Router supports **x402 Wallet** for on-chain USDC payments.
+
+When you send a request with `X-HPP-Payment-Rail: wallet`, the gateway prompts your client to sign payment authorization using the x402 protocol. The server will respond with `PAYMENT-REQUIRED` header containing payment specifications (wallet address, amount in micro-USDC, etc.).
+
+For detailed information about the x402 payment flow, see:
+- [x402 Protocol](https://docs.x402.com)
+- [Wallet Payments Guide](./guides/chat-completions#wallet)
 
 ## Errors
 
