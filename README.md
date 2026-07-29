@@ -100,11 +100,9 @@ redirects here.
 
 ## Security
 
-`npm audit` reports one **moderate** advisory in `js-yaml`, pulled in transitively
-through Docusaurus' own dependency (`gray-matter`). It is **build-time only**
-(front-matter parsing of trusted, first-party content) and is **not present in the
-deployed static site**. It cannot be overridden without breaking `gray-matter`, so it
-is accepted until Docusaurus bumps the dependency upstream. The high-severity
-`serialize-javascript` and `uuid` advisories are pinned to patched versions via npm
-`overrides` in `package.json`. CI fails only on **high/critical** advisories
-(`npm audit --audit-level=high`).
+Transitive advisories from the Docusaurus toolchain are pinned to patched versions
+via npm `overrides` in `package.json` (including `serialize-javascript`, `uuid`,
+`brace-expansion`, `minimatch`, `fast-uri`, `js-yaml`, `postcss`, `shell-quote`,
+`svgo`, `webpack-dev-server`, `body-parser`, and `dompurify`). Most of these packages are
+build-time or local-dev only and are **not present in the deployed static site**.
+CI fails on **high/critical** advisories (`npm audit --audit-level=high`).
