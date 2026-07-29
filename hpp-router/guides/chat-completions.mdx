@@ -17,7 +17,7 @@ POST https://router.hpp.io/llm/v1/chat/completions
 
 ## Payment methods
 
-HPP Router supports **x402 Wallet** for on-chain USDC payments. Set `X-HPP-Payment-Rail: wallet` and include your API key for authentication.
+HPP Router supports **x402 Wallet** for on-chain USDC.e payments. Set `X-Payment-Rail: wallet` and include your API key for authentication.
 
 See [Authentication](../authentication) for details.
 
@@ -34,7 +34,7 @@ Include both the payment rail header and your API key:
 ```bash showLineNumbers
 curl -X POST https://router.hpp.io/llm/v1/chat/completions \
   -H "apikey: $HPPROUTER_API_KEY" \
-  -H "X-HPP-Payment-Rail: wallet" \
+  -H "X-Payment-Rail: wallet" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-5",

@@ -16,7 +16,7 @@ https://router.hpp.io
 
 - **One API, many models.** Call OpenAI, Anthropic, Moonshot, or local Ollama models through one OpenAI-compatible endpoint. Switch models by changing a single `model` string.
 - **Smart routing.** Use the virtual model [`hpprouter/auto`](/hpp-router/smart-routing) and let the gateway pick a cost-appropriate model per request based on configurable rules.
-- **On-chain wallet payments** — Every request is tracked for usage and settled on-chain via x402 (USDC). Token usage is metered and billed at the resolved model's pricing.
+- **On-chain wallet payments** — Every request is tracked for usage and settled on-chain via x402 (USDC.e). Token usage is metered and billed at the resolved model's pricing.
 - **Drop-in compatibility.** Existing OpenAI SDK code works by pointing the base URL at `https://router.hpp.io` and using your HPP Router API key.
 
 ## How a request flows
@@ -32,12 +32,12 @@ Client → Kong Gateway (key-auth, rate-limiting)
 1. A request arrives with your API key.
 2. The gateway authenticates the consumer and applies rate limits.
 3. The router resolves the target `provider/model` — or, for `hpprouter/auto`, classifies the request and picks a model from rules.
-4. The upstream provider is called and the response is returned to you. If x402 wallet payment is used (`X-HPP-Payment-Rail: wallet`), the server will prompt for on-chain payment authorization.
+4. The upstream provider is called and the response is returned to you. If x402 wallet payment is used (`X-Payment-Rail: wallet`), the server will prompt for on-chain payment authorization.
 5. Token usage is extracted asynchronously (no added latency) and settled on-chain via x402 protocol.
 
 ## Where HPP Router fits in the HPP ecosystem
 
-HPP Router is the **model router** layer of the HPP stack — an AI-native L2 built for agents. It routes inference requests across the network (including HPP Coder), and API keys are issued through **[HPP Hub](https://hub.hpp.io)** (see also the [HPP Hub guide](/hub)).
+HPP Router is the **model router** layer of the HPP stack — an AI-native L2 built for agents. It routes inference requests across the network (including HPP Coder). API keys can be issued from the **[HPP Router portal](https://router.hpp.io)** and also through **[HPP Hub](https://hub.hpp.io)** (see also the [HPP Hub guide](/hub)).
 
 ## Next steps
 

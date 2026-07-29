@@ -1,6 +1,6 @@
 ---
 title: Models & Pricing
-description: Discover available models and understand HPP Router's token-based, prepaid billing.
+description: Discover available models and understand HPP Router's token-based, on-chain USDC.e billing.
 ---
 
 import Tabs from '@theme/Tabs';
@@ -9,7 +9,7 @@ import CodePanel from '@site/src/components/CodePanel';
 
 # Models & Pricing
 
-HPP Router exposes models from multiple providers behind one OpenAI-compatible API. Billing is **token-based** and settled on-chain via x402 wallet (USDC).
+HPP Router exposes models from multiple providers behind one OpenAI-compatible API. Billing is **token-based** and settled on-chain via x402 wallet (USDC.e).
 
 ## Listing models
 
@@ -128,7 +128,7 @@ When you request `hpprouter/auto`, billing uses the **resolved** model's pricing
 
 ## Checking your usage
 
-- `GET /api/quota-check` — check remaining balance for the authenticated consumer.
-- `GET /api/usage` — usage summary (requests, total tokens, total cost).
+- `GET /api/quota-check` — check prepaid quota remaining for the authenticated consumer.
+- `GET /api/usage` — usage summary (requests, total tokens, total cost); use `?rail=wallet` for on-chain settlement fields.
 
-See [Quota & Usage](./guides/quota-and-usage).
+See [Usage & Settlement](./guides/quota-and-usage).

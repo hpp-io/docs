@@ -28,7 +28,7 @@ Include both the payment rail header and your API key:
 ```bash showLineNumbers
 curl -X POST https://router.hpp.io/v1/images/generations \
   -H "apikey: $HPPROUTER_API_KEY" \
-  -H "X-HPP-Payment-Rail: wallet" \
+  -H "X-Payment-Rail: wallet" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-image-1",
@@ -86,7 +86,7 @@ Higher `quality` settings consume more **output tokens** — for example, `auto`
 
 ## Wallet payments
 
-All image generation requests require authentication with an API key. For wallet payments, include the `X-HPP-Payment-Rail: wallet` header.
+All image generation requests require authentication with an API key. For wallet payments, include the `X-Payment-Rail: wallet` header.
 
 - Requests are processed on-chain via x402 protocol.
 - If wallet settlement fails, the endpoint returns **`402 PAYMENT REQUIRED`** with payment instructions. See [Errors](./errors).

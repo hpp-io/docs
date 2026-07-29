@@ -66,6 +66,6 @@ When using [`hpprouter/auto`](../smart-routing), you may encounter:
 ## Handling guidance
 
 - **`401`** — fix your API key; do not retry blindly.
-- **`429`** — back off and retry; if it's an insufficient funds issue, top up your wallet via the x402 protocol.
+- **`429`** — back off and retry; if it's an insufficient funds issue, bridge or top up **USDC.e** on HPP (see [Networks & token](/x402/networks-and-token) and the [Bridge guide](/community/bridge)).
 - **`5xx`** with `retryable: true` — retry with exponential backoff.
 - **`5xx`** with `retryable: false` — surface the error; retrying will not help.

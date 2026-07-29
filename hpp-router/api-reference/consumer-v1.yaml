@@ -107,6 +107,18 @@ paths:
     get:
       operationId: getUsage
       summary: Get current consumer usage
+      description: >
+        Usage and prepaid quota summary for the authenticated consumer.
+        Pass `rail=wallet` to scope stats to the wallet payment rail and include
+        on-chain USDC.e settlement fields.
+      parameters:
+        - name: rail
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [wallet, quota]
+          description: Optional payment-rail filter. `wallet` adds settlement fields.
       responses:
         "200":
           description: Usage and quota summary for the authenticated consumer.
@@ -418,16 +430,37 @@ components:
             - type: "null"
         quota:
           type: number
+          description: Prepaid quota limit (credit/quota rail snapshot).
         used:
           type: number
+          description: Prepaid quota consumed.
         remaining:
           type: number
+          description: Prepaid quota remaining.
+        rail:
+          type: string
+          enum: [wallet, quota]
+          description: Present when the request filtered by `?rail=`.
+        spent_usdc_micro:
+          type: number
+          description: >
+            Total USDC.e settled on-chain in atomic/micro units.
+            Present when `rail=wallet`.
+        settle_success_count:
+          type: integer
+          description: Successful on-chain settlements. Present when `rail=wallet`.
+        settle_failed_count:
+          type: integer
+          description: Failed on-chain settlements. Present when `rail=wallet`.
         requests:
           type: integer
         total_tokens:
           type: integer
         total_cost:
           type: number
+          description: >
+            Dollar cost. For `rail=wallet`, reflects wallet-settled spend from
+            usage logs rather than prepaid `used`.
     QuotaCheckResponse:
       type: object
       required:

@@ -1,23 +1,23 @@
 ---
-title: Quota & Usage
-description: Check remaining quota and review usage with HPP Router's prepaid quota model.
+title: Usage & Settlement
+description: Check prepaid quota, review usage, and inspect on-chain USDC.e settlement with HPP Router.
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CodePanel from '@site/src/components/CodePanel';
 
----
-
 # Usage & Settlement
 
-HPP Router uses **on-chain USDC payments** via x402 wallet. All requests require authentication with an API key for consumer identification.
+HPP Router uses **on-chain USDC.e payments** via x402 wallet for billed inference. All requests require authentication with an API key for consumer identification.
 
-Token usage is metered and billed on-chain after usage settlement.
+Token usage is metered and, on the wallet rail, settled on-chain after the request completes. Prepaid **quota** balance checks remain available for consumers that still use the credit/quota rail.
 
-## Usage summary
+## Check quota
 
-A lightweight pre-flight check for the authenticated consumer:
+A lightweight pre-flight check for the authenticated consumer's prepaid quota (independent of on-chain wallet settlement):
+
+<a name="check-quota"></a>
 
 <CodePanel>
 <Tabs groupId="quota-check-request" queryString>
@@ -45,9 +45,9 @@ If the quota state cannot be verified (e.g. a backend datastore is unavailable),
 
 ## Usage summary
 
-A summary of consumption for the authenticated consumer.
+A summary of consumption for the authenticated consumer. The default response always includes prepaid quota fields (`quota`, `used`, `remaining`). Pass `?rail=wallet` to scope stats to the wallet payment rail and include on-chain settlement fields.
 
-### x402 Wallet (default)
+### Default (quota fields)
 
 <CodePanel>
 <Tabs groupId="usage-summary-request" queryString>
@@ -67,6 +67,39 @@ curl https://router.hpp.io/api/usage \
   "consumer_id": "....",
   "username": "alice",
   "custom_id": "user-001",
+  "quota": 100,
+  "used": 12.5,
+  "remaining": 87.5,
+  "requests": 42,
+  "total_tokens": 18500,
+  "total_cost": 12.5
+}
+```
+
+### Wallet rail (`?rail=wallet`)
+
+<CodePanel>
+<Tabs groupId="usage-summary-wallet" queryString>
+<TabItem value="curl" label="curl" default>
+
+```bash showLineNumbers
+curl "https://router.hpp.io/api/usage?rail=wallet" \
+  -H "apikey: $HPPROUTER_API_KEY"
+```
+
+</TabItem>
+</Tabs>
+</CodePanel>
+
+```json showLineNumbers
+{
+  "consumer_id": "....",
+  "username": "alice",
+  "custom_id": "user-001",
+  "quota": 100,
+  "used": 12.5,
+  "remaining": 87.5,
+  "rail": "wallet",
   "spent_usdc_micro": 2500000,
   "settle_success_count": 3,
   "settle_failed_count": 0,
@@ -80,23 +113,23 @@ curl https://router.hpp.io/api/usage \
 | --- | --- |
 | `consumer_id` | The authenticated consumer's id. |
 | `username` / `custom_id` | Optional identifiers (may be `null`). |
-| `spent_usdc_micro` | Total USDC spent on-chain (in micro units). |
-| `settle_success_count` | Number of successful on-chain settlements. |
-| `settle_failed_count` | Number of failed settlements. |
-| `requests` | Number of requests recorded. |
-| `total_tokens` | Total tokens consumed. |
-| `total_cost` | Total dollar cost (from resolved model pricing). |
+| `quota` / `used` / `remaining` | Prepaid quota snapshot (always present). |
+| `rail` | Present when filtered, e.g. `"wallet"`. |
+| `spent_usdc_micro` | Total USDC.e settled on-chain (atomic/micro units). Present when `rail=wallet`. |
+| `settle_success_count` | Successful on-chain settlements (`rail=wallet`). |
+| `settle_failed_count` | Failed settlements (`rail=wallet`). |
+| `requests` | Number of requests recorded (scoped by `rail` when set). |
+| `total_tokens` | Total tokens consumed (scoped by `rail` when set). |
+| `total_cost` | Dollar cost; for `rail=wallet`, reflects wallet-settled spend from usage logs. |
 
 ## How usage is metered
 
 1. The response from the provider is captured asynchronously (no added latency).
 2. Token usage is extracted from the response `usage` block.
 3. Cost is computed from the [resolved model's pricing](../models-and-pricing).
-4. The consumer's `used` value is updated and the request is logged.
+4. The request is logged; on the wallet rail, settlement proceeds via x402. On the quota rail, the consumer's `used` value is updated.
 
 For `hpprouter/auto`, cost uses the **resolved** model's pricing, not a price for `auto`. See [Smart Routing](../smart-routing).
-
-## Performance note
 
 ## Performance note
 

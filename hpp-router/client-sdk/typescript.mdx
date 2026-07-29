@@ -129,7 +129,7 @@ console.log(models.data.data);
 </Tabs>
 </CodePanel>
 
-## Usage
+## Usage & quota
 
 <CodePanel>
 <Tabs groupId="typescript-sdk-usage" queryString>
@@ -137,8 +137,11 @@ console.log(models.data.data);
 
 ```ts showLineNumbers
 const usage = await client.usage.get();
-
 console.log(usage.data);
+
+// Prepaid quota rail (still available alongside wallet settlement)
+const quota = await client.quota.check();
+console.log(quota.data);
 ```
 
 </TabItem>

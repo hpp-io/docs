@@ -26,7 +26,7 @@ Include both the payment rail header and your API key:
 ```bash showLineNumbers
 curl -X POST https://router.hpp.io/llm/v1/chat/completions \
   -H "apikey: $HPPROUTER_API_KEY" \
-  -H "X-HPP-Payment-Rail: wallet" \
+  -H "X-Payment-Rail: wallet" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-4o",

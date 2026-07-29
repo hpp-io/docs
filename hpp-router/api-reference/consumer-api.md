@@ -5,7 +5,7 @@ description: HPP Router Consumer API — OpenAI-compatible endpoints, schemas, a
 
 # API Reference
 
-HPP Router's request and response schemas are **OpenAI-compatible**, with HPP-specific extensions for smart routing headers and wallet payments (on-chain USDC). At a high level, you use the same patterns as the OpenAI Chat API — point your client at `https://router.hpp.io` and authenticate with your API key.
+HPP Router's request and response schemas are **OpenAI-compatible**, with HPP-specific extensions for smart routing headers and wallet payments (on-chain USDC.e). At a high level, you use the same patterns as the OpenAI Chat API — point your client at `https://router.hpp.io` and authenticate with your API key.
 
 ## OpenAPI Specification
 
@@ -13,8 +13,7 @@ The complete Consumer API is documented using **OpenAPI 3.1**. The spec is the s
 
 | Format | Location |
 | --- | --- |
-| **YAML (bundled)** | [`consumer-v1.yaml`](./consumer-v1.yaml) in this repo |
-| **YAML (source)** | [`hpp-router/openapi/consumer-v1.yaml`](https://github.com/hpp-io/hpp-router/blob/main/openapi/consumer-v1.yaml) |
+| **OpenAPI YAML** | [`consumer-v1.yaml`](./consumer-v1.yaml) |
 
 Import the spec into [Swagger UI](https://swagger.io/tools/swagger-ui/), [Postman](https://www.postman.com/), or an OpenAPI code generator to explore endpoints or produce client stubs.
 
@@ -24,7 +23,7 @@ For live requests, use the [Router Playground](https://router.hpp.io/playground/
 
 - **Base URL:** `https://router.hpp.io`
 - **Auth:** `apikey` header **or** `Authorization: Bearer <key>` for billed endpoints. `GET /llm/v1/models` does not require a key.
-  - For x402 wallet payments, set `X-HPP-Payment-Rail: wallet` and use PAYMENT-SIGNATURE headers instead of API keys. See [Authentication](../authentication).
+  - For x402 wallet payments, keep the API key and also set `X-Payment-Rail: wallet`. Sign and retry with `PAYMENT-SIGNATURE` / `X-PAYMENT` after a `402`. See [Authentication](../authentication).
 - **Version:** Consumer API `0.1.0`.
 
 ## Endpoints
@@ -35,6 +34,7 @@ For live requests, use the [Router Playground](https://router.hpp.io/playground/
 | `GET` | `/llm/v1/models` | [List available models](#get-llmv1models) |
 | `POST` | `/v1/images/generations` | [Generate images](#post-v1imagesgenerations) |
 | `GET` | `/api/usage` | [Get current consumer usage](#get-apiusage) |
+| `GET` | `/api/quota-check` | [Check prepaid quota](#get-apiquotacheck) |
 | `GET` | `/api/user/audit/:logId` | [Get user audit log](#get-apiuserauditlogid) |
 
 ---
@@ -59,7 +59,7 @@ Additional properties are allowed and passed through.
 
 **Authentication:** Required. Use `apikey` header or `Authorization: Bearer <key>` for billing/usage tracking.
 
-For x402 wallet payments, append the `X-HPP-Payment-Rail: wallet` header and sign payments using the x402 protocol.
+For x402 wallet payments, append the `X-Payment-Rail: wallet` header and sign payments using the x402 protocol.
 
 **Responses:**
 
@@ -74,7 +74,7 @@ See [Chat Completions](../guides/chat-completions) and [Smart Routing](../smart-
 
 ## `GET /llm/v1/models`
 
-Lists available models (OpenAI-compatible). **Authentication is optional.**
+Lists available models (OpenAI-compatible). **Authentication is optional** (Kong serves this route without `key-auth`; a separate `GET /public/v1/models` also exists on the backend).
 
 Each `Model` includes `id`, `object` (`"model"`), `owned_by`, optional catalog fields (`name`, `description`, `context`, `max_output`, `tool`, `structured`, `knowledge_cutoff`, `input_modalities`, `output_modalities`), and an optional `pricing` object.
 
@@ -112,10 +112,28 @@ See [Image Generation](../guides/image-generation).
 
 Usage summary for the authenticated consumer.
 
-**Response `200`** (`UsageResponse`): `consumer_id`, `username`, `custom_id`, `requests`, `total_tokens`, `total_cost`.
+**Query params:**
+- `rail` — optional filter: `wallet` or `quota`. When `rail=wallet`, response includes settlement fields and scopes request/token/cost stats to the wallet rail.
+
+**Response `200`** (`UsageResponse`): always `consumer_id`, `username`, `custom_id`, `quota`, `used`, `remaining`, `requests`, `total_tokens`, `total_cost`. With `?rail=wallet`, also `rail`, `spent_usdc_micro`, `settle_success_count`, `settle_failed_count`.
 
 **Errors:** `401`, `404`, `500`.
 
+See [Usage & Settlement](../guides/quota-and-usage).
+
+---
+
+## `GET /api/quota-check`
+
+Prepaid quota availability for the authenticated consumer (credit/quota rail). This is separate from on-chain wallet settlement.
+
+**Response `200`** (`QuotaCheckResponse`): `has_quota`, `quota`, `used`, `remaining`.
+
+**Errors:** `401`, `503` (fail-closed when quota state cannot be verified), `500`.
+
+See [Usage & Settlement](../guides/quota-and-usage#check-quota).
+
+---
 
 ## `GET /api/user/audit/:logId`
 
@@ -162,7 +180,7 @@ Access control:
 
 **Errors:** `401` (not authenticated), `403` (no access to consumer), `404` (log not found), `500`.
 
-See [Usage & Activity Logs](../guides/quota-and-usage) for more details.
+See [Usage & Settlement](../guides/quota-and-usage) for more details.
 
 ---
 
