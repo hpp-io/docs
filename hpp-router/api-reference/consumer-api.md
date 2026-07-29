@@ -74,7 +74,7 @@ See [Chat Completions](../guides/chat-completions) and [Smart Routing](../smart-
 
 ## `GET /llm/v1/models`
 
-Lists available models (OpenAI-compatible). **Authentication is optional** (Kong serves this route without `key-auth`; a separate `GET /public/v1/models` also exists on the backend).
+Lists available models (OpenAI-compatible). **Authentication is optional** — Kong serves this route without `key-auth`.
 
 Each `Model` includes `id`, `object` (`"model"`), `owned_by`, optional catalog fields (`name`, `description`, `context`, `max_output`, `tool`, `structured`, `knowledge_cutoff`, `input_modalities`, `output_modalities`), and an optional `pricing` object.
 
