@@ -62,8 +62,8 @@ The Bearer scheme is what most OpenAI-compatible SDKs send by default, which is 
 | `GET /llm/v1/models` | Optional | [List models](./models-and-pricing) |
 | `POST /llm/v1/chat/completions` | Required (wallet: also `X-Payment-Rail: wallet`) | [Chat completions](./guides/chat-completions) |
 | `POST /v1/images/generations` | Required (wallet: also `X-Payment-Rail: wallet`) | [Image generation](./guides/image-generation) |
-| `GET /api/usage` | Required | [Usage summary](./guides/quota-and-usage) |
-| `GET /api/quota-check` | Required | [Check prepaid quota](./guides/quota-and-usage#check-quota) |
+| `GET /api/usage` | Required | [Usage summary](./guides/usage-and-settlement) |
+| `GET /api/quota-check` | Required | [Check prepaid quota](./guides/usage-and-settlement#check-quota) |
 | `GET /api/user/audit/:logId` | Required | [Get user audit log](./api-reference/consumer-api#get-apiuserauditlogid) |
 
 Billed endpoints require an API key so Kong can identify the consumer. Wallet payments still need the key; they additionally use the payment-rail header and x402 payment signature.

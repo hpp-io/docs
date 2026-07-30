@@ -119,7 +119,7 @@ Usage summary for the authenticated consumer.
 
 **Errors:** `401`, `404`, `500`.
 
-See [Usage & Settlement](../guides/quota-and-usage).
+See [Usage & Settlement](../guides/usage-and-settlement).
 
 ---
 
@@ -131,7 +131,7 @@ Prepaid quota availability for the authenticated consumer (credit/quota rail). T
 
 **Errors:** `401`, `503` (fail-closed when quota state cannot be verified), `500`.
 
-See [Usage & Settlement](../guides/quota-and-usage#check-quota).
+See [Usage & Settlement](../guides/usage-and-settlement#check-quota).
 
 ---
 
@@ -180,7 +180,7 @@ Access control:
 
 **Errors:** `401` (not authenticated), `403` (no access to consumer), `404` (log not found), `500`.
 
-See [Usage & Settlement](../guides/quota-and-usage) for more details.
+See [Usage & Settlement](../guides/usage-and-settlement) for more details.
 
 ---
 
