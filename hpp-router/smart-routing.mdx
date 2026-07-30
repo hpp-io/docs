@@ -19,7 +19,7 @@ When you send `model: "hpprouter/auto"`, the gateway classifies the request and 
 
 <CodePanel>
 <Tabs groupId="smart-routing-request" queryString>
-<TabItem value="curl" label="curl" default>
+<TabItem value="curl" label="cURL" default>
 
 ```bash showLineNumbers
 curl -sS -D /tmp/headers.txt -o /tmp/out.json \
@@ -77,7 +77,7 @@ To read `X-HPP-Router-*` headers from browser JavaScript, the gateway must expos
 
 ## Billing
 
-Billing always uses the **resolved** model's pricing and the upstream `usage`. The resolved model is recorded in your [usage logs](./guides/usage-and-settlement).
+Billing always uses the **resolved** model's pricing and the upstream `usage` — there is no separate price for `hpprouter/auto`. The resolved model is recorded in your [usage logs](./guides/quota-and-usage).
 
 ## Notes for client apps
 

@@ -27,5 +27,5 @@ Content is grounded in the [`hpp-router`](https://github.com/hpp-io/hpp-router) 
 
 ## Follow-ups
 
-- **Portal sign-up & API keys:** docs mention both the [HPP Router portal](https://router.hpp.io) and [HPP Hub](https://hub.hpp.io) for key issuance.
+- **Portal sign-up & API keys:** docs currently mention [HPP Hub](https://hub.hpp.io) for key issuance. The Router Portal (`router.hpp.io`) will also support sign-up and key management — document once Portal sources are available.
 - **`audit` page:** not included yet; add when canonical audit/on-chain content is ready (see [hpp-router issue #93](https://github.com/hpp-io/hpp-router/issues/93)).

@@ -17,18 +17,13 @@ POST https://router.hpp.io/v1/images/generations
 
 ## Request
 
-### Wallet
-
-Include both the payment rail header and your API key:
-
 <CodePanel>
 <Tabs groupId="image-generation-request" queryString>
-<TabItem value="curl" label="curl" default>
+<TabItem value="curl" label="cURL" default>
 
 ```bash showLineNumbers
 curl -X POST https://router.hpp.io/v1/images/generations \
   -H "apikey: $HPPROUTER_API_KEY" \
-  -H "X-Payment-Rail: wallet" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-image-1",
@@ -75,19 +70,15 @@ The image is returned as base64 (`b64_json`). The `usage` block reports the toke
 
 ## Pricing (token-based)
 
-Image generation is billed per token, like chat. For `openai/gpt-image-1`:
+Image generation is billed per token, like chat:
 
-- **Input (text tokens):** $5 per 1M tokens (`0.000005` / token)
-- **Output (image tokens):** $40 per 1M tokens (`0.00004` / token)
-
-Confirm live rates with `GET /llm/v1/models`.
+- **Input:** $10 per 1M tokens ($0.00001 / token)
+- **Output:** $40 per 1M tokens ($0.00004 / token)
 
 Higher `quality` settings consume more **output tokens** — for example, `auto` can use roughly 15× the output tokens of `low`. Choose the lowest quality that meets your needs to control cost.
 
-## Wallet payments
+## Quota management
 
-All image generation requests require authentication with an API key. For wallet payments, include the `X-Payment-Rail: wallet` header.
-
-- Requests are processed on-chain via x402 protocol.
-- If wallet settlement fails, the endpoint returns **`402 PAYMENT REQUIRED`** with payment instructions. See [Errors](./errors).
-- Usage is tracked automatically and settled on-chain after completion.
+- Requests are checked against your [quota](./quota-and-usage) before being forwarded.
+- If quota is insufficient, the endpoint returns **`429`** (quota exceeded). See [Errors](./errors).
+- Usage is tracked automatically and deducted from your quota.

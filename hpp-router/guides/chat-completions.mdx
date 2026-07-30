@@ -15,26 +15,15 @@ The chat completions endpoint is the core of HPP Router. It is OpenAI-compatible
 POST https://router.hpp.io/llm/v1/chat/completions
 ```
 
-## Payment methods
-
-HPP Router supports **x402 Wallet** for on-chain USDC.e payments. Set `X-Payment-Rail: wallet` and include your API key for authentication.
-
-See [Authentication](../authentication) for details.
-
-### Basic request (wallet)
-
-Include both the payment rail header and your API key:
-
-<a name="wallet"></a>
+## Basic request
 
 <CodePanel>
-<Tabs groupId="chat-completions-wallet" queryString>
-<TabItem value="curl" label="curl" default>
+<Tabs groupId="chat-completions-request" queryString>
+<TabItem value="curl" label="cURL" default>
 
 ```bash showLineNumbers
 curl -X POST https://router.hpp.io/llm/v1/chat/completions \
   -H "apikey: $HPPROUTER_API_KEY" \
-  -H "X-Payment-Rail: wallet" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-5",
@@ -49,8 +38,6 @@ curl -X POST https://router.hpp.io/llm/v1/chat/completions \
 </TabItem>
 </Tabs>
 </CodePanel>
-
-The server will prompt for wallet payment authorization using the x402 protocol.
 
 ## Request fields
 
@@ -102,4 +89,4 @@ The `usage` block drives [billing](../models-and-pricing). When you use `hpprout
 
 ## Errors
 
-Requests are checked against your wallet balance before being forwarded. Insufficient funds return **`429`**; auth failures return **`401`**. Wallet requests may also return **`402 PAYMENT REQUIRED`** with payment instructions. See [Errors](./errors).
+Requests are checked against your quota before being forwarded. Insufficient quota returns **`429`**; auth failures return **`401`**. See [Errors](./errors).
