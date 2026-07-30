@@ -13,8 +13,7 @@ Send the same chat completion request using the stack you prefer. All examples t
 
 ## Prerequisites
 
-- An **HPP Router API key** from the [HPP Router portal](https://router.hpp.io) or [HPP Hub](https://hub.hpp.io) (required for Kong authentication)
-- x402 wallet payments for on-chain USDC.e transactions (wallet payment rail: `X-Payment-Rail: wallet`)
+- An **HPP Router API key** from [HPP Hub](https://hub.hpp.io)
 - Base URL: `https://router.hpp.io`
 
 Store your key in an environment variable:
@@ -72,7 +71,7 @@ console.log(completion.choices[0].message);
 ```
 
 </TabItem>
-<TabItem value="curl" label="curl">
+<TabItem value="curl" label="cURL">
 
 ```bash showLineNumbers
 curl -X POST https://router.hpp.io/llm/v1/chat/completions \
@@ -139,4 +138,4 @@ When you use `hpprouter/auto`, the model used for billing is returned in the `X-
 
 - [Authentication](./authentication) — API key vs. Bearer token.
 - [Models & Pricing](./models-and-pricing) — discover available models.
-- [Guides](./guides/chat-completions) — chat, streaming, vision, images, and errors.
+- [Guides](./guides/chat-completions) — chat, streaming, vision, images, quota, and errors.
