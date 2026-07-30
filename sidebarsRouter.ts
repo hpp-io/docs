@@ -19,7 +19,7 @@ const sidebars: SidebarsConfig = {
         'guides/streaming',
         'guides/vision-multimodal',
         'guides/image-generation',
-        'guides/quota-and-usage',
+        'guides/usage-and-settlement',
         'guides/errors',
         'guides/openai-sdk',
       ],
