@@ -19,7 +19,7 @@ On HPP, the tool that gives your agent this ability is **`hpp-x402`** — a comm
 payment tools to your agent host so the agent can find and pay for services on its own — always
 within your cap, always in USDC.e, always non-custodial.
 
-:::tip Which path is this?
+:::tip[Which path is this?]
 Building a client or server **in code**? Use the [`@x402` SDK](./quickstart-buyers.mdx) directly.
 Want an **existing AI agent** (Claude, Cursor, …) to pay autonomously — or to pay from your
 terminal? That's this guide. Both settle through the same [HPP facilitators](./facilitator.mdx).
@@ -135,7 +135,7 @@ storage : keychain (keychain://hpp-x402/delegate-default)
 
 You're now in **light mode** — the amount you fund is your spend cap, so start small.
 
-:::note What `setup` does
+:::note[What `setup` does]
 Generates a delegate key, stores it in the OS keychain as `keychain://hpp-x402/<account>` (never
 plaintext on disk), and writes the MCP server config for your host. Re-run any time; it's idempotent.
 Prefer to target the host later? Run `hpp-x402 install <host>` on its own.

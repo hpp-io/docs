@@ -1,35 +1,48 @@
 ---
 title: Service directory
 sidebar_label: Service directory
-description: The HPP x402 discovery directory — a curated, facilitator-indexed catalog of paid x402 services that agents and buyers can find and pay.
+description: The HPP x402 directory — a facilitator-indexed catalog of paid x402 services that agents and buyers can find and pay, published as the HPP x402 Explorer.
 ---
 
 # Service directory
 
-The **HPP x402 directory** is a curated catalog of paid x402 services on HPP. It's how an agent finds
+The **HPP x402 directory** is the catalog of paid x402 services on HPP. It's how an agent finds
 something to pay for without being handed a URL — the discovery layer that makes autonomous,
 [agentic payments](./agents.mdx) practical.
 
-**Public endpoint:** `https://x402-discovery.hpp.io`
+You browse it at **[x402-explorer.hpp.io](https://x402-explorer.hpp.io)**, the HPP x402 Explorer.
 
-## How listing works
+<div className="margin-bottom--md">
+  <a href="/x402/explorer/browse" className="button button--primary margin-right--sm">Find a service →</a>
+  <a href="/x402/explorer/sell" className="button button--secondary">List your service →</a>
+</div>
 
-You don't register a service by hand. The directory is **facilitator-indexed**:
+## How a service gets listed
 
-1. A [seller](./quickstart-sellers.mdx) advertises discovery metadata on its `402` (the `@x402`
-   Bazaar extension does this; `hpp-x402 serve` does it by default).
-2. On the service's **first settled payment**, the facilitator publishes the settlement and the
-   directory indexes the service — its URL, price, scheme, network, and description.
-3. It's now findable. Indexing follows the on-chain settlement, so a brand-new service appears shortly
-   after its first sale, not instantly. Pass `--private` (or omit the metadata) to stay unlisted.
+Two paths, and you don't have to choose in advance:
 
-Because listing is driven by real settlements, the directory is a **trust signal**: entries are
-services that have actually been paid, not self-submitted claims.
+1. **Auto-indexed.** On a service's **first settled payment**, the facilitator publishes the
+   settlement and the directory indexes the service — its URL, price, scheme, network, and
+   description (advertised via the `@x402` Bazaar extension; `hpp-x402 serve` does this by default).
+   Nothing to sign up for. Pass `--private`, or omit the metadata, to stay unlisted.
+2. **Seller-registered.** The seller signs in at
+   [My services](https://x402-explorer.hpp.io/manage) and
+   [registers the service](./explorer/sell.mdx), proving ownership of the payout address with a
+   signature. That listing carries a **Verified** badge and can be edited, delisted, and given an
+   on-chain identity.
+
+Because listing is anchored in real settlements and signed ownership, the directory is a **trust
+signal**: entries are services that have actually been paid for, or whose payout wallet has proven
+it controls them — not self-submitted claims.
 
 ## Browse it
 
-**From an agent** — the [bridge](./agents.mdx) exposes `hpp_discover`, so the agent searches the
-directory itself.
+**As a human** — the [Explorer catalog](./explorer/browse.mdx) searches by intent ("check a wallet
+for sanctions") across both HPP networks.
+
+**From an agent** — the Explorer is an MCP server; see
+[Connect an agent](./explorer/agents.mdx). The [bridge](./agents.mdx) also exposes `hpp_discover`,
+so an agent can search the directory and pay in the same session.
 
 **From the CLI:**
 
@@ -53,7 +66,7 @@ The directory is a read-only REST service — useful for building your own explo
 | `GET /discovery/resources/:id` | one service's full detail (metadata, schema, trust signals) |
 
 ```bash
-curl "https://x402-discovery.hpp.io/discovery/resources?type=http&limit=5"
+curl "https://x402-explorer.hpp.io/discovery/resources?type=http&limit=5"
 ```
 
 Filters: `type` (`http` / `mcp` / `a2a`), `network` (CAIP-2, e.g. `eip155:190415`), and `limit` /
@@ -61,6 +74,7 @@ Filters: `type` (`http` / `mcp` / `a2a`), `network` (CAIP-2, e.g. `eip155:190415
 
 ## Related
 
+- **[Find a service](./explorer/browse.mdx)** — a visual walkthrough of the Explorer.
+- **[List your service](./explorer/sell.mdx)** — get your own service into the catalog.
 - **[Pay from an AI agent](./agents.mdx)** — give an agent access to the directory.
-- **[Quickstart: Sellers](./quickstart-sellers.mdx)** — get your service listed.
 - **[How it works](./how-it-works.md)** — the `402` flow and payment schemes.

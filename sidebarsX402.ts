@@ -15,6 +15,12 @@ const sidebars: SidebarsConfig = {
     },
     'how-it-works',
     'directory',
+    {
+      type: 'category',
+      label: 'Explorer',
+      collapsed: false,
+      items: ['explorer/browse', 'explorer/sell', 'explorer/agents'],
+    },
     'networks-and-token',
     'facilitator',
     'sdk',
