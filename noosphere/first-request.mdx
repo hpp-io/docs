@@ -1,115 +1,336 @@
 ---
-title: "Tutorial: your first compute request"
-sidebar_label: "Tutorial: first on-chain request"
-description: End to end on HPP Sepolia — deploy a consumer contract, send a compute request, watch your agent deliver the result on-chain, and read it back.
+title: "Tutorial: hello-world, end to end"
+sidebar_label: "Tutorial: hello-world"
+description: The complete beginner walkthrough — install the agent with Docker, sell the hello-world container per-call with x402, and serve an on-chain compute request. Every command, output, and screenshot from a real run.
 ---
 
-# Tutorial: your first compute request
+# Tutorial: hello-world, end to end
 
-The full loop, end to end: a consumer contract asks for compute → your agent runs the
-container → the result lands back on-chain. ~15 minutes on **HPP Sepolia**.
+One container, both markets. In this tutorial you will, from scratch:
 
-**You'll need**
+1. **Run an agent in Docker** serving the `hello-world` container
+2. **Sell it per-call with x402** — and pay for it yourself as the buyer
+3. **Serve an on-chain compute request** — a contract asks, *your* agent delivers
 
-- A [running agent](./node-setup.mdx) serving `noosphere-hello-world`, with its agent wallet
-  funded (delivery gas)
-- A second wallet with a little HPP Sepolia ETH (the *consumer* — can be the same wallet while
-  testing)
-- [Foundry](https://book.getfoundry.sh/) (`forge`, `cast`) for the consumer contract
+Everything below — commands, outputs, screenshots — comes from one real run on **HPP Sepolia**.
 
-:::tip No testnet funds at all?
-The agent repo ships `scripts/e2e-test.sh`, which runs this **entire loop on a local Anvil
-chain** — it deploys the protocol contracts, starts an agent, and sends a request, no real
-network needed. (It expects `noosphere-evm` and `noosphere-sdk` checked out as sibling
-directories.)
-:::
+![Dashboard progression: fresh → first x402 sale → first on-chain delivery](/img/noosphere/tut-flow.gif)
 
-## 1. Deploy your consumer contract
+**You'll need:** Node.js ≥ 18, Docker ≥ 20.10, [Foundry](https://book.getfoundry.sh/)
+(`cast`/`forge`), and one wallet with a little HPP Sepolia ETH + USDC.e (the "buyer").
+The agent itself starts with **zero funds**.
 
-The protocol repo ships a ready-made sample,
-[`MyTransientClient`](https://github.com/hpp-io/noosphere-evm/blob/main/src/v1_0_0/sample/MyTransientClient.sol) —
-a one-shot consumer that stores the last result it receives. Deploy it pointed at the Sepolia
-**Router** (all addresses: [Registry & deployments](./registry-and-deployments.md)):
+---
+
+## Part 1 — Run the agent (Docker)
+
+### 1.1 Install
 
 ```bash
-git clone https://github.com/hpp-io/noosphere-evm.git && cd noosphere-evm
-
-forge create src/v1_0_0/sample/MyTransientClient.sol:MyTransientClient \
-  --rpc-url https://sepolia.hpp.io \
-  --private-key $CONSUMER_KEY \
-  --broadcast \
-  --constructor-args 0x480a4f7506548773040d47dd7b6372dbf71358d4
-```
-
-Note the `Deployed to:` address — that's your `CLIENT_ADDRESS`.
-
-## 2. Send the request
-
-The agent repo has a helper that does the consumer-side ceremony for you — payment wallet,
-subscription, request:
-
-```bash
+git clone https://github.com/hpp-io/noosphere-agent-js.git
 cd noosphere-agent-js
-
-PRIVATE_KEY=$CONSUMER_KEY \
-CLIENT_ADDRESS=0xYourClient \
-WALLET_FACTORY_ADDRESS=0xe1ccab0b5deeca0b240f9bbaeccdbcb252934fa7 \
-CONTAINER_ID=noosphere-hello-world \
-npm run send:request
+npm install
 ```
 
-What it does, in order (you'll see this transcript):
+### 1.2 Create the agent's key
+
+The agent signs with a keystore. Generate a fresh key and import it:
+
+```bash
+cast wallet new              # note the Address + Private key
+cp .env.example .env         # set KEYSTORE_PASSWORD=<a password>
+
+PRIVATE_KEY=0x<generated key> KEYSTORE_PASSWORD=<your password> npm run init
+```
 
 ```text
-📋 Sending one-time request
+🔐 Initializing Noosphere Agent Keystore
 
-🔍 Checking for existing payment wallet...
-📝 Creating new payment wallet...
-✓ Created wallet: 0xYourPaymentWallet…
+Creating keystore at ./.noosphere/keystore.json...
+Encrypting EOA keystore...
+✓ Keystore initialized: ./.noosphere/keystore.json
+  EOA Address: 0x6D4c904369C1ED5B42371D36714532E00Da30F26
 
-📝 Creating subscription...
-✓ Subscription created (tx: 0x…)
+✅ Keystore initialized successfully!
 
-📤 Sending compute request...
-✓ Request sent (tx: 0x…)
-✅ One-time request completed!
+IMPORTANT:
+  1. Backup the keystore file: ./.noosphere/keystore.json
+  2. Store the password securely
+  3. Never commit the keystore file to git
+  4. Fund the wallet address with ETH for gas fees
 ```
 
-Behind the scenes: it creates (or reuses) your **compute wallet** via the WalletFactory,
-creates a subscription for `noosphere-hello-world` (native-token fee, tiny default
-`feeAmount`), and calls `requestCompute` with a small JSON input. Send a little Sepolia ETH to
-the printed payment wallet if the delivery fee needs covering.
+That printed address is **your agent**. It needs ETH only for Part 3 (on-chain deliveries) —
+Part 2 works with an empty wallet.
 
-## 3. Watch your agent pick it up
+### 1.3 Configure
 
-On the agent side (logs or the [dashboard](./dashboard.mdx)):
+Docker mounts `docker/config.docker.json` as the agent's config. Start from the example and
+make it look like this (a minimal Sepolia config — `hello-world` container + x402 selling on):
 
-- **Events** counter: *Total* +1, then *Completed* +1 once delivered
-- **Computing History**: a new row with the delivery transaction, fee earned, gas spent
-- Agent logs: the container run and the delivery tx hash
+```jsonc
+{
+  "chain": {
+    "enabled": true,
+    "rpcUrl": "https://sepolia.hpp.io",
+    "wsRpcUrl": "wss://sepolia.hpp.io",
+    "routerAddress": "0x480a4f7506548773040d47dd7b6372dbf71358d4",
+    "coordinatorAddress": "0xeda4a7957e8f5de6cd6bd747c3ccd5e1c295302c",
+    "wallet": {
+      "keystorePath": "./.noosphere/keystore.json",
+      "paymentAddress": "0x6D4c904369C1ED5B42371D36714532E00Da30F26"   // your agent address
+    }
+  },
+  "containers": [
+    {
+      "id": "0x2fe108c896fbbc20874ff97c7f230c6d06da1e60e731cbedae60125468f8333a",
+      "name": "noosphere-hello-world",
+      "image": "ghcr.io/hpp-io/example-hello-world-noosphere:latest",
+      "port": "8081"                    // the port /computation listens on INSIDE the image
+    }
+  ],
+  "x402Seller": {
+    "enabled": true,
+    "payTo": "0x6D4c904369C1ED5B42371D36714532E00Da30F26",              // your agent address
+    "facilitators": { "eip155:181228": "https://facilitator-sepolia.hpp.io" },
+    "defaultAsset": {
+      "eip155:181228": {
+        "address": "0x401eCb1D350407f13ba348573E5630B83638E30D",
+        "extra": { "name": "Bridged USDC", "version": "2" }
+      }
+    },
+    "services": [
+      {
+        "name": "hello-world",
+        "containerId": "0x2fe108c896fbbc20874ff97c7f230c6d06da1e60e731cbedae60125468f8333a",
+        "settlement": "direct",
+        "network": "eip155:181228",
+        "schemes": ["exact"],
+        "x402Price": "1000",            // $0.001 per call
+        "inputSchema": { "type": "object" },
+        "receipt": true,
+        "description": "Hello-world compute, my first paid service"
+      }
+    ]
+  }
+}
+```
 
-This usually lands within one or two blocks of the request.
+The container `id` comes from the [community registry](./registry-and-deployments.md) — it's
+the on-chain identity subscriptions reference. Router/Coordinator addresses:
+[Registry & deployments](./registry-and-deployments.md).
 
-## 4. Read the result on-chain
-
-`MyTransientClient` stores the last delivery — read it back with `cast`:
+### 1.4 Build and start
 
 ```bash
-cast call 0xYourClient "lastReceivedOutput()(bytes)" --rpc-url https://sepolia.hpp.io
-# 0x7b22... (hex-encoded container output)
-
-cast to-ascii $(cast call 0xYourClient "lastReceivedOutput()(bytes)" --rpc-url https://sepolia.hpp.io)
-# hello world output from the container
+npm run docker:build
+npm run docker:up          # agent :4000, dashboard :3100
+npm run docker:logs
 ```
 
-You've now exercised the whole protocol: **subscription → request → commitment → container
-execution → on-chain delivery → callback → billing.**
+Healthy startup (excerpt from the real run):
 
-## Where to go next
+```text
+✓ Loaded keystore: ./.noosphere/keystore.json
+  EOA: 0x6D4c904369C1ED5B42371D36714532E00Da30F26
+[x402-seller] initialized — 1 service(s) (direct=1, onchain=0)
+[x402-seller] mounted direct routes — POST /paid/compute/hello-world (receipt)
+[x402-seller] mcp mounted — /mcp (+/mcp/sse), tools: compute_hello-world
+Express server running on http://localhost:4000
+WebSocket ready
+📊 Total subscriptions in registry: 189
+✓ Sync completed - processed all 189 subscriptions
+```
 
-| Next step | Page |
-| --- | --- |
-| Understand each step you just ran | [How it works](./how-it-works.md) |
-| Build a real consumer (redundancy, verifiers, scheduled runs) | [Request compute on-chain](./request-onchain-compute.mdx) |
-| Serve your own model instead of hello-world | [Container contract](./container-contract.md) |
-| **The x402 version of this tutorial** — free HF model to first paid call, no funds | [Sell from an agent](/x402/sell-from-an-agent) |
+The agent pulled the `hello-world` image, started it as a sibling container (via the Docker
+socket), mounted your paid route + MCP tool, and synced the chain. Open the dashboard at
+**http://localhost:3100**:
+
+![Fresh dashboard — healthy, connected, nothing served yet](/img/noosphere/tut-01-dashboard-fresh.png)
+
+The **x402 Seller** tab shows your service, waiting for its first sale:
+
+![Seller tab — one service, zero calls](/img/noosphere/tut-02-seller-zero.png)
+
+---
+
+## Part 2 — Sell it (and buy it) with x402
+
+Your service is already live at `POST /paid/compute/hello-world`. Now be your own first
+customer. The x402 buyer setup (wallet + USDC.e + paid fetch) is covered in the
+[x402 buyer quickstart](/x402/quickstart-buyers); the ready-made example
+[`hpp-x402-agent-sample/examples/01-hello-world`](https://github.com/hpp-io/hpp-x402-agent-sample)
+is exactly this call:
+
+```bash
+RESOURCE_URL=http://localhost:4000/paid/compute/hello-world \
+HPP_NETWORK=eip155:181228 \
+npx tsx src/index.ts
+```
+
+The buyer's first request gets `402 + price`, signs a USDC.e authorization (no gas), retries —
+and gets the result **plus a receipt with the on-chain settlement**:
+
+```jsonc
+{
+  "jobId": "…",
+  "service": "hello-world",
+  "output": "hello world, your input was: hello from 01",
+  "receipt": {
+    "sellerServiceId": "hello-world",
+    "payer": "0x26907E8d732F4abe3E120ef1743352d12738c116",
+    "settlement": {
+      "network": "eip155:181228",
+      "scheme": "exact",
+      "transaction": "0x30402029661813c03b94f2a9c3a5dda53d56be0746be8ad8ec3bb34f5ea6e73d",
+      "amount": "1000",
+      "asset": "0x401eCb1D350407f13ba348573E5630B83638E30D"
+    }
+  }
+}
+```
+
+That `transaction` is a real on-chain transfer: **$0.001 of USDC.e moved from the buyer to
+your agent's wallet**, gas sponsored by the facilitator. The Seller tab now shows it:
+
+![Seller tab after the first paid call — earnings, the job, the settle tx](/img/noosphere/tut-03-seller-paid.png)
+
+Buyers can also reach the same service as an **MCP tool** (`compute_hello-world` at `/mcp`)
+and — once you're on a public URL — discover it on the
+[x402 Explorer](https://x402-explorer.hpp.io). Full selling guide:
+[Sell from an agent](/x402/sell-from-an-agent).
+
+---
+
+## Part 3 — Serve an on-chain request
+
+Now the other market: a **smart contract** asks for the same compute, and your agent delivers
+the result on-chain.
+
+### 3.1 Prepare your agent for deliveries
+
+Two one-time steps the x402 rail didn't need:
+
+```bash
+# a) delivery gas — send a little Sepolia ETH to your AGENT address (1.2's output)
+
+# b) the agent's on-chain payment wallet (receives subscription fees):
+PRIVATE_KEY=0x<agent key> KEYSTORE_PASSWORD=<password> \
+WALLET_FACTORY_ADDRESS=0xe1ccab0b5deeca0b240f9bbaeccdbcb252934fa7 \
+npm run setup:wallet
+```
+
+```text
+✅ Agent wallet setup completed successfully!
+  ✓ Agent EOA: 0x6D4c904369C1ED5B42371D36714532E00Da30F26
+  ✓ Payment Wallet (CA): 0xd8B16479944FE9015453836C04b8010822bC7906
+```
+
+Copy the updated `config.json` over `docker/config.docker.json` and restart
+(`npm run docker:restart`) so the container picks it up.
+
+### 3.2 Deploy a consumer contract (the buyer side)
+
+The consumer is a contract extending `TransientComputeClient` — the repo ships a sample,
+`MyTransientClient`. Deploy it pointed at the Sepolia Router:
+
+```bash
+forge create src/v1_0_0/sample/MyTransientClient.sol:MyTransientClient \
+  --rpc-url https://sepolia.hpp.io --private-key $BUYER_KEY --broadcast \
+  --constructor-args 0x480a4f7506548773040d47dd7b6372dbf71358d4 $BUYER_ADDRESS
+```
+
+```text
+Deployed to: 0x2F2800CD931D2d4A6e9CFB4Fbdc17cdaB3aD26ff
+```
+
+:::caution Match the deployed protocol version
+Compile the client against the **contracts version that is live on the network** — the repo's
+newest `main` may target the next protocol version. If `createSubscription` reverts with no
+data, this is why. (The deployed interface takes no `redundancy` parameter.)
+:::
+
+### 3.3 Create a payment wallet, approve, subscribe, request
+
+Four transactions — the whole consumer-side ceremony (real hashes from this run):
+
+```bash
+RPC=https://sepolia.hpp.io
+CLIENT=0x2F2800CD931D2d4A6e9CFB4Fbdc17cdaB3aD26ff
+FACTORY=0xe1ccab0b5deeca0b240f9bbaeccdbcb252934fa7
+ROUTE=$(cast format-bytes32-string "Coordinator_v1.0.0")
+
+# 1) a compute wallet to escrow fees (skip if you have one) + fund it a little
+cast send $FACTORY "createWallet(address)" $BUYER_ADDRESS --private-key $BUYER_KEY --rpc-url $RPC
+cast send $WALLET --value 20000000000000 --private-key $BUYER_KEY --rpc-url $RPC
+
+# 2) let the consumer contract spend from it (native token, unlimited)
+cast send $WALLET "approve(address,address,uint256)" $CLIENT \
+  0x0000000000000000000000000000000000000000 $(cast max-uint) \
+  --private-key $BUYER_KEY --rpc-url $RPC
+
+# 3) subscribe: which container, what fee per delivery, which wallet pays
+cast send $CLIENT "createSubscription(string,bool,address,uint256,address,address,bytes32)" \
+  "noosphere-hello-world" false 0x0000000000000000000000000000000000000000 100 $WALLET \
+  0x0000000000000000000000000000000000000000 $ROUTE \
+  --private-key $BUYER_KEY --rpc-url $RPC
+# → SubscriptionCreated event carries your subscription id (194 in this run)
+
+# 4) request compute with your input
+cast send $CLIENT "requestCompute(uint64,bytes)" 194 \
+  $(cast from-utf8 '{"input":"hello from the tutorial"}') \
+  --private-key $BUYER_KEY --rpc-url $RPC
+```
+
+### 3.4 Watch your agent deliver
+
+Within seconds, the agent logs (real excerpt):
+
+```text
+RequestStarted: 0x…   SubscriptionId: 194
+📦 Container: noosphere-hello-world
+📥 Inputs received: {"input":"hello from the tutorial"}
+✓ Execution completed in 12ms
+✓ Result delivered successfully (block 295109)
+```
+
+The dashboard's **Events** card ticks *Completed: 1* — your node just earned its first
+on-chain delivery fee:
+
+![Dashboard after the delivery — Completed 1, payment wallet live](/img/noosphere/tut-04-dashboard-delivered.png)
+
+**Computing History** shows the job with its fee and gas:
+
+![Computing history — the delivered job](/img/noosphere/tut-05-history.png)
+
+### 3.5 Verify on-chain
+
+The consumer contract received the callback — read the stored result hash straight from the
+chain:
+
+```bash
+cast call $CLIENT "lastReceivedOutputHash()(bytes32)" --rpc-url $RPC
+# 0x663dedda91f9788a34661eec74b68cfbe1dd20b20826c0bca4008c3de53d0444
+```
+
+> On a live network, **any agent serving that container may win the delivery** — during this
+> run, an unrelated production agent beat ours to an earlier request. That's the marketplace
+> working. To guarantee *your* agent serves a request (like this tutorial's final run), use a
+> container ID only your node serves.
+
+---
+
+## What you just proved
+
+| | x402 rail (Part 2) | On-chain rail (Part 3) |
+| --- | --- | --- |
+| Buyer | An HTTP client with a wallet | A smart contract |
+| Request path | `POST /paid/compute/hello-world` | subscription → `requestCompute` |
+| Your agent's job | verify payment → run container → respond | watch chain → run container → deliver tx |
+| You got paid | USDC.e per call, instantly, no gas | Subscription fee per delivery |
+| Proof | settle tx + signed receipt | delivery tx + on-chain callback |
+
+**Next steps:** [serve your own model](./container-contract.md) ·
+[build a real consumer](./request-onchain-compute.mdx) ·
+[get listed on the explorer](/x402/sell-from-an-agent) ·
+[read the dashboard like an operator](./dashboard.mdx)

@@ -16,7 +16,28 @@ Every delivery is a transaction your **agent address** signs, so it needs ETH on
 network (HPP Sepolia for testnet). The address was printed by `npm run init` and is shown on
 the [dashboard's](./dashboard.mdx) Agent Wallet card, along with its live balance.
 
-## 2. How you earn
+## 2. Create the agent's payment wallet (one-time)
+
+Deliveries are only accepted from agents whose **payment wallet** was created by the
+protocol's WalletFactory — without it, delivery transactions revert (`InvalidWallet`):
+
+```bash
+PRIVATE_KEY=0x<agent key> KEYSTORE_PASSWORD=<password> \
+WALLET_FACTORY_ADDRESS=<factory for your network> \
+npm run setup:wallet
+```
+
+```text
+✅ Agent wallet setup completed successfully!
+  ✓ Agent EOA: 0xYourAgent…
+  ✓ Payment Wallet (CA): 0xYourPaymentWallet…
+```
+
+Factory addresses per network: [Registry & deployments](./registry-and-deployments.md).
+(Running in Docker? Copy the updated `config.json` over `docker/config.docker.json` and
+restart.)
+
+## 3. How you earn
 
 ```
 subscription (consumer)  →  request  →  your agent runs the container
@@ -30,7 +51,7 @@ subscription (consumer)  →  request  →  your agent runs the container
 **See it happen end to end**: the [first-request tutorial](./first-request.mdx) sends a real
 subscription + request to your own node on Sepolia and reads the result back on-chain.
 
-## 3. Levels of participation
+## 4. Levels of participation
 
 | Level | What you run | What it earns |
 | --- | --- | --- |

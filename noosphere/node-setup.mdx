@@ -70,25 +70,30 @@ cp .env.example .env        # then edit: KEYSTORE_PASSWORD=<your password>
 
 ## 3. Create your wallet
 
+`init` imports a private key into an encrypted keystore — generate a fresh one first
+(e.g. with Foundry's `cast`):
+
 ```bash
-npm run init
+cast wallet new              # prints Address + Private key
+
+PRIVATE_KEY=0x<generated key> KEYSTORE_PASSWORD=<your password> npm run init
 ```
 
 ```text
 🔐 Initializing Noosphere Agent Keystore
 
-✓ Wallet address: 0xYourAgentAddress...
-Creating keystore at .noosphere/...
+Creating keystore at ./.noosphere/keystore.json...
+Encrypting EOA keystore...
+✓ Keystore initialized: ./.noosphere/keystore.json
+  EOA Address: 0xYourAgentAddress…
 
 ✅ Keystore initialized successfully!
 
 IMPORTANT:
-  1. Backup the keystore file
+  1. Backup the keystore file: ./.noosphere/keystore.json
   2. Store the password securely
   3. Never commit the keystore file to git
   4. Fund the wallet address with ETH for gas fees
-
-You can now run the agent with: npm run agent
 ```
 
 Two addresses matter:
