@@ -1,0 +1,147 @@
+---
+title: List your service
+sidebar_label: List your service
+description: Step-by-step guide to getting your paid x402 service into the HPP Explorer catalog — claim an auto-discovered listing, register endpoints by signing with your payout wallet, and mint an on-chain identity.
+---
+
+# List your service
+
+Your service earns from x402 payments whether or not it's listed — the catalog is a **discovery**
+layer, not a gate. Listing it makes it findable by humans in the catalog and by
+[AI agents through the Explorer's MCP server](./agents.mdx).
+
+There are two ways in:
+
+| | How it happens | What you get |
+| --- | --- | --- |
+| **Auto-indexed** | Your service's **first settled payment** puts it in the catalog by itself — nothing to do | A listing marked *Auto-indexed*, ownership not proven |
+| **Registered** | You sign in and register it (below) | A *Verified* listing you control, with name, tags, links, and an optional on-chain identity |
+
+Either way, **the Explorer never holds your funds**. Buyers pay your `payTo` address directly on
+chain; listing only publishes metadata.
+
+:::note[About these screenshots]
+The seller screens below were captured against a local test instance with a demo wallet, so the
+service names and addresses are examples. Your own page looks the same with your data.
+:::
+
+## Step 1 — Sign in with your payout wallet
+
+Open **[My services](https://x402-explorer.hpp.io/manage)** (the *Manage* section of the left nav)
+and click **Sign in**.
+
+![The My services sign-in screen](/img/x402/explorer/explorer-signin.png)
+
+Sign-in is powered by **Privy**: use email or a social login and Privy creates an embedded wallet,
+or connect a wallet you already have.
+
+:::caution[Sign in with the wallet that gets paid]
+Your wallet address *is* your identity here — the Explorer matches listings by their `payTo`
+address. Sign in with the wallet your endpoint's `402` pays to, or you'll see an empty page.
+:::
+
+## Step 2 — Claim what's already yours
+
+If your service has been paid before, it's probably already in the catalog. The Explorer tells you
+so at the top of **My services**:
+
+![Unclaimed listings banner](/img/x402/explorer/explorer-claim.png)
+
+Click **Claim**, sign the message your wallet pops up, and the listing becomes yours: it gets the
+**Verified** badge and appears in your table below, where you can manage it.
+
+Signing proves you control the payout address. It's a plain **EIP-712 signature — no transaction,
+no gas, nothing spent.**
+
+## Step 3 — Register a service
+
+To list something new (or something that has never been paid for yet), click
+**+ Register a service**.
+
+![The registration form](/img/x402/explorer/explorer-register.png)
+
+Fill in the service once, then add its endpoints:
+
+**About the service**
+
+| Field | Notes |
+| --- | --- |
+| **Service name** | What buyers see in the catalog, e.g. `Weather Oracle` |
+| **Icon URL** | Optional; a square image looks best |
+| **Tags** | Comma-separated keywords — they feed search |
+| **Homepage / Docs / Source repo** | Optional links shown on your service page |
+
+**Endpoints (resource URLs)**
+
+One row per callable thing. A service that speaks both HTTP and MCP has two endpoints — click
+**+ Add endpoint** for each.
+
+| Field | Notes |
+| --- | --- |
+| **Type** | `http`, `mcp`, or `a2a` — publish HTTP as the canonical one, and add an MCP twin if agents are your buyers |
+| **Method** | HTTP verb (`http` only) |
+| **Resource URL** | The exact paid URL, e.g. `https://weather.example/paid/forecast` |
+| **Description** | One line describing what the endpoint does — this is what semantic search matches on |
+| **Payment options** | Network, token, scheme (`exact` / `upto`), and price. Use **+ Add option** if you accept more than one network or scheme |
+
+Then click **🔑 Sign & submit** and approve the signature.
+
+:::tip[Declare the input contract on every transport]
+A buyer can't inspect what they haven't paid for, so whatever your `402` advertises is all they get.
+If you publish an MCP twin, declare its arguments there too — an MCP tool whose `inputSchema` is
+just `args: object` tells a buyer nothing, and they end up guessing with real money. Don't assume the
+HTTP example carries over: the same service often takes `{"text": …}` over HTTP and
+`{"args": {"text": …}}` over MCP.
+:::
+
+:::tip[Your `402` is the source of truth]
+When you submit, the Explorer calls your endpoint once *without* paying and reads the `402` it
+returns. Price, scheme, network, and payment metadata are taken from that live response — so a
+listing can't advertise terms your service doesn't actually charge.
+
+Two consequences worth knowing:
+
+- **Have your endpoint live and returning a `402` before registering.** If the probe fails, the
+  listing is still created from what you typed, and the real terms fill in on the first settlement.
+- **If your endpoint's `402` pays a different address than the wallet you signed with, registration
+  is rejected** (`the endpoint's 402 pays a different address`). This is the anti-squatting guard —
+  sign with the wallet in your endpoint's `payTo`.
+:::
+
+New registrations enter **pending review**; an operator approves them before they show up in the
+public catalog. You'll see them in your own table the whole time.
+
+## Step 4 — Manage your listings
+
+**My services** is your dashboard from then on:
+
+![The My services dashboard](/img/x402/explorer/explorer-my-services.png)
+
+| Column | What it tells you |
+| --- | --- |
+| **Service** | Your service and its network — the ↗ opens its public page |
+| **Transports** | Every endpoint of the service, its scheme, and its state (`active`, `pending`, `withdrawn`) |
+| **Settlements** | On-chain payments counted across the whole service |
+| **Identity** | Its ERC-8004 identity — an agent number, or a button to mint one |
+| **Manage** | Delist a single transport (**Remove http** / **Remove mcp**) |
+
+**Removing** a transport delists it from discovery — it stops appearing in the catalog. Your
+endpoint keeps working and your funds are untouched; you can list it again later with the same name
+and price, and it keeps its identity.
+
+## Step 5 (optional) — Mint an on-chain identity
+
+Click **⬡ Register service identity** to mint an [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004)
+identity for the service. **Gas is sponsored — it costs you nothing.**
+
+One identity covers *every* transport of the service, so your HTTP route and your MCP tool are one
+agent rather than two. Once minted, the badge shows the agent number (e.g. `⬡ #1487`), and your
+service can be filtered by **On-chain identity** in the catalog — a stronger trust signal for buyers
+and agents.
+
+## Related
+
+- **[Quickstart: Sellers](../quickstart-sellers.mdx)** — the code side: charge for an endpoint with
+  the `@x402` SDK.
+- **[Find a service](./browse.mdx)** — what buyers see when they land on your listing.
+- **[Connect an agent](./agents.mdx)** — how agents discover and call what you listed.

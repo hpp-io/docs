@@ -2,6 +2,7 @@
 title: Pay from an AI agent
 sidebar_label: Pay from an AI agent
 description: A complete guide to giving an AI agent — Claude, Cursor, or any MCP host — a capped wallet so it can discover and pay for x402 services on HPP autonomously, with no code.
+slug: agents
 ---
 
 import Tabs from '@theme/Tabs';
@@ -19,7 +20,7 @@ On HPP, the tool that gives your agent this ability is **`hpp-x402`** — a comm
 payment tools to your agent host so the agent can find and pay for services on its own — always
 within your cap, always in USDC.e, always non-custodial.
 
-:::tip Which path is this?
+:::tip[Which path is this?]
 Building a client or server **in code**? Use the [`@x402` SDK](./quickstart-buyers.mdx) directly.
 Want an **existing AI agent** (Claude, Cursor, …) to pay autonomously — or to pay from your
 terminal? That's this guide. Both settle through the same [HPP facilitators](./facilitator.mdx).
@@ -135,7 +136,7 @@ storage : keychain (keychain://hpp-x402/delegate-default)
 
 You're now in **light mode** — the amount you fund is your spend cap, so start small.
 
-:::note What `setup` does
+:::note[What `setup` does]
 Generates a delegate key, stores it in the OS keychain as `keychain://hpp-x402/<account>` (never
 plaintext on disk), and writes the MCP server config for your host. Re-run any time; it's idempotent.
 Prefer to target the host later? Run `hpp-x402 install <host>` on its own.
@@ -171,7 +172,7 @@ Behind the scenes the bridge gives the agent these tools:
 | Tool | What the agent does with it |
 | --- | --- |
 | `wallet_address` | report your wallet address (so you can fund it) |
-| `hpp_discover` | browse/search the curated [service directory](./directory.mdx) |
+| `hpp_discover` | browse/search the curated [service directory](./service-directory.mdx) |
 | `hpp_call` | pay + invoke a discovered service, within your cap |
 | `x402_http_call` | pay any x402 URL directly (e.g. a link you were handed) |
 
@@ -266,7 +267,7 @@ hpp-x402 serve --pay-to 0xYou --price 10000 --scheme upto          # usage-based
 
 It returns `402` until paid, then runs your handler (echo by default, or forward the body to
 `--handler`). `--price` is in atomic USDC.e (6 decimals → `10000` = 0.01). By default it advertises
-itself, so after the **first paid call** it's indexed into the [directory](./directory.mdx) and other
+itself, so after the **first paid call** it's indexed into the [directory](./service-directory.mdx) and other
 agents can discover it. Behind a tunnel? Pass `--url https://your-public-host` so the public address
 is what gets listed.
 

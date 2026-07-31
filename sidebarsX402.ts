@@ -6,7 +6,7 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 const sidebars: SidebarsConfig = {
   x402Sidebar: [
     {type: 'doc', id: 'intro', label: 'Overview'},
-    'agents',
+    'pay-from-an-ai-agent',
     {
       type: 'category',
       label: 'Build with the SDK',
@@ -14,7 +14,13 @@ const sidebars: SidebarsConfig = {
       items: ['quickstart-sellers', 'quickstart-buyers'],
     },
     'how-it-works',
-    'directory',
+    'service-directory',
+    {
+      type: 'category',
+      label: 'Explorer',
+      collapsed: false,
+      items: ['explorer/browse', 'explorer/sell', 'explorer/agents'],
+    },
     'networks-and-token',
     'facilitator',
     'sdk',

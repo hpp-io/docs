@@ -1,0 +1,81 @@
+---
+title: Service directory
+sidebar_label: Service directory
+description: The HPP x402 directory — a facilitator-indexed catalog of paid x402 services that agents and buyers can find and pay, published as the HPP x402 Explorer.
+slug: directory
+---
+
+# Service directory
+
+The **HPP x402 directory** is the catalog of paid x402 services on HPP. It's how an agent finds
+something to pay for without being handed a URL — the discovery layer that makes autonomous,
+[agentic payments](./pay-from-an-ai-agent.mdx) practical.
+
+You browse it at **[x402-explorer.hpp.io](https://x402-explorer.hpp.io)**, the HPP x402 Explorer.
+
+<div className="margin-bottom--md">
+  <a href="/x402/explorer/browse" className="button button--primary margin-right--sm">Find a service →</a>
+  <a href="/x402/explorer/sell" className="button button--secondary">List your service →</a>
+</div>
+
+## How a service gets listed
+
+Two paths, and you don't have to choose in advance:
+
+1. **Auto-indexed.** On a service's **first settled payment**, the facilitator publishes the
+   settlement and the directory indexes the service — its URL, price, scheme, network, and
+   description (advertised via the `@x402` Bazaar extension; `hpp-x402 serve` does this by default).
+   Nothing to sign up for. Pass `--private`, or omit the metadata, to stay unlisted.
+2. **Seller-registered.** The seller signs in at
+   [My services](https://x402-explorer.hpp.io/manage) and
+   [registers the service](./explorer/sell.mdx), proving ownership of the payout address with a
+   signature. That listing carries a **Verified** badge and can be edited, delisted, and given an
+   on-chain identity.
+
+Because listing is anchored in real settlements and signed ownership, the directory is a **trust
+signal**: entries are services that have actually been paid for, or whose payout wallet has proven
+it controls them — not self-submitted claims.
+
+## Browse it
+
+**As a human** — the [Explorer catalog](./explorer/browse.mdx) searches by intent ("check a wallet
+for sanctions") across both HPP networks.
+
+**From an agent** — the Explorer is an MCP server; see
+[Connect an agent](./explorer/agents.mdx). The [bridge](./pay-from-an-ai-agent.mdx) also exposes `hpp_discover`,
+so an agent can search the directory and pay in the same session.
+
+**From the CLI:**
+
+```bash
+hpp-x402 discover --limit 10                 # everything, newest first
+hpp-x402 discover "compute" -t http          # search + filter by type
+hpp-x402 discover --scheme upto              # only usage-based services
+```
+
+Each result shows `type · scheme · price · network · URL · id`. Pay one with
+`hpp-x402 call <url-or-id>`.
+
+## REST API
+
+The directory is a read-only REST service — useful for building your own explorer or agent tooling.
+
+| Endpoint | Returns |
+| --- | --- |
+| `GET /discovery/resources?type&network&limit&offset` | a page of listed services |
+| `GET /discovery/search?q&type&network&limit` | full-text + semantic search |
+| `GET /discovery/resources/:id` | one service's full detail (metadata, schema, trust signals) |
+
+```bash
+curl "https://x402-explorer.hpp.io/discovery/resources?type=http&limit=5"
+```
+
+Filters: `type` (`http` / `mcp` / `a2a`), `network` (CAIP-2, e.g. `eip155:190415`), and `limit` /
+`offset` for paging.
+
+## Related
+
+- **[Find a service](./explorer/browse.mdx)** — a visual walkthrough of the Explorer.
+- **[List your service](./explorer/sell.mdx)** — get your own service into the catalog.
+- **[Pay from an AI agent](./pay-from-an-ai-agent.mdx)** — give an agent access to the directory.
+- **[How it works](./how-it-works.md)** — the `402` flow and payment schemes.
