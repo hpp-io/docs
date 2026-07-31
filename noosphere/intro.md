@@ -59,5 +59,5 @@ Noosphere is live on **HPP Mainnet** and **HPP Sepolia** — contract addresses 
 :::info Selling compute without the chain?
 Noosphere agents can *also* sell the same containers per-call over plain HTTP, paid with
 stablecoins via the **x402** protocol — no subscriptions, no on-chain requests. That is a
-separate product with its own docs: **[x402 on HPP](/x402)**.
+separate product with its own docs: **[Sell from an agent](/x402/sell-from-an-agent)**.
 :::

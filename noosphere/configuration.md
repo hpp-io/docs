@@ -21,7 +21,7 @@ Secrets are never written into the file — use `${ENV_VAR}` substitution and pu
 | `scheduler` / `retry` | Scheduled-subscription interval commitment and retry policy |
 | `payload` | Large input/output storage (below) |
 | `vrf` | Opt-in NoosphereVRF epoch serving (pair with the registry's `noosphere-vrng` container) |
-| `x402Seller` | The separate per-call selling rail — configured here but documented with its own product: [x402 on HPP](/x402) |
+| `x402Seller` | The separate per-call selling rail — configured here but documented with its own product: [Sell from an agent](/x402/sell-from-an-agent) |
 
 ## `chain`
 

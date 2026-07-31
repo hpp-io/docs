@@ -57,6 +57,7 @@ Pick your side of the payment.
 | How | Start here |
 | --- | --- |
 | Put a price on an HTTP endpoint (SDK) | **[Quickstart: Sellers](./quickstart-sellers.mdx)** |
+| Sell any Docker container, no server code (Noosphere agent) | **[Sell from an agent](./sell-from-an-agent.mdx)** |
 | One command, no server code | `hpp-x402 serve` — see the [agent guide](pay-from-an-ai-agent.mdx#sell-from-the-cli) |
 
 ### 📖 Learn the concepts
