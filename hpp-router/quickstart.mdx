@@ -14,8 +14,8 @@ Send the same chat completion request using the stack you prefer. All examples t
 ## Prerequisites
 
 - An **HPP Router API key** from the [HPP Router portal](https://router.hpp.io) or [HPP Hub](https://hub.hpp.io) (required for Kong authentication)
-- x402 wallet payments for on-chain USDC.e transactions (wallet payment rail: `X-Payment-Rail: wallet`)
 - Base URL: `https://router.hpp.io`
+- Optional: for on-chain settlement, use the wallet rail (`X-Payment-Rail: wallet` or `@hpprouter/sdk` `paymentRail: 'wallet'`) — see [Authentication](./authentication#x402-wallet)
 
 Store your key in an environment variable:
 

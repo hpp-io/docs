@@ -108,6 +108,123 @@ console.log(meta.resolvedModel);
 
 See [Streaming](../guides/streaming) for the streaming-fallback behavior of `hpprouter/auto`.
 
+## Wallet (x402) payment rail
+
+HPP Router supports two payment rails for chat:
+
+| Rail | How to enable | Billing |
+| --- | --- | --- |
+| `quota` (default) | Omit wallet options | Prepaid API-key credit |
+| `wallet` | `paymentRail: 'wallet'` + `paymentSigner` | On-chain x402 (`upto` / Permit2) |
+
+When `paymentRail` is `wallet` and the gateway returns HTTP **402**, the SDK calls your `paymentSigner` with the parsed challenge body, then **retries once** with the returned headers (typically `PAYMENT-SIGNATURE`; `X-PAYMENT` is also accepted).
+
+Do **not** rely on setting `X-Payment-Rail` only through `defaultHeaders` — that bypasses the SDK's 402 loop and surfaces `HppRouterPaymentRequiredError` immediately.
+
+### Non-streaming
+
+Signing uses the x402 **upto** scheme (Permit2), not a plain EIP-3009 `transferWithAuthorization`. Implement `paymentSigner` with `@x402/core` + `@x402/evm` (for example `UptoEvmScheme`) and your wallet (server key, Privy, MetaMask, …). Asset, network, amount, and `payTo` come from `accepts[0]` in the 402 body — do not hardcode the token.
+
+```bash
+npm install @hpprouter/sdk @x402/core @x402/evm viem
+```
+
+<CodePanel>
+<Tabs groupId="typescript-sdk-wallet" queryString>
+<TabItem value="typescript" label="TypeScript" default>
+
+```ts showLineNumbers
+import { HppRouter } from '@hpprouter/sdk';
+import type { X402PaymentRequired } from '@hpprouter/sdk';
+
+// Replace signPayment with your UptoEvmScheme / wallet wiring.
+async function myPaymentSigner(
+  paymentRequired: X402PaymentRequired,
+): Promise<Record<string, string>> {
+  const encoded = await signPayment(paymentRequired);
+  return { 'PAYMENT-SIGNATURE': encoded };
+}
+
+const client = new HppRouter({
+  apiKey: process.env.HPPROUTER_API_KEY!,
+  baseURL: 'https://router.hpp.io',
+  paymentRail: 'wallet',
+  paymentSigner: myPaymentSigner,
+});
+
+const result = await client.chat.send({
+  model: 'openai/gpt-5',
+  messages: [{ role: 'user', content: 'Hello' }],
+});
+
+console.log(result.data.choices);
+```
+
+</TabItem>
+</Tabs>
+</CodePanel>
+
+You can also override the rail per request:
+
+```ts showLineNumbers
+await client.chat.send(
+  { model: 'openai/gpt-5', messages: [{ role: 'user', content: 'Hello' }] },
+  { paymentRail: 'wallet', paymentSigner: myPaymentSigner },
+);
+```
+
+### Streaming + settle metadata
+
+On the wallet rail, the gateway may emit an `x402` settle event after content ends. Use the `done` promise:
+
+```ts showLineNumbers
+const { stream, done } = await client.chat.stream({
+  model: 'openai/gpt-5',
+  messages: [{ role: 'user', content: 'Hello' }],
+});
+
+for await (const event of stream) {
+  const delta = event.choices?.[0]?.delta?.content;
+  if (delta) process.stdout.write(delta);
+}
+
+const finalMeta = await done;
+if (finalMeta.x402) {
+  console.log('Settled tx:', finalMeta.x402.tx);
+  console.log('Amount (micro units):', finalMeta.x402.amount);
+}
+```
+
+### Wallet-related errors
+
+```ts showLineNumbers
+import {
+  HppRouterPaymentRequiredError,
+  HppRouterPaymentSignerError,
+  HppRouterQuotaError,
+} from '@hpprouter/sdk';
+
+try {
+  await client.chat.send({
+    model: 'openai/gpt-5',
+    messages: [{ role: 'user', content: 'Hi' }],
+  });
+} catch (err) {
+  if (err instanceof HppRouterPaymentRequiredError) {
+    // 402 with no usable signer / challenge handling
+    console.error(err.paymentRequired?.accepts);
+  } else if (err instanceof HppRouterPaymentSignerError) {
+    // Signer threw (wallet locked, user rejected, …)
+    console.error(err.message, err.cause);
+  } else if (err instanceof HppRouterQuotaError) {
+    // 429 on the quota rail
+    console.error(err.message);
+  }
+}
+```
+
+See [Chat Completions](../guides/chat-completions#wallet) and [Errors](../guides/errors) for the HTTP-level 402 flow.
+
 ## Models
 
 `models.list()` does **not** require an API key.

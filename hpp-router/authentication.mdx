@@ -9,7 +9,7 @@ import CodePanel from '@site/src/components/CodePanel';
 
 # Authentication
 
-HPP Router uses **on-chain USDC.e payments** via x402 wallet. All requests require authentication with an API key for consumer identification.
+HPP Router authenticates consumers with an API key. Billing can use the prepaid **quota** rail (default) or the optional x402 **wallet** rail for on-chain settlement (commonly USDC.e).
 
 ## Getting an API key
 
@@ -70,15 +70,23 @@ Billed endpoints require an API key so Kong can identify the consumer. Wallet pa
 
 For wallet payments, also include the `X-Payment-Rail: wallet` header. See [Chat Completions](./guides/chat-completions) for examples.
 
+## Payment rails
+
+| Rail | Client signal | Notes |
+| --- | --- | --- |
+| Quota (default) | No `X-Payment-Rail` header | Prepaid credit on the API key |
+| Wallet (x402) | `X-Payment-Rail: wallet` | On-chain settlement for paid models |
+
 ## x402 Wallet
 
-HPP Router supports **x402 Wallet** for on-chain USDC.e payments.
+When you send a request with `X-Payment-Rail: wallet`, the gateway uses the x402 protocol for payment authorization. If no payment signature is present for a paid model, the server responds with **`402`** and a `PAYMENT-REQUIRED` header (base64-encoded JSON). The JSON body includes an x402 `accepts` entry — typically `scheme` (`upto`), `asset`, `amount` (atomic/micro units), `payTo`, and `network`.
 
-When you send a request with `X-Payment-Rail: wallet`, the gateway prompts your client to sign payment authorization using the x402 protocol. If no payment signature is present, the server responds with **`402`** and a `PAYMENT-REQUIRED` header (base64-encoded JSON) whose body includes an x402 `accepts` entry — typically `asset` (USDC.e contract), `amount` (atomic/micro units), `payTo`, network, and scheme metadata.
+Retry once with the same request body plus `PAYMENT-SIGNATURE` (the gateway also accepts `X-PAYMENT`). Prefer [`@hpprouter/sdk`](./client-sdk/typescript#wallet-x402-payment-rail) with `paymentRail` + `paymentSigner` so this loop is automatic.
 
-For detailed information about the x402 payment flow, see:
+For protocol details, see:
 - [x402 on HPP](/x402)
-- [Wallet Payments Guide](./guides/chat-completions#wallet)
+- [Chat Completions — wallet](./guides/chat-completions#wallet)
+- [Errors — 402](./guides/errors)
 
 ## Errors
 
