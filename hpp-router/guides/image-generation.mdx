@@ -86,8 +86,8 @@ Higher `quality` settings consume more **output tokens** — for example, `auto`
 
 ## Wallet payments
 
-All image generation requests require authentication with an API key. For wallet payments, include the `X-Payment-Rail: wallet` header.
+All image generation requests require authentication with an API key.
 
-- Requests are processed on-chain via x402 protocol.
-- If wallet settlement fails, the endpoint returns **`402 PAYMENT REQUIRED`** with payment instructions. See [Errors](./errors).
-- Usage is tracked automatically and settled on-chain after completion.
+- **Quota (default):** omit `X-Payment-Rail` and bill against prepaid credit when applicable.
+- **Wallet:** include `X-Payment-Rail: wallet`. For billable image models, a missing payment signature returns **`402 PAYMENT REQUIRED`** with a `PAYMENT-REQUIRED` challenge — sign and retry with `PAYMENT-SIGNATURE` (see [Errors](./errors) and [Chat Completions — wallet](./chat-completions#wallet)).
+- After a successful authorized request, usage is logged and wallet settlement proceeds on-chain. Settlement failures are distinct from the initial **402** challenge.

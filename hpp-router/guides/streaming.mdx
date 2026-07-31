@@ -19,12 +19,35 @@ Accept: text/event-stream
 
 ## REST (curl)
 
-### Wallet (with API key)
+### Quota (default)
 
-Include both the payment rail header and your API key:
+Omit `X-Payment-Rail` (or leave it unset) to use the prepaid quota rail:
 
 <CodePanel>
-<Tabs groupId="streaming-curl" queryString>
+<Tabs groupId="streaming-curl-quota" queryString>
+<TabItem value="curl" label="curl" default>
+
+```bash showLineNumbers
+curl -N -X POST https://router.hpp.io/llm/v1/chat/completions \
+  -H "apikey: $HPPROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5",
+    "messages": [{ "role": "user", "content": "Stream a short answer." }],
+    "stream": true
+  }'
+```
+
+</TabItem>
+</Tabs>
+</CodePanel>
+
+### Wallet (`X-Payment-Rail: wallet`)
+
+Include the payment rail header and your API key. For paid models, the first response is typically **`402`** with a `PAYMENT-REQUIRED` challenge — you must sign and retry with `PAYMENT-SIGNATURE` (curl has no built-in signer). Prefer [`@hpprouter/sdk`](../client-sdk/typescript#wallet-x402-payment-rail) for the automatic loop.
+
+<CodePanel>
+<Tabs groupId="streaming-curl-wallet" queryString>
 <TabItem value="curl" label="curl" default>
 
 ```bash showLineNumbers
@@ -43,7 +66,7 @@ curl -N -X POST https://router.hpp.io/llm/v1/chat/completions \
 </Tabs>
 </CodePanel>
 
-The response is a stream of `data:` lines, each carrying a partial chunk, terminated by `data: [DONE]`:
+The successful response is a stream of `data:` lines, each carrying a partial chunk, terminated by `data: [DONE]`:
 
 ```
 data: {"choices":[{"delta":{"content":"He"}}]}
@@ -55,13 +78,11 @@ data: [DONE]
 
 ## TypeScript SDK
 
-### Wallet (with API key)
-
-Include both the payment rail header and your API key:
+### Quota (default)
 
 <CodePanel>
 <Tabs groupId="streaming-typescript" queryString>
-<TabItem value="typescript" label="TypeScript SDK (default)" default>
+<TabItem value="typescript" label="TypeScript SDK (quota)" default>
 
 ```ts showLineNumbers
 import { HppRouter } from '@hpprouter/sdk';
@@ -84,35 +105,51 @@ console.log(meta.resolvedModel);
 ```
 
 </TabItem>
-<TabItem value="typescript-wallet" label="TypeScript SDK (Wallet)">
+<TabItem value="typescript-wallet" label="TypeScript SDK (wallet)">
 
 ```ts showLineNumbers
 import { HppRouter } from '@hpprouter/sdk';
+import type { X402PaymentRequired } from '@hpprouter/sdk';
 
-// Wallet rail is not a built-in SDK option — set X-Payment-Rail via defaultHeaders.
+// Implement with @x402/core + @x402/evm (UptoEvmScheme / Permit2).
+// Do not set X-Payment-Rail only via defaultHeaders — use paymentRail + paymentSigner
+// so the SDK can run the 402 → sign → retry loop.
+async function myPaymentSigner(
+  paymentRequired: X402PaymentRequired,
+): Promise<Record<string, string>> {
+  const encoded = await signPayment(paymentRequired); // your signing logic
+  return { 'PAYMENT-SIGNATURE': encoded };
+}
+
 const client = new HppRouter({
   apiKey: process.env.HPPROUTER_API_KEY!,
   baseURL: 'https://router.hpp.io',
-  defaultHeaders: {
-    'X-Payment-Rail': 'wallet',
-  },
+  paymentRail: 'wallet',
+  paymentSigner: myPaymentSigner,
 });
 
-const { stream, meta } = await client.chat.stream({
+const { stream, meta, done } = await client.chat.stream({
   model: 'openai/gpt-5',
   messages: [{ role: 'user', content: 'Stream a short answer.' }],
 });
 
 for await (const event of stream) {
-  console.log(event);
+  process.stdout.write(event.choices?.[0]?.delta?.content ?? '');
 }
 
 console.log(meta.resolvedModel);
+
+const finalMeta = await done;
+if (finalMeta.x402) {
+  console.log('Settled tx:', finalMeta.x402.tx, finalMeta.x402.amount);
+}
 ```
 
 </TabItem>
 </Tabs>
 </CodePanel>
+
+See [TypeScript SDK — Wallet (x402)](../client-sdk/typescript#wallet-x402-payment-rail) for a fuller signer setup.
 
 ## Streaming and smart routing
 
@@ -124,7 +161,7 @@ This is intentional — it prioritizes the stability of the SSE pipeline over pe
 
 ## Usage accounting
 
-Token usage is captured from the streamed response and billed the same way as non-streaming requests. Because usage logging is asynchronous, it does not add latency to the stream.
+Token usage is captured from the streamed response and billed according to the active payment rail (quota or wallet). Because usage logging is asynchronous, it does not add latency to the stream. On the wallet rail, settle metadata may also appear in the stream after content ends — the TypeScript SDK surfaces it on `done`.
 
 ## Tips
 
