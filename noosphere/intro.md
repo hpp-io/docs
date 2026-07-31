@@ -68,6 +68,6 @@ Noosphere is live on **HPP Mainnet** and **HPP Sepolia** — contract addresses 
 | **see it work end to end** (15 min, Sepolia) | **[Tutorial: first request](./first-request.mdx)** |
 | understand the protocol | **[How it works](./how-it-works.md)** |
 | call compute **from my contract** | **[Request compute on-chain](./request-onchain-compute.mdx)** |
-| **run an agent** and earn fees | **[Run an agent](./run-an-agent.mdx)** |
+| **run an agent** and earn fees | **[Set up the node](./node-setup.mdx)** → [serve the network](./serve-compute-network.mdx) |
 | sell my model **per-call** (x402, no funds needed) | **[Sell from an agent](/x402/sell-from-an-agent)** |
 | package my model as a container | **[Container contract](./container-contract.md)** |

@@ -1,10 +1,9 @@
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
 // Sidebar for the standalone "Noosphere" product docs (served at /noosphere).
-// Pure protocol docs: concepts -> hands-on tutorial -> role guides (operator /
-// contract developer) -> reference. x402 per-call selling is a separate product
-// (/x402); it appears here only as the operator's second market, with detail
-// owned by /x402/sell-from-an-agent.
+// Concepts -> hands-on tutorial -> operator (common setup, then a rail each —
+// the x402 rail's detail lives in /x402, linked in place) -> contract
+// developers -> reference.
 const sidebars: SidebarsConfig = {
   noosphereSidebar: [
     {type: 'doc', id: 'intro', label: 'Overview'},
@@ -14,7 +13,16 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Run an agent',
       collapsed: false,
-      items: ['run-an-agent', 'dashboard'],
+      items: [
+        'node-setup',
+        'serve-compute-network',
+        {
+          type: 'link',
+          label: 'Sell per-call (x402) ↗',
+          href: '/x402/sell-from-an-agent',
+        },
+        'dashboard',
+      ],
     },
     'request-onchain-compute',
     {
