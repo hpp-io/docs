@@ -62,6 +62,42 @@ sequenceDiagram
    the consumer's callback, and Billing pays the agent from the compute wallet. With
    `useDeliveryInbox`, results are stored in a **DeliveryInbox** for the consumer to pull instead.
 
+## For comparison: the x402 per-call flow (separate rail)
+
+The same agent can also sell per-call over plain HTTP with [x402](/x402) — worth seeing side
+by side, because **none of the protocol contracts above appear in it**. No subscription, no
+Router/Coordinator, no compute wallet: the buyer pays per request and the
+[HPP facilitator](/x402/facilitator) settles straight to the operator's wallet.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as 🧑‍💻 Buyer (app / AI agent)
+    participant A as 🤖 Agent (paid route)
+    participant D as 🐳 Container
+    participant F as ⚙️ HPP Facilitator
+    B->>A: POST /paid/compute/svc  (no payment)
+    A-->>B: 402 + payment terms (price · payTo · asset)
+    Note over B: Sign a USDC.e authorization — no gas needed
+    B->>A: retry + payment-signature
+    A->>F: verify(payment)
+    F-->>A: valid ✓
+    A->>D: POST /computation { input }
+    D-->>A: { output }
+    A->>F: settle(payment)
+    Note over F: On-chain tx: USDC.e → operator's wallet
+    A-->>B: 200 { output, receipt }
+```
+
+| | On-chain rail (above) | x402 rail |
+| --- | --- | --- |
+| Who asks | Smart contract, via subscription | Anyone, via HTTP/MCP |
+| Protocol contracts involved | Router · Coordinator · Billing · compute wallet | **None** |
+| Payment | Escrowed fee per delivery | Signed stablecoin authorization per call |
+| Result returns | On-chain callback / DeliveryInbox | The HTTP response itself |
+
+Configuration and selling guide: [Sell from an agent](/x402/sell-from-an-agent).
+
 ## Transient vs scheduled subscriptions
 
 | | Transient | Scheduled |
