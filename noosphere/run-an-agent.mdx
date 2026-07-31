@@ -1,16 +1,26 @@
 ---
 title: Run an agent
 sidebar_label: Run an agent
-description: Operate a Noosphere agent node — serve on-chain compute subscriptions with Docker containers and earn the subscription fees.
+description: Operate a Noosphere agent node step by step — what to install, what each command asks and prints, how to know it's working, and how it earns.
 ---
 
 # Run an agent
 
-An **agent** is a node that earns fees by serving the compute network: it watches the chain for
-requests it can fulfill, runs the matching container, and delivers the result on-chain.
+An **agent** is a node that earns fees by serving compute: it watches the chain for requests it
+can fulfill, runs the matching Docker container, and delivers the result on-chain. This page
+walks the whole setup with the exact prompts and outputs you'll see.
 
-> **Prerequisites:** Node.js ≥ 18, Docker ≥ 20.10, and a small amount of ETH on the target HPP
-> network for delivery gas.
+**What you'll need**
+
+- Node.js ≥ 18 and Docker ≥ 20.10 (`docker ps` should work)
+- ~10 minutes
+- For the on-chain rail: a little ETH on the target HPP network for delivery gas
+  (the [x402 per-call rail](#selling-per-call-with-x402-separate-rail) needs none)
+
+**What you'll have at the end**: a running node with a
+[web dashboard](./dashboard.mdx), serving containers from the
+[community registry](./registry-and-deployments.md) — ready for your
+[first compute request](./first-request.mdx).
 
 ## 1. Install
 
@@ -20,70 +30,139 @@ cd noosphere-agent-js
 npm install
 ```
 
-## 2. Configure
+## 2. Generate your config (interactive)
 
 ```bash
-npm run generate:config     # interactive
-cp .env.example .env        # then set KEYSTORE_PASSWORD
+npm run generate:config              # HPP Sepolia (testnet) by default
+# npm run generate:config -- --network mainnet
 ```
 
-The generator asks which network to join and which containers to serve, offering the
-**community registry** catalog (`hello-world`, `llm`, `freqtrade`, `vrng`, …) — see
-[Registry & deployments](./registry-and-deployments.md). It writes `config.json` with the
-network's Router/Coordinator addresses filled in. Every block is described in the
+The generator connects to the [community registry](./registry-and-deployments.md) and walks you
+through it. A typical session looks like:
+
+```text
+🌐 Network: testnet (chainId: 181228)
+
+📦 Available Containers:
+
+  [1] noosphere-hello-world
+      Simple Hello World example container for testing Noosphere compute requests
+      Port: 8081, Image: ghcr.io/hpp-io/example-hello-world-noosphere:latest
+  [2] noosphere-llm
+      LLM inference
+      Port: 8082, Image: ghcr.io/hpp-io/example-llm-noosphere:latest
+  ...
+
+Select containers (e.g. 1,2): 1
+✓ Added: noosphere-hello-world
+
+Sell selected containers per-call via x402? (y/N): n
+
+✅ config.json written
+  Containers: noosphere-hello-world
+Next steps:
+  1. cp .env.example .env  (set KEYSTORE_PASSWORD)
+  2. Set environment variables for container env (if any)
+  3. npm run init
+```
+
+Start with `noosphere-hello-world` — it's the "is everything wired" container. You can add more
+(or your own — see [Container contract](./container-contract.md)) any time by editing
+`config.json`. Every block of the file is explained in the
 [configuration reference](./configuration.md).
+
+```bash
+cp .env.example .env        # then edit: KEYSTORE_PASSWORD=<your password>
+```
 
 ## 3. Create your wallet
 
 ```bash
-npm run init                # prints your agent + receiving addresses
+npm run init
 ```
 
-This creates an encrypted keystore under `.noosphere/` (unlocked by `KEYSTORE_PASSWORD`):
+```text
+🔐 Initializing Noosphere Agent Keystore
 
-- **Agent address** — signs delivery transactions. **Fund this with ETH** (delivery gas).
-- **Receiving address** — where your earned fees accumulate.
+✓ Wallet address: 0xYourAgentAddress...
+Creating keystore at .noosphere/...
 
-## 4. Run
+✅ Keystore initialized successfully!
+
+IMPORTANT:
+  1. Backup the keystore file
+  2. Store the password securely
+  3. Never commit the keystore file to git
+  4. Fund the wallet address with ETH for gas fees
+
+You can now run the agent with: npm run agent
+```
+
+Two addresses matter:
+
+- **Agent address** (printed above) — signs delivery transactions. **Fund it with a small
+  amount of ETH** on your network (HPP Sepolia for testnet) before expecting on-chain
+  deliveries.
+- **Receiving address** (`PAYMENT_ADDRESS` in `.env`, defaults to the agent address) — where
+  earnings accumulate.
+
+## 4. Run it
 
 ```bash
 npm run agent               # agent API on :4000
-npm run dev                 # web dashboard on :3100 (separate terminal)
 ```
 
-The agent pulls your configured container images and starts serving:
+Healthy startup logs look like:
 
-- **Event loop** — WebSocket-first chain monitoring with automatic replay/checkpointing, so
-  restarts never miss a request.
-- **Scheduler** — for scheduled subscriptions, commits to upcoming intervals automatically.
-- **Delivery** — runs the container, submits the output, collects the fee.
+```text
+[agent] config loaded (network eip155:181228, 1 container)
+[agent] keystore unlocked — agent 0xYourAgent…
+[agent] pulling ghcr.io/hpp-io/example-hello-world-noosphere:latest …
+[agent] container noosphere-hello-world ready on :8081
+[agent] chain monitor connected (WebSocket) — replaying from checkpoint
+[agent] scheduler running (commitment interval 60s)
+```
 
-### Dashboard
+In a second terminal, start the dashboard:
 
-`npm run dev` → http://localhost:3100
+```bash
+npm run dev                 # dashboard on http://localhost:3100
+```
 
-| Page | Shows |
-| --- | --- |
-| `/` | Agent status, containers, verifiers, connection health |
-| `/history` | Delivered compute with fees, gas, and profit |
+![Noosphere agent dashboard](/img/noosphere/dashboard-agent.png)
+
+## 5. Is it working? (checklist)
+
+| Check | How | Expect |
+| --- | --- | --- |
+| Node healthy | Open [the dashboard](./dashboard.mdx) at `localhost:3100` | **Healthy** + **WebSocket** badges in the header |
+| Container up | `docker ps` | `noosphere-noosphere-hello-world` running |
+| Chain connection | Dashboard → Agent Wallet card | Router/Coordinator addresses + RPC shown, balance visible |
+| Scheduler | Dashboard → Scheduler card | Status **Running** |
+| Serving real work | [Send yourself a request](./first-request.mdx) | Events counter increments, delivery appears in Computing History |
+
+If something's off, jump to [troubleshooting](#troubleshooting).
 
 ## Levels of participation
 
 | Level | What you run | What it earns |
 | --- | --- | --- |
-| **Basic worker** | Registry containers (e.g. `hello-world`, `llm`) | Subscription fees for plain deliveries |
+| **Basic worker** | Registry containers (`hello-world`, `llm`, …) | Subscription fees for plain deliveries |
 | **Verified compute** | A container **plus its proof service**, configured under `verifiers[]` | Fees from subscriptions that require proof-checked results |
 | **VRF operator** | The `noosphere-vrng` container + the `vrf` config block | Fees from NoosphereVRF epochs |
 
 ## Serving your own container
 
 Anything that speaks the [container contract](./container-contract.md)
-(`POST /computation` → `{ output }`) can be served. Add it to `containers[]` in your config;
-to make it requestable by *other* consumers, publish it to the
-[community registry](./registry-and-deployments.md#contributing-to-the-registry) so it gets a
-registry container ID that subscriptions can reference.
+(`POST /computation` → `{ output }`) can be served. Add it to `containers[]`; to make it
+requestable by *other* consumers, publish it to the
+[community registry](./registry-and-deployments.md#contributing-to-the-registry) so
+subscriptions can reference its ID.
 
 ## Docker deployment
+
+Prefer everything in containers? The repo ships a compose setup — the agent manages your model
+containers through the Docker socket (they run as siblings, started on demand):
 
 ```bash
 npm run docker:build
@@ -91,17 +170,18 @@ npm run docker:up          # agent :4000, dashboard :3100
 npm run docker:logs
 ```
 
-The compose file mounts `docker/config.docker.json` and your `.noosphere/` keystore; secrets
-come from `.env`. The agent manages model containers through the Docker socket — they run as
-siblings, started on demand.
+It mounts `docker/config.docker.json` as the config and your `.noosphere/` keystore; secrets
+come from `.env`.
 
 ## Troubleshooting
 
 | Symptom | Fix |
 | --- | --- |
 | Agent won't start | `.env` has `KEYSTORE_PASSWORD`? Docker running? `config.json` exists? (`npm run init` needs it first) |
-| No requests arriving | Agent wallet funded with ETH? Are there active subscriptions for a container you serve? |
-| Delivery reverts | Check the agent wallet's gas balance and that your container ID matches the subscription's |
+| Port already in use | Something else on 4000/3100 — set `EXPRESS_PORT` or remap compose ports |
+| Dashboard shows no connection | RPC/WS unreachable — check `chain.rpcUrl`/`wsRpcUrl` in `config.json` |
+| No requests arriving | Agent wallet funded with ETH? Are there active subscriptions for a container you serve? Try [sending one yourself](./first-request.mdx) |
+| Delivery reverts | Agent wallet gas balance; container ID must match the subscription's |
 | Container errors | `docker logs noosphere-<container-name>` |
 
 ## Selling per-call with x402 (separate rail)
@@ -119,7 +199,7 @@ Which rail, when:
 | 💰 **x402 per-call** | Your buyers are apps or AI agents over HTTP/MCP; you want zero-cost onboarding and instant per-call revenue |
 | **Both** | One node serves both markets from the same containers — they don't interfere |
 
-Enabling it is a config block on the same agent:
+Enabling it is a config block on the same agent (the config generator also offers it):
 
 ```jsonc
 "x402Seller": { "enabled": true, "services": [ /* what you sell */ ] }
@@ -127,4 +207,5 @@ Enabling it is a config block on the same agent:
 
 Pricing, schemas, receipts, and getting listed on the
 [x402 Explorer](https://x402-explorer.hpp.io) are covered in the full guide:
-**[Sell from an agent](/x402/sell-from-an-agent)**.
+**[Sell from an agent](/x402/sell-from-an-agent)**. Your per-call earnings show up in the
+dashboard's [x402 Seller tab](./dashboard.mdx#x402-seller).

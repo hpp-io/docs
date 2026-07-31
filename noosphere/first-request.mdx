@@ -1,0 +1,115 @@
+---
+title: "Tutorial: your first compute request"
+sidebar_label: "Tutorial: first request"
+description: End to end on HPP Sepolia — deploy a consumer contract, send a compute request, watch your agent deliver the result on-chain, and read it back.
+---
+
+# Tutorial: your first compute request
+
+The full loop, end to end: a consumer contract asks for compute → your agent runs the
+container → the result lands back on-chain. ~15 minutes on **HPP Sepolia**.
+
+**You'll need**
+
+- A [running agent](./run-an-agent.mdx) serving `noosphere-hello-world`, with its agent wallet
+  funded (delivery gas)
+- A second wallet with a little HPP Sepolia ETH (the *consumer* — can be the same wallet while
+  testing)
+- [Foundry](https://book.getfoundry.sh/) (`forge`, `cast`) for the consumer contract
+
+:::tip No testnet funds at all?
+The agent repo ships `scripts/e2e-test.sh`, which runs this **entire loop on a local Anvil
+chain** — it deploys the protocol contracts, starts an agent, and sends a request, no real
+network needed. (It expects `noosphere-evm` and `noosphere-sdk` checked out as sibling
+directories.)
+:::
+
+## 1. Deploy your consumer contract
+
+The protocol repo ships a ready-made sample,
+[`MyTransientClient`](https://github.com/hpp-io/noosphere-evm/blob/main/src/v1_0_0/sample/MyTransientClient.sol) —
+a one-shot consumer that stores the last result it receives. Deploy it pointed at the Sepolia
+**Router** (all addresses: [Registry & deployments](./registry-and-deployments.md)):
+
+```bash
+git clone https://github.com/hpp-io/noosphere-evm.git && cd noosphere-evm
+
+forge create src/v1_0_0/sample/MyTransientClient.sol:MyTransientClient \
+  --rpc-url https://sepolia.hpp.io \
+  --private-key $CONSUMER_KEY \
+  --broadcast \
+  --constructor-args 0x480a4f7506548773040d47dd7b6372dbf71358d4
+```
+
+Note the `Deployed to:` address — that's your `CLIENT_ADDRESS`.
+
+## 2. Send the request
+
+The agent repo has a helper that does the consumer-side ceremony for you — payment wallet,
+subscription, request:
+
+```bash
+cd noosphere-agent-js
+
+PRIVATE_KEY=$CONSUMER_KEY \
+CLIENT_ADDRESS=0xYourClient \
+WALLET_FACTORY_ADDRESS=0xe1ccab0b5deeca0b240f9bbaeccdbcb252934fa7 \
+CONTAINER_ID=noosphere-hello-world \
+npm run send:request
+```
+
+What it does, in order (you'll see this transcript):
+
+```text
+📋 Sending one-time request
+
+🔍 Checking for existing payment wallet...
+📝 Creating new payment wallet...
+✓ Created wallet: 0xYourPaymentWallet…
+
+📝 Creating subscription...
+✓ Subscription created (tx: 0x…)
+
+📤 Sending compute request...
+✓ Request sent (tx: 0x…)
+✅ One-time request completed!
+```
+
+Behind the scenes: it creates (or reuses) your **compute wallet** via the WalletFactory,
+creates a subscription for `noosphere-hello-world` (native-token fee, tiny default
+`feeAmount`), and calls `requestCompute` with a small JSON input. Send a little Sepolia ETH to
+the printed payment wallet if the delivery fee needs covering.
+
+## 3. Watch your agent pick it up
+
+On the agent side (logs or the [dashboard](./dashboard.mdx)):
+
+- **Events** counter: *Total* +1, then *Completed* +1 once delivered
+- **Computing History**: a new row with the delivery transaction, fee earned, gas spent
+- Agent logs: the container run and the delivery tx hash
+
+This usually lands within one or two blocks of the request.
+
+## 4. Read the result on-chain
+
+`MyTransientClient` stores the last delivery — read it back with `cast`:
+
+```bash
+cast call 0xYourClient "lastReceivedOutput()(bytes)" --rpc-url https://sepolia.hpp.io
+# 0x7b22... (hex-encoded container output)
+
+cast to-ascii $(cast call 0xYourClient "lastReceivedOutput()(bytes)" --rpc-url https://sepolia.hpp.io)
+# hello world output from the container
+```
+
+You've now exercised the whole protocol: **subscription → request → commitment → container
+execution → on-chain delivery → callback → billing.**
+
+## Where to go next
+
+| Next step | Page |
+| --- | --- |
+| Understand each step you just ran | [How it works](./how-it-works.md) |
+| Build a real consumer (redundancy, verifiers, scheduled runs) | [Request compute on-chain](./request-onchain-compute.mdx) |
+| Serve your own model instead of hello-world | [Container contract](./container-contract.md) |
+| Sell the same container per-call, off-chain | [Sell from an agent](/x402/sell-from-an-agent) |

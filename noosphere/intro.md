@@ -66,6 +66,7 @@ Noosphere is live on **HPP Mainnet** and **HPP Sepolia** — contract addresses 
 
 | I want to… | Start here |
 | --- | --- |
+| **see it work end to end** (15 min, Sepolia) | **[Tutorial: first request](./first-request.mdx)** |
 | understand the protocol | **[How it works](./how-it-works.md)** |
 | call compute **from my contract** | **[Request compute on-chain](./request-onchain-compute.mdx)** |
 | **run an agent** and earn fees | **[Run an agent](./run-an-agent.mdx)** |
