@@ -171,7 +171,7 @@ Behind the scenes the bridge gives the agent these tools:
 | Tool | What the agent does with it |
 | --- | --- |
 | `wallet_address` | report your wallet address (so you can fund it) |
-| `hpp_discover` | browse/search the curated [service directory](./directory.mdx) |
+| `hpp_discover` | browse/search the curated [service directory](./service-directory.mdx) |
 | `hpp_call` | pay + invoke a discovered service, within your cap |
 | `x402_http_call` | pay any x402 URL directly (e.g. a link you were handed) |
 
@@ -266,7 +266,7 @@ hpp-x402 serve --pay-to 0xYou --price 10000 --scheme upto          # usage-based
 
 It returns `402` until paid, then runs your handler (echo by default, or forward the body to
 `--handler`). `--price` is in atomic USDC.e (6 decimals → `10000` = 0.01). By default it advertises
-itself, so after the **first paid call** it's indexed into the [directory](./directory.mdx) and other
+itself, so after the **first paid call** it's indexed into the [directory](./service-directory.mdx) and other
 agents can discover it. Behind a tunnel? Pass `--url https://your-public-host` so the public address
 is what gets listed.
 
