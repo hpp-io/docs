@@ -1,0 +1,103 @@
+---
+title: Request compute on-chain
+sidebar_label: Request compute on-chain
+description: Call off-chain compute from a smart contract — extend TransientComputeClient or ScheduledComputeClient, create a subscription, and receive results in a callback.
+---
+
+# Request compute on-chain
+
+Smart contracts request Noosphere compute through **subscriptions**. You extend a client base
+contract from [`noosphere-evm`](https://github.com/hpp-io/noosphere-evm), point it at the
+Router, and implement one callback.
+
+## Minimal one-shot client
+
+`TransientComputeClient` is the one-shot flavor: create a subscription, send a request with
+inputs, receive the output in a callback.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.23;
+
+import {TransientComputeClient} from "noosphere-evm/v1_0_0/client/TransientComputeClient.sol";
+import {Commitment} from "noosphere-evm/v1_0_0/types/Commitment.sol";
+
+contract MyClient is TransientComputeClient {
+    bytes public lastOutput;
+
+    constructor(address router) TransientComputeClient(router) {}
+
+    function createSubscription(
+        string memory containerId,   // which container agents must run, e.g. "hello-world"
+        uint16 redundancy,           // how many independent agents should answer
+        address feeToken,            // fee currency (address(0) = native)
+        uint256 feeAmount,           // fee paid per delivery, per agent
+        address wallet,              // your compute wallet (funds the fees)
+        address verifier             // optional proof verifier (address(0) = none)
+    ) external returns (uint64) {
+        return _createComputeSubscription(
+            containerId, redundancy, false, feeToken, feeAmount, wallet, verifier, bytes32(0)
+        );
+    }
+
+    function request(uint64 subscriptionId, bytes memory inputs)
+        external
+        returns (uint64, Commitment memory)
+    {
+        return _requestCompute(subscriptionId, inputs);   // inputs stored for agents to fetch
+    }
+
+    // Called by the protocol when an agent delivers.
+    function _receiveCompute(
+        uint64 subscriptionId,
+        uint32 interval,
+        uint16 numRedundantDeliveries,
+        bool useDeliveryInbox,
+        address node,
+        bytes calldata input,
+        bytes calldata output,
+        bytes calldata proof,
+        bytes32 containerId
+    ) internal override {
+        lastOutput = output;
+        // decode + act on the result
+    }
+}
+```
+
+The repo ships a complete example:
+[`src/v1_0_0/sample/MyTransientClient.sol`](https://github.com/hpp-io/noosphere-evm/blob/main/src/v1_0_0/sample/MyTransientClient.sol).
+
+## The subscription parameters
+
+| Parameter | Meaning |
+| --- | --- |
+| `containerId` | The compute to run — any agent running this container can serve you |
+| `redundancy` | Number of independent agents that must each deliver (each is paid `feeAmount`) |
+| `useDeliveryInbox` | `true` → results land in the DeliveryInbox for you to pull, instead of a push callback |
+| `feeToken` / `feeAmount` | What each delivery pays, from your compute wallet |
+| `wallet` | Your **compute wallet** — created via the protocol's Wallet Factory and funded by you |
+| `verifier` | Optional `IVerifier` contract; deliveries only count once their proof verifies |
+| `routeId` | Routing hint for specialized agent sets (use `bytes32(0)` by default) |
+
+## Recurring work
+
+`ScheduledComputeClient` adds a schedule: `maxExecutions` runs, one every `intervalSeconds`.
+Agents watch upcoming intervals and deliver each one — price feeds, periodic scoring, batch
+pipelines. The callback is the same.
+
+## Paying for it
+
+Fund a compute wallet and pass it as `wallet`. Every delivery, the protocol's Billing moves
+`feeAmount` in `feeToken` from that wallet to the delivering agent. Budget
+`feeAmount × redundancy × executions`, plus any protocol fee.
+
+## Trust levels
+
+- Start with `redundancy = 1`, `verifier = address(0)` for cheap, fast results.
+- Raise `redundancy` to cross-check answers from independent agents.
+- Set a `verifier` for proof-checked compute — agents attach proofs (from a companion proof
+  service) and only verified deliveries reach your callback.
+
+> **Prototyping off-chain first?** The same containers are sellable per-call over HTTP — often
+> the fastest way to iterate before wiring a contract. See [Buy compute](./buy-compute.mdx).

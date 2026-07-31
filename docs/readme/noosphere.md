@@ -4,6 +4,10 @@ description: A Gateway to Verifiable Off-Chain Intelligence
 
 # Noösphere
 
+> **📘 Builder manual:** the full Noosphere documentation — running an agent, selling compute
+> per-call with x402, and requesting compute from smart contracts — lives at
+> [**docs.hpp.io/noosphere**](/noosphere).
+
 Smart contracts are powerful but limited — they can’t think, adapt, or process complex real-world data. As Web3 intersects with AI, RWA, and scientific computation, this becomes a major bottleneck. Noosphere introduces a verifiable off-chain intelligence layer, enabling smart contracts to securely delegate inference and computation
 
 ### Limitations of Smart Contracts
