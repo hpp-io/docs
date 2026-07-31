@@ -1,6 +1,6 @@
 ---
 title: Usage & Settlement
-description: Check prepaid quota, review usage, and inspect on-chain USDC.e settlement with HPP Router.
+description: Check prepaid quota, review usage, and inspect x402 wallet settlement with HPP Router.
 ---
 
 import Tabs from '@theme/Tabs';
@@ -9,13 +9,18 @@ import CodePanel from '@site/src/components/CodePanel';
 
 # Usage & Settlement
 
-HPP Router uses **on-chain USDC.e payments** via x402 wallet for billed inference. All requests require authentication with an API key for consumer identification.
+HPP Router meters token usage for every authenticated request. Billing uses one of two payment rails:
 
-Token usage is metered and, on the wallet rail, settled on-chain after the request completes. Prepaid **quota** balance checks remain available for consumers that still use the credit/quota rail.
+| Rail | How requests are billed | Where to inspect |
+| --- | --- | --- |
+| **Quota** (default) | Prepaid credit on the API key | `GET /api/quota-check`, default `GET /api/usage` |
+| **Wallet (x402)** | On-chain settlement after a signed request (`X-Payment-Rail: wallet`) | `GET /api/usage?rail=wallet` |
+
+All of these endpoints require an API key. Enabling the wallet rail on inference is described in [Authentication](../authentication#x402-wallet) and [Chat Completions — wallet](./chat-completions#wallet). The payment asset is commonly USDC.e; the challenged `accepts[0].asset` (and on-chain settlement) is authoritative for a given deployment.
 
 ## Check quota
 
-A lightweight pre-flight check for the authenticated consumer's prepaid quota (independent of on-chain wallet settlement):
+A lightweight pre-flight check for the authenticated consumer's prepaid quota (independent of wallet-rail settlement):
 
 <a name="check-quota"></a>
 
@@ -115,9 +120,9 @@ curl "https://router.hpp.io/api/usage?rail=wallet" \
 | `username` / `custom_id` | Optional identifiers (may be `null`). |
 | `quota` / `used` / `remaining` | Prepaid quota snapshot (always present). |
 | `rail` | Present when filtered, e.g. `"wallet"`. |
-| `spent_usdc_micro` | Total USDC.e settled on-chain (atomic/micro units). Present when `rail=wallet`. |
-| `settle_success_count` | Successful on-chain settlements (`rail=wallet`). |
-| `settle_failed_count` | Failed settlements (`rail=wallet`). |
+| `spent_usdc_micro` | Total wallet-rail spend settled on-chain (atomic/micro units; field name is historical — commonly USDC.e). Present when `rail=wallet`. |
+| `settle_success_count` | Successful on-chain settlements (`rail=wallet`). Distinct from the initial HTTP **402** payment challenge. |
+| `settle_failed_count` | Failed settlements after an authorized request (`rail=wallet`). |
 | `requests` | Number of requests recorded (scoped by `rail` when set). |
 | `total_tokens` | Total tokens consumed (scoped by `rail` when set). |
 | `total_cost` | Dollar cost; for `rail=wallet`, reflects wallet-settled spend from usage logs. |
@@ -127,7 +132,9 @@ curl "https://router.hpp.io/api/usage?rail=wallet" \
 1. The response from the provider is captured asynchronously (no added latency).
 2. Token usage is extracted from the response `usage` block.
 3. Cost is computed from the [resolved model's pricing](../models-and-pricing).
-4. The request is logged; on the wallet rail, settlement proceeds via x402. On the quota rail, the consumer's `used` value is updated.
+4. The request is logged:
+   - **Quota rail** — the consumer's prepaid `used` / `remaining` values are updated.
+   - **Wallet rail** — on-chain settlement proceeds via x402 after the request is authorized (signature present). A missing signature returns **402** before inference; that challenge is not a settle failure. See [Errors](./errors).
 
 For `hpprouter/auto`, cost uses the **resolved** model's pricing, not a price for `auto`. See [Smart Routing](../smart-routing).
 
@@ -137,4 +144,4 @@ The usage endpoint is backed by a short-lived in-memory cache to reduce database
 
 ## Local models
 
-Requests to local models (e.g. `ollama/*`) are tracked at **$0 cost**, but token usage is still recorded in your usage logs.
+Requests to local models (e.g. `ollama/*`) are tracked at **$0 cost**, but token usage is still recorded in your usage logs. Free providers are typically not wallet-billed even when `X-Payment-Rail: wallet` is set.
