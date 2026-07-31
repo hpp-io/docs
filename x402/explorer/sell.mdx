@@ -78,13 +78,21 @@ One row per callable thing. A service that speaks both HTTP and MCP has two endp
 
 | Field | Notes |
 | --- | --- |
-| **Type** | `http`, `mcp`, or `a2a` |
+| **Type** | `http`, `mcp`, or `a2a` — publish HTTP as the canonical one, and add an MCP twin if agents are your buyers |
 | **Method** | HTTP verb (`http` only) |
 | **Resource URL** | The exact paid URL, e.g. `https://weather.example/paid/forecast` |
 | **Description** | One line describing what the endpoint does — this is what semantic search matches on |
 | **Payment options** | Network, token, scheme (`exact` / `upto`), and price. Use **+ Add option** if you accept more than one network or scheme |
 
 Then click **🔑 Sign & submit** and approve the signature.
+
+:::tip[Declare the input contract on every transport]
+A buyer can't inspect what they haven't paid for, so whatever your `402` advertises is all they get.
+If you publish an MCP twin, declare its arguments there too — an MCP tool whose `inputSchema` is
+just `args: object` tells a buyer nothing, and they end up guessing with real money. Don't assume the
+HTTP example carries over: the same service often takes `{"text": …}` over HTTP and
+`{"args": {"text": …}}` over MCP.
+:::
 
 :::tip[Your `402` is the source of truth]
 When you submit, the Explorer calls your endpoint once *without* paying and reads the `402` it

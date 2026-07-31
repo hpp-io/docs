@@ -60,6 +60,10 @@ Narrow the list with the filter row:
 Each card shows the price per call, the transports it speaks (`HTTP`, `MCP`, `A2A`), how many
 settlements it has, and how many distinct buyers paid for it.
 
+One service can appear as two rows — the seller published it over both HTTP and MCP. Same seller,
+same price, same settlement; **the id you copy decides which transport you call**, and the two can
+take a different request body. [Connect an agent](./agents.mdx#http-or-mcp) has the details.
+
 ## Read a service page
 
 Click **Open service** on any card.

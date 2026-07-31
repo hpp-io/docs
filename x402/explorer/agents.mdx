@@ -17,7 +17,7 @@ use any of it: **a wallet it can spend from.** The Explorer's
 | Paid in | **USDC.e** — [`0x401eCb1D350407f13ba348573E5630B83638E30D`](https://explorer.hpp.io/token/0x401eCb1D350407f13ba348573E5630B83638E30D), the same address on both HPP networks ([Sepolia explorer](https://sepolia-explorer.hpp.io/token/0x401eCb1D350407f13ba348573E5630B83638E30D)) |
 | Gas | **0** — the [HPP facilitator](../facilitator.mdx) pays the settlement ([mainnet](https://facilitator.hpp.io/supported) · [sepolia](https://facilitator-sepolia.hpp.io/supported) — the schemes each one accepts) |
 | Spend cap | **what you fund** (tighter caps below) |
-| Requires | **`@hpp-io/x402-mcp-bridge` 0.1.11 or newer** |
+| Requires | **`@hpp-io/x402-mcp-bridge` 0.1.12 or newer** |
 
 ## What it looks like when it works
 
@@ -32,9 +32,11 @@ Explorer — newest row, `0x1717…1DFd`, `$0.001`:
 ![The same settlement in the Explorer](/img/x402/explorer/explorer-onchain-proof.gif)
 
 :::caution[Upgrade if you installed earlier]
-Bridge **0.1.10 and earlier fail to start**: `setup` wrote a resource-server URL that wasn't there and
-the bridge died on it, so the host came up with no tools at all.
-`npm i -g @hpp-io/x402-mcp-bridge@latest` fixes it. `npx` users always get the current version.
+Two fixes you want. **0.1.10 and earlier fail to start**: `setup` wrote a resource-server URL that
+wasn't there and the bridge died on it, so the host came up with no tools at all. **0.1.11 and
+earlier can't call MCP listings**: they connected to the listing's payment identity instead of its
+endpoint, and got a `404`. `npm i -g @hpp-io/x402-mcp-bridge@latest` fixes both — `npx` users get
+the current version automatically.
 :::
 
 ## 1. Install
@@ -166,6 +168,25 @@ say *"call resource `<id>`"*.
 | `wallet_balance` | Its own USDC.e balance — how the agent explains a failed payment instead of just failing |
 | `wallet_set_limit` | Per-call and per-day caps, enforced locally before it signs |
 
+## HTTP or MCP?
+
+A service can appear in the catalog twice — the seller published it over both transports. **Price,
+wallet and settlement are identical**; only the envelope differs:
+
+| | HTTP | MCP |
+| --- | --- | --- |
+| Challenge | `402` + `payment-required` header | JSON-RPC error `-32042` |
+| Payment | `payment-signature` header on the retry | `_meta["x402/payment"]` on the tool call |
+| Receipt | `payment-response` header | `_meta["x402/payment-response"]` |
+| Identity | URL + method | the tool on a server URL |
+
+An MCP listing therefore carries **two** URLs: the endpoint you open a session against
+(`mcpServerUrl`) and the payment identity the seller's `402` advertises
+(`<base>/mcp/tools/<tool>`, not connectable). `describe` shows both.
+
+You don't have to choose: `hpp_call` takes the id and follows the listing. What you do have to check
+is the body — see below.
+
 ## Without an agent — the CLI
 
 The same wallet and the same settlement path, driven by hand. Useful for scripts, for CI, and for
@@ -181,6 +202,9 @@ hpp-x402 describe <id>                        # the declared input contract
 hpp-x402 call <id> --body '{"text":"…"}' -n eip155:190415
 ```
 
+Call by **id** and the listing picks the transport — `call` handles `http`, `mcp` and `a2a` the same
+way. Call by **URL** and it is HTTP only, because nothing told us otherwise.
+
 :::caution[`discover` defaults to Sepolia]
 Without `-n` you are searching HPP Sepolia, so a mainnet listing simply won't appear. Pass the
 network you mean, or `--all-networks` to search both.
@@ -190,6 +214,31 @@ network you mean, or `--all-networks` to search both.
 The only trustworthy input format is the one the seller declared in its own `402`. **Empty means the
 service takes no parameters.** A listing that declares nothing means read the seller's docs — a guess
 still costs you a payment, and can come back as a confident answer about something else entirely.
+:::
+
+### Calling an MCP listing
+
+Same command, different id:
+
+```bash
+hpp-x402 describe 88943da4-…
+# type=mcp · transport=streamable-http · mcpServerUrl=https://agent.hpp.io/mcp
+
+hpp-x402 call 88943da4-… --body '{"args":{"text":"…"}}' -n eip155:190415
+# {"jobId":"…","service":"promptguard","output":"{\"label\": \"INJECTION\", \"score\": 1.0}"}
+```
+
+:::caution[The body follows the transport, not the service]
+That is the *same service* as the HTTP example above, and it takes a different body: `{"text": …}`
+over HTTP, `{"args": {"text": …}}` over MCP. Run `describe` for the id you are actually calling, and
+if it answers *not declared by the seller*, ask the seller rather than guessing — a guess can cost a
+payment.
+:::
+
+:::note[No transaction hash in an MCP result]
+The HTTP path returns the settlement receipt in the response body. Over MCP the receipt travels in
+`_meta["x402/payment-response"]` and is not surfaced in the tool result, so confirm the payment on
+the service's page in the Explorer.
 :::
 
 Other commands you'll reach for: `hpp-x402 wallet address`, `hpp-x402 status`,
@@ -223,6 +272,21 @@ The catalog is also a public REST service — for building your own tooling:
 ```bash
 curl "https://x402-explorer.hpp.io/discovery/search?q=sanctions&limit=3"
 ```
+
+## When something breaks
+
+**Only some tools showed up — 2 instead of 9.** A globally installed bridge shadows `npx`, so the
+host may be running an old build. Check with `npm ls -g | grep x402`, then upgrade it
+(`npm i -g @hpp-io/x402-mcp-bridge@latest`) or remove it.
+
+**A listing is type `mcp` and the call 404s.** Bridge 0.1.11 and earlier connected to the payment
+identity instead of the endpoint. Upgrade, or call the service's HTTP twin.
+
+**The call worked but there's no transaction hash.** Expected over MCP — the receipt is in `_meta`,
+not the tool result. Look the settlement up on the service's page in the Explorer.
+
+**Payments fail on a service you can see in the catalog.** Check the network:
+`hpp-x402 wallet balance -n <network>`. A Sepolia balance never pays for a mainnet service.
 
 ## Related
 
