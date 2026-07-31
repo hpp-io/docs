@@ -57,7 +57,6 @@ its own docs ([x402 on HPP](/x402)).
 | **Agent node** | Runs containers, watches the chain, delivers results | [`noosphere-agent-js`](https://github.com/hpp-io/noosphere-agent-js) |
 | **SDK** | `@noosphere/*` npm packages the agent is built from (contracts, crypto, payload, registry) | [`noosphere-sdk`](https://github.com/hpp-io/noosphere-sdk) |
 | **Registry** | Community catalog of containers, verifiers, and the deployed contract addresses per network | [`noosphere-registry`](https://github.com/hpp-io/noosphere-registry) |
-| **Starter app** | Scaffold-style dApp kit with Noosphere examples | [`noosphere-starter-app`](https://github.com/hpp-io/noosphere-starter-app) |
 
 Noosphere is live on **HPP Mainnet** and **HPP Sepolia** — contract addresses in
 [Registry & deployments](./registry-and-deployments.md).
