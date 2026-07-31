@@ -104,10 +104,27 @@ siblings, started on demand.
 | Delivery reverts | Check the agent wallet's gas balance and that your container ID matches the subscription's |
 | Container errors | `docker logs noosphere-<container-name>` |
 
----
+## Selling per-call with x402 (separate rail)
 
-:::tip Also sellable per-call, off-chain
-The same node and containers can separately be sold **per-call over HTTP/MCP** with stablecoin
-payments — no subscriptions or on-chain requests involved. That's the **x402** rail, a separate
-product: see [Sell from an agent](/x402/sell-from-an-agent) in the x402 docs.
-:::
+Your node has a second, independent market: selling the **same containers per-call over
+HTTP/MCP**, paid in stablecoins via [x402](/x402). Nothing on-chain is involved on the request
+side — no subscriptions, no Router — and settlement goes straight from the buyer to your wallet
+with gas sponsored, so **it works with an empty wallet**.
+
+Which rail, when:
+
+| Choose… | When |
+| --- | --- |
+| ⛓ **Compute network** (this page) | Your buyers are smart contracts; you want protocol-verified, redundant delivery; you can fund delivery gas |
+| 💰 **x402 per-call** | Your buyers are apps or AI agents over HTTP/MCP; you want zero-cost onboarding and instant per-call revenue |
+| **Both** | One node serves both markets from the same containers — they don't interfere |
+
+Enabling it is a config block on the same agent:
+
+```jsonc
+"x402Seller": { "enabled": true, "services": [ /* what you sell */ ] }
+```
+
+Pricing, schemas, receipts, and getting listed on the
+[x402 Explorer](https://x402-explorer.hpp.io) are covered in the full guide:
+**[Sell from an agent](/x402/sell-from-an-agent)**.

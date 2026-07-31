@@ -34,6 +34,21 @@ flowchart LR
   price feeds, portfolio rebalancing signals, periodic risk checks.
 - **Verifiable randomness** — consume **NoosphereVRF**, served by the same agent network.
 
+## One agent, two markets
+
+The same agent node — and the same containers — can earn from **two independent markets**.
+This documentation covers the on-chain protocol; per-call selling is a separate product with
+its own docs ([x402 on HPP](/x402)).
+
+| | ⛓ Compute network (this docs) | 💰 x402 per-call selling |
+| --- | --- | --- |
+| Who buys | **Smart contracts** (subscriptions) | Apps, scripts, AI agents — plain HTTP/MCP |
+| Request path | **On-chain** — Router/Coordinator route it, results return by callback | Off-chain — a normal paid HTTP call; no protocol contracts involved |
+| Settlement | **On-chain billing** from the consumer's escrow wallet, per delivery | Stablecoin payment per call, settled by the [HPP facilitator](/x402/facilitator) straight to your wallet |
+| Funds to start | Agent wallet needs ETH (delivery gas) | **None** — an empty wallet works, gas is sponsored |
+| Verification | Redundancy · verifier contracts | Optional signed execution receipt |
+| Docs | You are here | **[Sell from an agent](/x402/sell-from-an-agent)** |
+
 ## The pieces
 
 | Piece | What it is | Repository |
@@ -54,10 +69,5 @@ Noosphere is live on **HPP Mainnet** and **HPP Sepolia** — contract addresses 
 | understand the protocol | **[How it works](./how-it-works.md)** |
 | call compute **from my contract** | **[Request compute on-chain](./request-onchain-compute.mdx)** |
 | **run an agent** and earn fees | **[Run an agent](./run-an-agent.mdx)** |
+| sell my model **per-call** (x402, no funds needed) | **[Sell from an agent](/x402/sell-from-an-agent)** |
 | package my model as a container | **[Container contract](./container-contract.md)** |
-
-:::info Selling compute without the chain?
-Noosphere agents can *also* sell the same containers per-call over plain HTTP, paid with
-stablecoins via the **x402** protocol — no subscriptions, no on-chain requests. That is a
-separate product with its own docs: **[Sell from an agent](/x402/sell-from-an-agent)**.
-:::
