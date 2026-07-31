@@ -1,7 +1,7 @@
 ---
 title: Configuration
 sidebar_label: Configuration
-description: The Noosphere agent's config.json, block by block — chain, containers, x402Seller, verifiers, scheduler, payload storage, and VRF.
+description: The Noosphere agent's config.json, block by block — chain, containers, verifiers, scheduler, payload storage, and VRF.
 ---
 
 # Configuration
@@ -11,46 +11,54 @@ The agent is configured by a single `config.json` (generate one interactively wi
 [`config.example.json`](https://github.com/hpp-io/noosphere-agent-js/blob/main/config.example.json)).
 Secrets are never written into the file — use `${ENV_VAR}` substitution and put values in `.env`.
 
-## Core blocks
+## Blocks
 
 | Block | Purpose |
 | --- | --- |
-| `chain` | RPC endpoints, Router/Coordinator addresses, wallet (keystore path + receiving address) |
+| `chain` | RPC/WS endpoints, Router & Coordinator addresses, wallet (keystore path + receiving address). Addresses per network: [Registry & deployments](./registry-and-deployments.md) |
 | `containers[]` | The Docker images this agent can run — see [Container contract](./container-contract.md#registering-the-container) |
-| `x402Seller` | Per-call selling (below) |
-| `verifiers[]` | On-chain verifier contracts to serve (+ optional proof-service container) |
-| `scheduler` / `retry` | Compute-network interval scheduling and retry policy |
+| `verifiers[]` | Verifier contracts this agent serves, each optionally paired with a proof-service container |
+| `scheduler` / `retry` | Scheduled-subscription interval commitment and retry policy |
 | `payload` | Large input/output storage (below) |
-| `vrf` | Optional NoosphereVRF epoch serving |
+| `vrf` | Opt-in NoosphereVRF epoch serving (pair with the registry's `noosphere-vrng` container) |
+| `x402Seller` | The separate per-call selling rail — configured here but documented with its own product: [x402 on HPP](/x402) |
 
-## `x402Seller`
+## `chain`
 
-| Field | Meaning |
-| --- | --- |
-| `enabled` | Master switch — `false`/absent leaves the module fully inert |
-| `payTo` | Receiving wallet (defaults to `chain.wallet.paymentAddress`) |
-| `facilitators` | Facilitator URL per network — Sepolia `https://facilitator-sepolia.hpp.io`, Mainnet `https://facilitator.hpp.io` |
-| `defaultAsset` | Payment token per network (USDC.e address + its EIP-712 domain) |
-| `services[]` | What you sell (below) |
-| `discovery` | Listing on the [x402 Explorer](https://x402-explorer.hpp.io) — `apiUrl`, `publicBaseUrl`, `register` |
-| `demoTunnel` | **Test only** — ephemeral Quick Tunnel standing in for `publicBaseUrl` |
+```jsonc
+"chain": {
+  "rpcUrl": "https://sepolia.hpp.io",
+  "wsRpcUrl": "wss://sepolia.hpp.io",
+  "router": "0x480a4f7506548773040d47dd7b6372dbf71358d4",
+  "wallet": {
+    "keystorePath": ".noosphere",
+    "paymentAddress": "${PAYMENT_ADDRESS}"
+  }
+}
+```
 
-### `services[]` entry
+`npm run generate:config` fills the addresses for the network you pick, sourced from the
+[community registry](./registry-and-deployments.md).
 
-| Field | Meaning |
-| --- | --- |
-| `name` | Route + tool name (`/paid/compute/<name>`, MCP `compute_<name>`) |
-| `containerId` | Which `containers[]` entry runs the work |
-| `settlement` | `"direct"` — run locally, settle per call |
-| `network` / `schemes` | Payment network (CAIP-2) + schemes (`["exact"]`) |
-| `x402Price` | Price per call in atomic USDC.e (6 decimals — `"5000"` = $0.005) |
-| `inputSchema` | JSON Schema; invalid input is rejected `400` **before** payment |
-| `receipt` | `true` → embed a verifiable execution receipt in each response |
-| `discovery` | Listing enrichment: `input` example, `output.example`, `tags`, `iconUrl`, `serviceName` |
+## `containers[]`
 
-> Give every service a real `inputSchema` and a `discovery` block with genuine input/output
-> examples — the explorer renders them on your service page, and buyers (human and AI) decide
-> with them.
+```jsonc
+"containers": [
+  {
+    "id": "hf-sentiment",            // referenced by subscriptions / registry ID
+    "name": "hf-sentiment",          // docker name (agent prefixes it)
+    "image": "hf-sentiment:latest",
+    "port": "8090",                  // where /computation listens inside
+    "env": { "HF_TOKEN": "${HF_TOKEN}" }
+  }
+]
+```
+
+## `verifiers[]`
+
+Serve proof-checked subscriptions: each entry names the on-chain verifier contract and,
+when the proof is produced off-chain, the companion proof-service container.
+`PROOF_SERVICE_PRIVATE_KEY` in `.env` signs proof submissions.
 
 ## `payload`
 
@@ -78,10 +86,9 @@ Large inputs/outputs stay off-chain; the agent resolves URI-based payloads:
 
 ## Networks
 
-| Network | CAIP-2 | Facilitator |
+| Network | Chain ID | RPC |
 | --- | --- | --- |
-| HPP Mainnet | `eip155:190415` | `https://facilitator.hpp.io` |
-| HPP Sepolia | `eip155:181228` | `https://facilitator-sepolia.hpp.io` |
+| HPP Mainnet | `190415` | `https://mainnet.hpp.io` |
+| HPP Sepolia | `181228` | `https://sepolia.hpp.io` |
 
-USDC.e is `0x401eCb1D350407f13ba348573E5630B83638E30D` on both — full chain details in
-[x402 Networks & Token](/x402/networks-and-token).
+Full contract addresses: [Registry & deployments](./registry-and-deployments.md).

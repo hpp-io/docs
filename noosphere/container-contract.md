@@ -1,13 +1,13 @@
 ---
 title: Container contract
 sidebar_label: Container contract
-description: The one-endpoint interface every Noosphere container implements — POST /computation in, { output } out — shared by the on-chain and x402 rails.
+description: The one-endpoint interface every Noosphere container implements — POST /computation in, { output } out.
 ---
 
 # Container contract
 
-Everything an agent runs — an on-chain subscription's workload or a per-call x402 service — is
-an ordinary Docker image that implements **one endpoint**:
+Everything an agent runs for the compute network is an ordinary Docker image that implements
+**one endpoint**:
 
 ```
 POST /computation
@@ -22,17 +22,16 @@ Content-Type: application/json
 { "output": "<string result>" }
 ```
 
-That's the whole interface. The agent starts your container, forwards the request body to
-`localhost:<port>/computation`, and treats `output` as the result — delivered on-chain (compute
-network) or returned to the buyer (x402).
+That's the whole interface. The agent starts your container, forwards the request inputs to
+`localhost:<port>/computation`, and delivers `output` on-chain as the subscription result.
 
 ## Rules of thumb
 
-- **`output` is a string.** Return structured results as a JSON-encoded string; buyers decode it.
+- **`output` is a string.** Return structured results as a JSON-encoded string; consumers decode it.
 - **Stateless requests.** Each call should be self-contained; keep model state (weights, caches)
   in the image or a mounted volume.
-- **Fail loudly.** A non-200 response or a crash means: on-chain — no delivery; x402 — buyer gets
-  a `502` and **is not charged**.
+- **Fail loudly.** A non-200 response or a crash means no delivery is submitted — the consumer
+  is never charged for failed work.
 - **Size the port.** The `containers[]` entry declares the internal port the agent posts to.
 
 ## A complete example (~30 lines)
@@ -88,12 +87,10 @@ generation, summarization, translation, embeddings, your own fine-tune.
 ```
 
 The agent pulls the image if needed and manages the container lifecycle (start on demand via
-the Docker socket). The same entry serves both rails:
-
-- **x402**: a `services[]` entry points at it via `containerId` — see
-  [Sell compute](./sell-compute.mdx)
-- **on-chain**: subscriptions name its registry `containerId` — see
-  [Request compute on-chain](./request-onchain-compute.mdx)
+the Docker socket). To make the container requestable by other consumers, publish it to the
+[community registry](./registry-and-deployments.md#contributing-to-the-registry) — subscriptions
+reference containers by their registry ID
+([Request compute on-chain](./request-onchain-compute.mdx)).
 
 ## Large inputs and outputs
 

@@ -1,15 +1,16 @@
 ---
-title: "Quickstart: run an agent"
-sidebar_label: "Quickstart: run an agent"
-description: Stand up a Noosphere agent node — install, generate a config, create a wallet, and serve compute from Docker containers.
+title: Run an agent
+sidebar_label: Run an agent
+description: Operate a Noosphere agent node — serve on-chain compute subscriptions with Docker containers and earn the subscription fees.
 ---
 
-# Quickstart: run an agent
+# Run an agent
 
-An **agent** is a node that earns by running compute. This page gets one running from scratch;
-[the next page](./sell-compute.mdx) turns it into a paid API with x402.
+An **agent** is a node that earns fees by serving the compute network: it watches the chain for
+requests it can fulfill, runs the matching container, and delivers the result on-chain.
 
-> **Prerequisites:** Node.js ≥ 18 and Docker ≥ 20.10.
+> **Prerequisites:** Node.js ≥ 18, Docker ≥ 20.10, and a small amount of ETH on the target HPP
+> network for delivery gas.
 
 ## 1. Install
 
@@ -22,13 +23,15 @@ npm install
 ## 2. Configure
 
 ```bash
-npm run generate:config     # interactive — pick containers, opt into selling
+npm run generate:config     # interactive
 cp .env.example .env        # then set KEYSTORE_PASSWORD
 ```
 
-The generator writes `config.json`: the chain block (RPC + protocol addresses), the containers
-your agent can run, and — if you answered *yes* to selling — an `x402Seller` block with paid
-routes. Every block is described in the [configuration reference](./configuration.md).
+The generator asks which network to join and which containers to serve, offering the
+**community registry** catalog (`hello-world`, `llm`, `freqtrade`, `vrng`, …) — see
+[Registry & deployments](./registry-and-deployments.md). It writes `config.json` with the
+network's Router/Coordinator addresses filled in. Every block is described in the
+[configuration reference](./configuration.md).
 
 ## 3. Create your wallet
 
@@ -36,12 +39,10 @@ routes. Every block is described in the [configuration reference](./configuratio
 npm run init                # prints your agent + receiving addresses
 ```
 
-This creates an encrypted keystore under `.noosphere/` (unlocked with `KEYSTORE_PASSWORD`).
-Two addresses matter:
+This creates an encrypted keystore under `.noosphere/` (unlocked by `KEYSTORE_PASSWORD`):
 
-- **Agent address** — signs on-chain deliveries. Fund it with ETH **only** if you join the
-  on-chain compute network; the x402 rail needs no funds at all.
-- **Receiving address** (`PAYMENT_ADDRESS`) — where your earnings go.
+- **Agent address** — signs delivery transactions. **Fund this with ETH** (delivery gas).
+- **Receiving address** — where your earned fees accumulate.
 
 ## 4. Run
 
@@ -50,12 +51,12 @@ npm run agent               # agent API on :4000
 npm run dev                 # web dashboard on :3100 (separate terminal)
 ```
 
-The agent pulls your configured container images, starts them as needed, and:
+The agent pulls your configured container images and starts serving:
 
-- serves **paid routes** at `POST /paid/compute/<service>` and MCP tools at `/mcp`
-  (if selling is enabled) — see [Sell compute](./sell-compute.mdx)
-- watches the chain for **compute-network requests** it can serve (if the agent wallet is
-  funded) — see [the compute network rail](#the-on-chain-compute-network-rail)
+- **Event loop** — WebSocket-first chain monitoring with automatic replay/checkpointing, so
+  restarts never miss a request.
+- **Scheduler** — for scheduled subscriptions, commits to upcoming intervals automatically.
+- **Delivery** — runs the container, submits the output, collects the fee.
 
 ### Dashboard
 
@@ -64,13 +65,25 @@ The agent pulls your configured container images, starts them as needed, and:
 | Page | Shows |
 | --- | --- |
 | `/` | Agent status, containers, verifiers, connection health |
-| `/seller` | Earnings, settle success rate, per-service stats, live paid-jobs feed |
-| `/history` | On-chain compute history with fees and profit |
+| `/history` | Delivered compute with fees, gas, and profit |
+
+## Levels of participation
+
+| Level | What you run | What it earns |
+| --- | --- | --- |
+| **Basic worker** | Registry containers (e.g. `hello-world`, `llm`) | Subscription fees for plain deliveries |
+| **Verified compute** | A container **plus its proof service**, configured under `verifiers[]` | Fees from subscriptions that require proof-checked results |
+| **VRF operator** | The `noosphere-vrng` container + the `vrf` config block | Fees from NoosphereVRF epochs |
+
+## Serving your own container
+
+Anything that speaks the [container contract](./container-contract.md)
+(`POST /computation` → `{ output }`) can be served. Add it to `containers[]` in your config;
+to make it requestable by *other* consumers, publish it to the
+[community registry](./registry-and-deployments.md#contributing-to-the-registry) so it gets a
+registry container ID that subscriptions can reference.
 
 ## Docker deployment
-
-Run the whole agent (API + dashboard) in Docker; the agent manages your model containers
-through the Docker socket, starting them as siblings automatically:
 
 ```bash
 npm run docker:build
@@ -78,34 +91,23 @@ npm run docker:up          # agent :4000, dashboard :3100
 npm run docker:logs
 ```
 
-The compose file mounts `docker/config.docker.json` as the config and your `.noosphere/`
-keystore directory; secrets come from `.env`.
-
-## The on-chain compute network rail
-
-Beyond selling your own models, the agent serves the **on-chain marketplace**: consumers create
-subscriptions on-chain, the protocol routes requests, and your agent delivers results back —
-earning the subscription's fee per delivery.
-
-```bash
-npm run generate:config     # pick registry containers (hello-world, llm, …)
-npm run init
-# fund the AGENT wallet with ETH (delivery gas) — address shown by init
-npm run agent
-```
-
-- **Verifiers** — attach proof services for verified compute (higher trust, higher fees).
-- **Scheduler** — commits to upcoming subscription intervals automatically.
-- **VRF** — optionally serve NoosphereVRF randomness epochs (the `vrf` config block).
-
-> This rail needs ETH for delivery gas. The [x402 seller rail](./sell-compute.mdx) does not —
-> an empty wallet can start earning.
+The compose file mounts `docker/config.docker.json` and your `.noosphere/` keystore; secrets
+come from `.env`. The agent manages model containers through the Docker socket — they run as
+siblings, started on demand.
 
 ## Troubleshooting
 
 | Symptom | Fix |
 | --- | --- |
 | Agent won't start | `.env` has `KEYSTORE_PASSWORD`? Docker running? `config.json` exists? (`npm run init` needs it first) |
-| Port already in use | Something else on 4000/3100 — set `EXPRESS_PORT` or remap compose ports |
-| No compute-network requests | Agent wallet needs ETH, and there must be active subscriptions on-chain |
+| No requests arriving | Agent wallet funded with ETH? Are there active subscriptions for a container you serve? |
+| Delivery reverts | Check the agent wallet's gas balance and that your container ID matches the subscription's |
 | Container errors | `docker logs noosphere-<container-name>` |
+
+---
+
+:::tip Also sellable per-call, off-chain
+The same node and containers can separately be sold **per-call over HTTP/MCP** with stablecoin
+payments — no subscriptions or on-chain requests involved. That's the **x402** rail, a separate
+product: see [x402 on HPP](/x402).
+:::

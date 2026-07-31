@@ -1,30 +1,33 @@
 ---
 title: How it works
 sidebar_label: How it works
-description: The Noosphere request lifecycle — consumers, the Router and Coordinator, agents and containers, billing wallets, verification, and the x402 rail.
+description: The Noosphere protocol — subscriptions, the commitment lifecycle through Router and Coordinator, compute wallets and billing, redundancy and verification, and NoosphereVRF.
 ---
 
 # How it works
 
-Noosphere connects three parties: **consumers** who want computation, **agents** who run it, and
-the **protocol contracts** that coordinate requests, payments, and verification between them.
+Noosphere connects three parties through the chain: **consumers** (contracts that want
+computation), **agents** (nodes that run it), and the **protocol contracts** that coordinate
+requests, escrow, and delivery between them.
 
 ## The roles
 
-- **Consumer.** A smart contract that needs off-chain work. It extends one of the client base
-  contracts ([`TransientComputeClient`](./request-onchain-compute.mdx) for one-shot requests,
-  `ScheduledComputeClient` for recurring ones), creates a **compute subscription**, and receives
-  results through a callback.
-- **Protocol contracts.** The **Router** is the single entry point consumers talk to — it creates
-  subscriptions and emits requests. The **Coordinator** manages the agent side: request
-  commitments, result delivery, and hand-off to **Billing**, which meters fees and pays agents
-  through per-consumer **compute wallets** (created by the Wallet Factory).
-- **Agent.** A node running [`noosphere-agent-js`](https://github.com/hpp-io/noosphere-agent-js).
-  It watches the chain for requests it can serve, runs the matching **container**, and delivers
-  the output back on-chain. The same node can also [sell compute per-call over x402](./sell-compute.mdx).
-- **Containers.** Ordinary Docker images that expose one endpoint —
-  [`POST /computation`](./container-contract.md). The protocol identifies them by container ID, so
-  a subscription says *what* to run, and any agent that runs that container can serve it.
+- **Consumer.** A smart contract that extends one of the client base contracts and creates a
+  **compute subscription**. It funds a **compute wallet** and receives results in a callback.
+- **Protocol contracts.**
+  - **Router** — the single address consumers talk to. It registers protocol components and
+    routes each subscription to the right Coordinator version (`routeId`).
+  - **Coordinator** — runs the request lifecycle: opens requests as **commitments**, validates
+    agent deliveries, and triggers the consumer callback.
+  - **Billing** — meters fees per delivery and settles them from the consumer's compute wallet.
+  - **WalletFactory / Wallet** — creates and manages the escrow wallets that fund subscriptions.
+- **Agent.** A node running [`noosphere-agent-js`](https://github.com/hpp-io/noosphere-agent-js)
+  (built on the [`@noosphere/sdk`](https://github.com/hpp-io/noosphere-sdk) packages). It watches
+  chain events, runs the requested **container**, and submits the delivery transaction.
+- **Containers.** Ordinary Docker images exposing one endpoint —
+  [`POST /computation`](./container-contract.md). Subscriptions reference containers by ID from
+  the [community registry](./registry-and-deployments.md), so *any* agent running that container
+  can serve the request.
 
 ## The request lifecycle
 
@@ -32,75 +35,66 @@ the **protocol contracts** that coordinate requests, payments, and verification 
 sequenceDiagram
     autonumber
     participant C as 📜 Consumer contract
-    participant R as 🧭 Router / Coordinator
+    participant R as 🧭 Router
+    participant K as 🎛 Coordinator
     participant A as 🤖 Agent
     participant D as 🐳 Container
     C->>R: createComputeSubscription(containerId, fee, redundancy, …)
     C->>R: sendRequest(subscriptionId, inputs)
-    R-->>A: request event (commitment)
+    R->>K: open request (commitment)
+    K-->>A: request event
     A->>C: getComputeInputs(subscriptionId, interval)
     A->>D: POST /computation { input }
     D-->>A: { output }
-    A->>R: deliver(output)
-    R->>C: callback — _receiveCompute(output, node, …)
-    Note over R: Billing pays the agent's fee<br/>from the consumer's compute wallet
+    A->>K: deliver(output [, proof])
+    K->>C: _receiveCompute(output, node, …)
+    Note over K: Billing pays the agent's fee<br/>from the consumer's compute wallet
 ```
 
-1. The consumer creates a **subscription**: which container to run, what fee it pays per
-   delivery (`feeToken` + `feeAmount`), how many independent agents should answer
-   (`redundancy`), which wallet funds it, and optionally which **verifier** must check results.
-2. `sendRequest` (or the interval schedule) opens a request. Agents see it, **commit**, run the
-   container, and **deliver** the output.
-3. The Coordinator invokes the consumer's callback with the output and pays the agent from the
-   consumer's compute wallet.
+1. **Subscribe.** The consumer creates a subscription: which container to run, the fee per
+   delivery (`feeToken` + `feeAmount`), how many independent agents must answer (`redundancy`),
+   which compute wallet funds it, and optionally a **verifier**.
+2. **Request.** `sendRequest` (or the interval schedule) opens a request. The Coordinator records
+   a **commitment** — the on-chain fingerprint of what was asked, for which fee, in which interval.
+3. **Execute.** Agents see the request, fetch the inputs, run the container, and submit the
+   output on-chain (the delivery transaction is the agent's gas cost).
+4. **Deliver & settle.** The Coordinator validates the delivery against the commitment, invokes
+   the consumer's callback, and Billing pays the agent from the compute wallet. With
+   `useDeliveryInbox`, results are stored in a **DeliveryInbox** for the consumer to pull instead.
 
 ## Transient vs scheduled subscriptions
 
 | | Transient | Scheduled |
 | --- | --- | --- |
 | Shape | One-shot: create → request → one delivery | Recurring: every `intervalSeconds`, up to `maxExecutions` |
-| Inputs | Stored on-chain per request (`_requestCompute(subscriptionId, inputs)`) | Produced by the consumer per interval |
-| Typical use | "Ask the model a question, act on the answer" | Price feeds, periodic risk scoring, batch jobs |
+| Inputs | Stored on-chain per request | Produced by the consumer per interval |
+| Typical use | "Ask the model, act on the answer" | Price feeds, periodic scoring, batch jobs |
 | Base contract | `TransientComputeClient` | `ScheduledComputeClient` |
 
-Subscriptions activate lazily and can be cancelled by their owner. With `useDeliveryInbox`,
-results land in a **DeliveryInbox** instead of a direct callback — useful when the consumer wants
-to pull results on its own schedule.
+Subscriptions activate lazily and can be cancelled by their owner at any time.
 
-## Payment and billing
+## Payment: compute wallets and billing
 
-Consumers fund a **compute wallet** (created via the protocol's Wallet Factory) and approve it
-for their subscriptions. Each delivery, **Billing** transfers the subscription's `feeAmount` in
-`feeToken` to the delivering agent (plus protocol fees, if configured). Redundancy `N` means `N`
-agents each deliver and each get paid — you're buying independent answers.
+Consumers pre-fund a **compute wallet** (created via the WalletFactory) and point their
+subscriptions at it. On every valid delivery, **Billing** transfers the subscription's
+`feeAmount` in `feeToken` from that wallet to the delivering agent. Redundancy `N` means `N`
+agents each deliver and each get paid — you are buying independent answers.
 
-> This is the **on-chain rail's** billing. The **x402 rail** is separate and simpler: the buyer
-> pays USDC.e per HTTP call and the [HPP facilitator](/x402/facilitator) settles it directly to
-> the seller's wallet — no compute wallet, no gas for the seller. See
-> [Sell compute with x402](./sell-compute.mdx).
+Budget rule of thumb: `feeAmount × redundancy × executions`, plus any protocol fee.
 
-## Verification
+## Verification: trust is a dial
 
-Trust is a dial, not a switch:
-
-- **Redundancy** — ask several agents for the same work and compare answers.
-- **Verifier contracts** — a subscription can name an on-chain verifier
-  implementing `IVerifier`; agents attach proofs (optionally produced by a companion *proof
-  service* container) and deliveries only count once verified.
-- **Execution receipts (x402 rail)** — per-call sales can embed a signed receipt binding the
-  price, the settlement transaction, and hashes of the exact request and response. See
-  [Sell compute](./sell-compute.mdx#execution-receipts).
+- **Baseline** — a single agent's answer (`redundancy = 1`, no verifier): cheapest and fastest.
+- **Redundancy** — several independent agents deliver the same interval; compare answers
+  in your callback.
+- **Verifier contracts** — a subscription can name an on-chain verifier (the `IVerifier`
+  interface). Deliveries then carry a proof and only count once the verifier accepts it.
+  Available verifiers are listed per network in the
+  [community registry](./registry-and-deployments.md).
 
 ## NoosphereVRF
 
-Agents can additionally serve **NoosphereVRF** — epoch-based verifiable randomness that contracts
-can consume. Operators opt in with the [`vrf` config block](./configuration.md); consumers use the
-VRF contracts deployed alongside the core protocol.
-
-## Where things live
-
-| Piece | Repository |
-| --- | --- |
-| Protocol contracts (Router, Coordinator, Billing, clients, VRF) | [`hpp-io/noosphere-evm`](https://github.com/hpp-io/noosphere-evm) |
-| Agent node (worker + x402 seller + dashboard) | [`hpp-io/noosphere-agent-js`](https://github.com/hpp-io/noosphere-agent-js) |
-| Payment rail, facilitator, explorer | [x402 on HPP](/x402) · [x402 Explorer](https://x402-explorer.hpp.io) |
+The same agent network serves **NoosphereVRF** — epoch-based verifiable randomness that
+contracts can consume on both networks (addresses in
+[Registry & deployments](./registry-and-deployments.md)). Agent operators opt in by running the
+registry's `noosphere-vrng` container and enabling the `vrf` config block.
