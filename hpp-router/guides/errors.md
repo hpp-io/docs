@@ -12,8 +12,8 @@ HPP Router returns standard HTTP status codes and a JSON error envelope. Handle 
 | Code | Meaning | Typical cause |
 | --- | --- | --- |
 | `400` | Bad Request | Malformed body, or an unroutable/unsupported model. |
-| `401` | Unauthorized | Missing or invalid API key. See [Authentication](../authentication). |
-| `402` | Payment Required | Wallet rail (`X-Payment-Rail: wallet`) needs an x402 signature. Response includes a `PAYMENT-REQUIRED` header (and usually a JSON body with `accepts`). Sign and retry with `PAYMENT-SIGNATURE` (or `X-PAYMENT`). See [Authentication — x402 Wallet](../authentication#x402-wallet). |
+| `401` | Unauthorized | Missing or invalid API key; or Agent (keyless) called a free/zero-price model (`keyless_free_model_not_allowed`). See [Authentication](../authentication) and [x402 Agent](./x402-agent). |
+| `402` | Payment Required | Wallet rail (`X-Payment-Rail: wallet`) or **Agent (keyless)** needs an x402 signature. Response includes `PAYMENT-REQUIRED` (and aliases) plus a JSON body with `accepts`. Sign and retry with `PAYMENT-SIGNATURE` (or `X-PAYMENT`). See [Authentication — x402 Wallet](../authentication#x402-wallet) and [x402 Agent](./x402-agent). |
 | `429` | Too Many Requests / Quota exhausted | Rate limit hit, or prepaid **quota** insufficient. This is not the normal wallet-rail payment challenge (that is `402`). |
 | `500` | Internal Server Error | Unexpected gateway or upstream error. |
 | `503` | Service Unavailable | Wallet rail / facilitator not configured, or settlement could not proceed (fail-closed). |
@@ -55,19 +55,20 @@ Errors are returned as JSON. Two shapes are possible.
 | `error.upstream_status` | The provider's HTTP status, when applicable. |
 | `error.retryable` | Whether the request can be safely retried. |
 
-### Wallet `402` challenge
+### Wallet / Agent `402` challenge
 
-On the wallet rail, a missing or unsigned payment typically returns **`402`** with:
+On the keyed wallet rail or the [Agent (keyless)](./x402-agent) path, a missing or unsigned payment typically returns **`402`** with:
 
-- Header `PAYMENT-REQUIRED`: base64-encoded JSON challenge
+- Headers: `PAYMENT-REQUIRED` (primary), plus `payment-required` / `x-payment-required` / `WWW-Authenticate` aliases
 - Body: `{ "x402Version": 2, "accepts": [ { "scheme": "upto", "asset", "amount", "payTo", "network", ... } ], ... }`
 
 Retry the **same** request once with:
 
-- `X-Payment-Rail: wallet`
-- `PAYMENT-SIGNATURE: <base64 payload>` (the gateway also accepts `X-PAYMENT`)
+- Keyed wallet: `X-Payment-Rail: wallet` and your API key
+- Agent: **no** API key (still omit `Authorization` / `apikey`)
+- Either path: `PAYMENT-SIGNATURE: <base64 payload>` (the gateway also accepts `X-PAYMENT`)
 
-[`@hpprouter/sdk`](../client-sdk/typescript#wallet-x402-payment-rail) runs this loop automatically when you pass `paymentRail: 'wallet'` and a `paymentSigner`.
+[`@hpprouter/sdk`](../client-sdk/typescript#wallet-x402-payment-rail) runs the keyed loop automatically when you pass `paymentRail: 'wallet'` and a `paymentSigner`. For keyless Agent calls, use raw HTTP or [hpp-x402](/x402/agents) (see also [x402 Agent](./x402-agent)).
 
 ## Smart-routing errors
 
