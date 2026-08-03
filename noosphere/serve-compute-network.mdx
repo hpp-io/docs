@@ -46,7 +46,7 @@ subscription (consumer)  →  request  →  your agent runs the container
 
 - The [dashboard](./dashboard.mdx) **Events** card counts it: *Completed* rising = earning.
 - **Computing History** shows each delivery's fee earned vs gas spent — profit per job.
-- Redundancy-N subscriptions pay N agents independently; being fast and reliable wins requests.
+- One delivery per request — the first valid delivery wins, so being fast and reliable wins requests.
 
 **See it happen end to end**: the [first-request tutorial](./first-request.mdx) sends a real
 subscription + request to your own node on Sepolia and reads the result back on-chain.

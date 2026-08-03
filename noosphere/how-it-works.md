@@ -1,7 +1,7 @@
 ---
 title: How it works
 sidebar_label: How it works
-description: The Noosphere protocol — subscriptions, the commitment lifecycle through Router and Coordinator, compute wallets and billing, redundancy and verification, and NoosphereVRF.
+description: The Noosphere protocol — subscriptions, the commitment lifecycle through Router and Coordinator, compute wallets and billing, verification, and NoosphereVRF.
 ---
 
 # How it works
@@ -39,10 +39,11 @@ sequenceDiagram
     participant K as 🎛 Coordinator
     participant A as 🤖 Agent
     participant D as 🐳 Container
-    C->>R: createComputeSubscription(containerId, fee, redundancy, …)
-    C->>R: sendRequest(subscriptionId, inputs)
+    C->>R: createComputeSubscription(containerId, fee, wallet, …)
+    Note over C: requestCompute(subscriptionId, inputs)<br/>— inputs stay stored ON THE CLIENT
+    C->>R: sendRequest(subscriptionId, interval)
     R->>K: open request (commitment)
-    K-->>A: request event
+    K-->>A: RequestStarted event
     A->>C: getComputeInputs(subscriptionId, interval)
     A->>D: POST /computation { input }
     D-->>A: { output }
@@ -52,10 +53,13 @@ sequenceDiagram
 ```
 
 1. **Subscribe.** The consumer creates a subscription: which container to run, the fee per
-   delivery (`feeToken` + `feeAmount`), how many independent agents must answer (`redundancy`),
-   which compute wallet funds it, and optionally a **verifier**.
-2. **Request.** `sendRequest` (or the interval schedule) opens a request. The Coordinator records
-   a **commitment** — the on-chain fingerprint of what was asked, for which fee, in which interval.
+   delivery (`feeToken` + `feeAmount`), which compute wallet funds it, and optionally a
+   **verifier**.
+2. **Request.** The client stores the inputs and calls `sendRequest` (or the interval schedule
+   opens one). The Coordinator records a **commitment** — the on-chain fingerprint of what was
+   asked, for which fee, in which interval — and emits `RequestStarted`. Inputs never travel
+   through the Router: agents fetch them from the client (`getComputeInputs`), which is what
+   keeps large inputs cheap.
 3. **Execute.** Agents see the request, fetch the inputs, run the container, and submit the
    output on-chain (the delivery transaction is the agent's gas cost).
 4. **Deliver & settle.** The Coordinator validates the delivery against the commitment, invokes
@@ -113,16 +117,15 @@ Subscriptions activate lazily and can be cancelled by their owner at any time.
 
 Consumers pre-fund a **compute wallet** (created via the WalletFactory) and point their
 subscriptions at it. On every valid delivery, **Billing** transfers the subscription's
-`feeAmount` in `feeToken` from that wallet to the delivering agent. Redundancy `N` means `N`
-agents each deliver and each get paid — you are buying independent answers.
+`feeAmount` in `feeToken` from that wallet to the delivering agent — one delivery per request,
+first valid delivery wins. (The delivering agent must also have its own factory-created
+payment wallet to receive the fee.)
 
-Budget rule of thumb: `feeAmount × redundancy × executions`, plus any protocol fee.
+Budget rule of thumb: `feeAmount × executions`, plus any protocol fee.
 
 ## Verification: trust is a dial
 
-- **Baseline** — a single agent's answer (`redundancy = 1`, no verifier): cheapest and fastest.
-- **Redundancy** — several independent agents deliver the same interval; compare answers
-  in your callback.
+- **Baseline** — accept the delivering agent's answer as-is (no verifier): cheapest and fastest.
 - **Verifier contracts** — a subscription can name an on-chain verifier (the `IVerifier`
   interface). Deliveries then carry a proof and only count once the verifier accepts it.
   Available verifiers are listed per network in the

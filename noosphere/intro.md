@@ -9,8 +9,8 @@ description: Noosphere is HPP's on-chain compute framework — smart contracts r
 
 Smart contracts can't run an AI model, crunch a dataset, or react to complex off-chain
 conditions. **Noosphere** fixes that: it's HPP's on-chain framework for **requesting off-chain
-compute from smart contracts** — and getting the result back on-chain, with payment, redundancy,
-and verification handled by the protocol.
+compute from smart contracts** — and getting the result back on-chain, with payment and
+verification handled by the protocol.
 
 The defining property: **both the request and the settlement live on-chain.** A consumer
 contract creates a *compute subscription*; decentralized **agents** pick the work up, run it in
@@ -46,7 +46,7 @@ its own docs ([x402 on HPP](/x402)).
 | Request path | **On-chain** — Router/Coordinator route it, results return by callback | Off-chain — a normal paid HTTP call; no protocol contracts involved |
 | Settlement | **On-chain billing** from the consumer's escrow wallet, per delivery | Stablecoin payment per call, settled by the [HPP facilitator](/x402/facilitator) straight to your wallet |
 | Funds to start | Agent wallet needs ETH (delivery gas) | **None** — an empty wallet works, gas is sponsored |
-| Verification | Redundancy · verifier contracts | Optional signed execution receipt |
+| Verification | On-chain verifier contracts | Optional signed execution receipt |
 | Docs | You are here | **[Sell from an agent](/x402/sell-from-an-agent)** |
 
 ## The pieces
