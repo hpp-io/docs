@@ -14,8 +14,6 @@ One container, both markets. In this tutorial you will, from scratch:
 
 Everything below — commands, outputs, screenshots — comes from one real run on **HPP Sepolia**.
 
-![Dashboard progression: fresh → first x402 sale → first on-chain delivery](/img/noosphere/tut-flow.gif)
-
 :::tip Want a feel before the terminal?
 The **[Noosphere Playground](https://dapptest.hpp.io/)** runs this same protocol from a
 browser dApp — on-chain LLM chat and VRF games on HPP Sepolia, no installation.
@@ -153,9 +151,8 @@ socket), mounted your paid route + MCP tool, and synced the chain. Open the dash
 
 ![Fresh dashboard — healthy, connected, nothing served yet](/img/noosphere/tut-01-dashboard-fresh.png)
 
-The **x402 Seller** tab shows your service, waiting for its first sale:
-
-![Seller tab — one service, zero calls](/img/noosphere/tut-02-seller-zero.png)
+The **x402 Seller** tab already lists your `hello-world` service — price, scheme, zero calls —
+waiting for its first sale.
 
 ---
 
@@ -300,9 +297,11 @@ RequestStarted: 0x…   SubscriptionId: 194
 ```
 
 The dashboard's **Events** card ticks *Completed: 1* — your node just earned its first
-on-chain delivery fee:
+on-chain delivery fee. (The Failed/Skipped counts are leftovers from this capture session's
+earlier attempts — a clean run shows 1/1. One of them was a lost delivery race, explained in
+3.5.)
 
-![Dashboard after the delivery — Completed 1, payment wallet live](/img/noosphere/tut-04-dashboard-delivered.png)
+![Events after the delivery — Completed 1](/img/noosphere/tut-04-events-completed.png)
 
 **Computing History** shows the job with its fee and gas:
 
