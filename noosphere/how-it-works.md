@@ -18,7 +18,8 @@ requests, escrow, and delivery between them.
   - **Router** — the single address consumers talk to. It registers protocol components and
     routes each subscription to the right Coordinator version (`routeId`).
   - **Coordinator** — runs the request lifecycle: opens requests as **commitments**, validates
-    agent deliveries, and triggers the consumer callback.
+    agent deliveries, and reports fulfillment back through the Router, which invokes the
+    consumer callback.
   - **Billing** — meters fees per delivery and settles them from the consumer's compute wallet.
   - **WalletFactory / Wallet** — creates and manages the escrow wallets that fund subscriptions.
 - **Agent.** A node running [`noosphere-agent-js`](https://github.com/hpp-io/noosphere-agent-js)
@@ -44,11 +45,12 @@ sequenceDiagram
     C->>R: sendRequest(subscriptionId, interval)
     R->>K: open request (commitment)
     K-->>A: RequestStarted event
-    A->>C: getComputeInputs(subscriptionId, interval)
+    A->>C: getComputeInputs(subscriptionId, interval, …)
     A->>D: POST /computation { input }
     D-->>A: { output }
     A->>K: deliver(output [, proof])
-    K->>C: _receiveCompute(output, node, …)
+    K->>R: validated fulfillment
+    R->>C: callback: _receiveCompute(output, node, …)
     Note over K: Billing pays the agent's fee<br/>from the consumer's compute wallet
 ```
 
@@ -62,8 +64,8 @@ sequenceDiagram
    keeps large inputs cheap.
 3. **Execute.** Agents see the request, fetch the inputs, run the container, and submit the
    output on-chain (the delivery transaction is the agent's gas cost).
-4. **Deliver & settle.** The Coordinator validates the delivery against the commitment, invokes
-   the consumer's callback, and Billing pays the agent from the compute wallet. With
+4. **Deliver & settle.** The Coordinator validates the delivery against the commitment, the
+   Router invokes the consumer's callback, and Billing pays the agent from the compute wallet. With
    `useDeliveryInbox`, results are stored in a **DeliveryInbox** for the consumer to pull instead.
 
 ## For comparison: the x402 per-call flow (separate rail)
@@ -116,12 +118,14 @@ Subscriptions activate lazily and can be cancelled by their owner at any time.
 ## Payment: compute wallets and billing
 
 Consumers pre-fund a **compute wallet** (created via the WalletFactory) and point their
-subscriptions at it. On every valid delivery, **Billing** transfers the subscription's
-`feeAmount` in `feeToken` from that wallet to the delivering agent — one delivery per request,
-first valid delivery wins. (The delivering agent must also have its own factory-created
-payment wallet to receive the fee.)
+subscriptions at it. On every valid delivery, **Billing** settles the subscription's
+`feeAmount` in `feeToken` from that wallet — the delivering agent receives `feeAmount` minus
+a small protocol cut (the fee comes *out of* `feeAmount`, not on top). One delivery per
+request; the first valid delivery wins. (The delivering agent must also have its own
+factory-created payment wallet to receive the fee.)
 
-Budget rule of thumb: `feeAmount × executions`, plus any protocol fee.
+Budget rule of thumb: exactly `feeAmount` is escrow-locked per request, so plan
+`feeAmount × executions`.
 
 ## Verification: trust is a dial
 

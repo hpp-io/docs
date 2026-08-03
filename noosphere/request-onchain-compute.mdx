@@ -75,7 +75,7 @@ contract MyClient is TransientComputeClient {
 > deployed interfaces, or `createSubscription` will revert with no data.
 
 The repo ships a complete example:
-[`src/v1_0_0/sample/MyTransientClient.sol`](https://github.com/hpp-io/noosphere-evm/blob/main/src/v1_0_0/sample/MyTransientClient.sol).
+[`src/v1_0_0/sample/MyTransientClient.sol`](https://github.com/hpp-io/noosphere-evm/blob/80bce17f1c679142c161197a5ddd612e70864f6e/src/v1_0_0/sample/MyTransientClient.sol).
 
 ## The subscription parameters
 
@@ -98,7 +98,8 @@ pipelines. The callback is the same.
 
 Fund a compute wallet, **approve your consumer contract to spend from it**, and pass it as
 `wallet`. Every delivery, the protocol's Billing moves `feeAmount` in `feeToken` from that
-wallet to the delivering agent. Budget `feeAmount × executions`, plus any protocol fee.
+wallet to the delivering agent (minus a small protocol cut taken out of `feeAmount`, not
+added on top). Budget `feeAmount × executions`.
 
 ## Trust levels
 

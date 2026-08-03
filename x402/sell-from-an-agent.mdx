@@ -51,6 +51,7 @@ Add the container and a service to the agent's `config.json`:
   ],
   "x402Seller": {
     "enabled": true,
+    "payTo": "0xYourReceivingWallet",        // where the USDC.e lands
     "facilitators": { "eip155:181228": "https://facilitator-sepolia.hpp.io" },
     "defaultAsset": {
       "eip155:181228": {
@@ -84,9 +85,12 @@ Mainnet: use `eip155:190415` with `https://facilitator.hpp.io` — see
 ### 3. Run and earn
 
 ```bash
-npm run init          # creates your keystore wallet (receiving address)
+npm run init          # creates the agent's keystore (its signing key)
 npm run agent         # paid routes live on :4000
 ```
+
+Payments land at `x402Seller.payTo` (falling back to `chain.wallet.paymentAddress` if unset) —
+the seller refuses to start with neither configured.
 
 When a buyer calls `POST /paid/compute/sentiment` with a valid payment:
 
@@ -132,7 +136,7 @@ verifiable proof of *what the payment bought*.
     "enabled": true,
     "apiUrl": "https://x402-explorer.hpp.io",
     "publicBaseUrl": "https://your-public-host.example.com",
-    "register": true          // signs with your keystore wallet (payTo)
+    "register": true          // signed by the keystore wallet — payTo must equal it
   }
 }
 ```

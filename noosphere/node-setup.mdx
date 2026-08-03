@@ -35,34 +35,43 @@ through it. A typical session:
 
 ```text
 🌐 Network: testnet (chainId: 181228)
+📡 Fetching registry from https://raw.githubusercontent.com/hpp-io/noosphere-registry/main/networks/181228.json
 
 📦 Available Containers:
 
   [1] noosphere-hello-world
       Simple Hello World example container for testing Noosphere compute requests
       Port: 8081, Image: ghcr.io/hpp-io/example-hello-world-noosphere:latest
+
   [2] noosphere-llm
-      LLM inference
+      LLM (Large Language Model) inference container supporting multiple models via LLM Router and Gemini integration
       Port: 8082, Image: ghcr.io/hpp-io/example-llm-noosphere:latest
   ...
 
-Select containers (e.g. 1,2): 1
-✓ Added: noosphere-hello-world
+Enter container numbers to add (comma-separated, e.g., "1,2") or "all": 1
 
-Sell selected containers per-call via x402? (y/N): n
+💰 Sell these containers per-call via x402? (y/N): n
 
-✅ config.json written
+✓ Config generated: ./config.json
   Containers: noosphere-hello-world
-Next steps:
-  1. cp .env.example .env  (set KEYSTORE_PASSWORD)
+
+📝 Next steps:
+  1. Update wallet.paymentAddress in config.json (receives x402 payments too)
   2. Set environment variables for container env (if any)
-  3. npm run init
+  3. Run: npm run init  (to create keystore)
+  4. Run: npm run agent (to start the agent)
 ```
 
 Start with `noosphere-hello-world` — the "is everything wired" container. Add more (or
 [your own](./container-contract.md)) any time by editing `config.json`; every block is
 explained in the [configuration reference](./configuration.md). Answering **y** to the selling
-question pre-fills the x402 seller block — harmless either way, you can change it later.
+question pre-fills the x402 seller block (it will also ask a per-call price) — harmless either
+way, you can change it later.
+
+About "Next steps 1": the generator writes `wallet.paymentAddress` as the **zero address**.
+Set it to the wallet that should receive your earnings — `npm run setup:wallet` fills it in
+automatically when you [create the agent's payment wallet](./serve-compute-network.mdx), or
+edit it by hand.
 
 ```bash
 cp .env.example .env        # then edit: KEYSTORE_PASSWORD=<your password>
@@ -100,8 +109,9 @@ Two addresses matter:
 
 - **Agent address** (printed above) — signs on-chain delivery transactions. Needs ETH **only
   for the compute-network rail**.
-- **Receiving address** (`PAYMENT_ADDRESS` in `.env`, defaults to the agent address) — where
-  earnings accumulate on either rail.
+- **Receiving address** (`chain.wallet.paymentAddress` in `config.json`) — where earnings
+  accumulate on either rail. Not set automatically: the generator leaves the zero address
+  until `setup:wallet` (or you) fills it.
 
 ## 4. Run it
 
@@ -109,15 +119,19 @@ Two addresses matter:
 npm run agent               # agent API on :4000
 ```
 
-Healthy startup logs look like:
+Healthy startup logs look like (excerpt from a real run):
 
 ```text
-[agent] config loaded (network eip155:181228, 1 container)
-[agent] keystore unlocked — agent 0xYourAgent…
-[agent] pulling ghcr.io/hpp-io/example-hello-world-noosphere:latest …
-[agent] container noosphere-hello-world ready on :8081
-[agent] chain monitor connected (WebSocket) — replaying from checkpoint
-[agent] scheduler running (commitment interval 60s)
+📦 Payload storage config: default=ipfs, S3=✗, IPFS=✗
+✓ Loaded keystore: ./.noosphere/keystore.json
+  EOA: 0xYourAgentAddress…
+🔌 WebSocket connection attempt 1/3...
+✓ Connected via WebSocket (push-based events)
+Starting from block 295062
+🕐 Starting Scheduler Service...
+  Commitment generation interval: 60000ms
+✓ Noosphere Agent is running
+[INFO] Express server running on http://localhost:4000
 ```
 
 In a second terminal, start the [dashboard](./dashboard.mdx):
@@ -154,7 +168,7 @@ come from `.env`.
 
 | Symptom | Fix |
 | --- | --- |
-| Agent won't start | `.env` has `KEYSTORE_PASSWORD`? Docker running? `config.json` exists? (`npm run init` needs it first) |
+| Agent won't start | `.env` has `KEYSTORE_PASSWORD`? Docker running? `config.json` exists? (`npm run init` itself requires an existing `config.json`) |
 | Port already in use | Something else on 4000/3100 — set `EXPRESS_PORT` or remap compose ports |
 | Dashboard shows no connection | RPC/WS unreachable — check `chain.rpcUrl`/`wsRpcUrl` in `config.json` |
 | Container errors | `docker logs noosphere-<container-name>` |

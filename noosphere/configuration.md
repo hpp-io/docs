@@ -27,18 +27,31 @@ Secrets are never written into the file — use `${ENV_VAR}` substitution and pu
 
 ```jsonc
 "chain": {
+  "enabled": true,
   "rpcUrl": "https://sepolia.hpp.io",
   "wsRpcUrl": "wss://sepolia.hpp.io",
-  "router": "0x480a4f7506548773040d47dd7b6372dbf71358d4",
+  "routerAddress": "0x480a4f7506548773040d47dd7b6372dbf71358d4",
+  "coordinatorAddress": "0xeda4a7957e8f5de6cd6bd747c3ccd5e1c295302c",
+  "deploymentBlock": 295062,        // start scanning from here — use a recent block
+  "processingInterval": 5000,       // ms between chain-processing passes
   "wallet": {
-    "keystorePath": ".noosphere",
-    "paymentAddress": "${PAYMENT_ADDRESS}"
+    "keystorePath": "./.noosphere/keystore.json",
+    "paymentAddress": "0xYourReceivingWallet"   // written by setup:wallet, or set by hand
   }
 }
 ```
 
-`npm run generate:config` fills the addresses for the network you pick, sourced from the
-[community registry](./registry-and-deployments.md).
+`npm run generate:config` fills the addresses for the network you pick (from its built-in
+per-network presets; the [community registry](./registry-and-deployments.md) supplies the
+container/verifier catalog). It leaves `paymentAddress` as the zero address — set it, or let
+`npm run setup:wallet` fill it when you create the agent's payment wallet.
+
+:::note
+`config.json` is parsed as plain JSON against the agent's TypeScript types — there is **no
+schema validation**, so a misspelled key is silently ignored. `${ENV_VAR}` substitution works
+in any string value; an unset variable is left as the literal `${…}` with only a console
+warning.
+:::
 
 ## `containers[]`
 
@@ -60,6 +73,16 @@ Serve proof-checked subscriptions: each entry names the on-chain verifier contra
 when the proof is produced off-chain, the companion proof-service container.
 `PROOF_SERVICE_PRIVATE_KEY` in `.env` signs proof submissions.
 
+## `scheduler` / `retry` / `containerExecution`
+
+```jsonc
+"scheduler": { "enabled": true, "cronIntervalMs": 60000, "syncPeriodMs": 3000 },
+"retry":     { "maxRetries": 3, "retryIntervalMs": 30000 }
+```
+
+An optional `containerExecution` block (`timeout`, `connectionRetries`,
+`connectionRetryDelayMs`) tunes how the agent calls your containers.
+
 ## `payload`
 
 Large inputs/outputs stay off-chain; the agent resolves URI-based payloads:
@@ -74,12 +97,16 @@ Large inputs/outputs stay off-chain; the agent resolves URI-based payloads:
 "payload": { "uploadThreshold": 1024, "defaultStorage": "s3" }
 ```
 
+Defaults when the block is omitted: `uploadThreshold: 1024`, `defaultStorage: "ipfs"`.
+IPFS/S3 backends can also be configured inline via `payload.ipfs { … }` / `payload.s3 { … }`
+instead of env vars.
+
 ## Environment variables
 
 | Variable | Purpose |
 | --- | --- |
 | `KEYSTORE_PASSWORD` | Decrypts the agent keystore *(required)* |
-| `PAYMENT_ADDRESS` | Receiving wallet shown by `npm run init` |
+| *(any)* | `${ENV_VAR}` substitution is generic — reference any variable from a `config.json` string value |
 | `EXPRESS_PORT` | Agent API port (default `4000`) |
 | `PROOF_SERVICE_PRIVATE_KEY` | Only for verifiers with a proof service |
 | `R2_*` / `PINATA_*` / `IPFS_*` | Payload storage backends (above) |

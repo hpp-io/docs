@@ -38,8 +38,9 @@ RPC `https://sepolia.hpp.io` (`wss://sepolia.hpp.io`) · Explorer
 
 Both networks route subscriptions with
 `routeId = "Coordinator_v1.0.0"` (bytes32:
-`0x436f6f7264696e61746f725f76312e302e30…`). Consumers normally pass `bytes32(0)` and let the
-Router use the default route.
+`0x436f6f7264696e61746f725f76312e302e30…`). Consumers **must pass this routeId** when
+creating subscriptions — there is no default route: with `routeId = bytes32(0)` the
+subscription is created, but every `sendRequest` reverts (`CoordinatorNotFound`).
 
 > Always confirm against the registry files —
 > [`networks/190415.json`](https://github.com/hpp-io/noosphere-registry/blob/main/networks/190415.json) ·
@@ -57,14 +58,15 @@ Community-verified images any agent can serve and any subscription can reference
 | `noosphere-freqtrade` | Crypto price prediction (15-minute candles) |
 | `noosphere-vrng` | Serves NoosphereVRF randomness epochs |
 
-Each registry entry carries the image, port, input schema, base price, and verification status —
-everything an agent needs to serve it and a consumer needs to request it.
+Each registry entry carries the image, port, base price, verification status and — where the
+container declares one — an input schema: everything an agent needs to serve it and a
+consumer needs to request it.
 
 ## Verifiers
 
-Verifier contracts that subscriptions can require (per network). Sepolia currently lists the
-**Immediate Finalize Verifier** — deliveries finalize as soon as the proof-carrying delivery is
-accepted.
+Verifier contracts that subscriptions can require (per network). Both networks currently list
+an **Immediate Finalize Verifier** — deliveries finalize as soon as the proof-carrying
+delivery is accepted.
 
 ## Using the registry from code
 
@@ -78,8 +80,11 @@ const registry = new RegistryManager({
 await registry.load();
 
 const containers = registry.searchContainers('llm');
-const router = registry.getDeployment('190415').contracts.router;
+const hello = registry.getContainer('noosphere-hello-world');
 ```
+
+The SDK syncs the **container and verifier catalog**. Contract addresses are not exposed
+through it — read them from the network JSON files linked above (or the tables on this page).
 
 ## Contributing to the registry
 
