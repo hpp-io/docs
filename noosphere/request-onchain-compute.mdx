@@ -63,6 +63,10 @@ contract MyClient is TransientComputeClient {
         lastOutputHash = output.contentHash;
         // resolve output.uri off-chain, or decode inline data — then act on it
     }
+
+    function typeAndVersion() external pure override returns (string memory) {
+        return "MyClient 1.0.0";
+    }
 }
 ```
 
