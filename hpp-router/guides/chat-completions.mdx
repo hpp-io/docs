@@ -17,16 +17,17 @@ POST https://router.hpp.io/llm/v1/chat/completions
 
 ## Payment methods
 
-HPP Router supports two payment rails. Always send an API key for consumer identification.
+HPP Router supports prepaid quota, keyed x402 wallet, and a **keyless Agent** path.
 
 | Rail | How to enable | When to use |
 | --- | --- | --- |
-| **Quota** (default) | Omit `X-Payment-Rail` | Prepaid credit on the API key |
-| **Wallet (x402)** | `X-Payment-Rail: wallet` | On-chain settlement per request |
+| **Quota** (default) | API key, omit `X-Payment-Rail` | Prepaid credit on the API key |
+| **Wallet (x402)** | API key + `X-Payment-Rail: wallet` | On-chain settlement per request |
+| **Agent (keyless)** | **No API key** | Autonomous agents / `hpp-x402` — see [x402 Agent](./x402-agent) |
 
-On the wallet rail, paid models typically return **`402`** until you attach a payment signature. Free providers (for example some Ollama models) are not wallet-billed even if the header is set.
+On the wallet or Agent path, paid models typically return **`402`** until you attach a payment signature. On Agent, free or zero-price models are rejected (`keyless_free_model_not_allowed`).
 
-See [Authentication](../authentication) for key schemes and [TypeScript SDK — Wallet](../client-sdk/typescript#wallet-x402-payment-rail) for the automatic SDK loop.
+See [Authentication](../authentication) for key schemes, [TypeScript SDK — Wallet](../client-sdk/typescript#wallet-x402-payment-rail) for the keyed SDK loop, and [x402 Agent (keyless)](./x402-agent) for no-API-key agents.
 
 ### Basic request (quota)
 
@@ -143,8 +144,8 @@ The `usage` block drives [billing](../models-and-pricing). When you use `hpprout
 
 ## Errors
 
-- **`401`** — missing or invalid API key.
-- **`402`** — wallet rail payment challenge (`PAYMENT-REQUIRED`). Sign and retry once.
+- **`401`** — missing or invalid API key; on Agent path, also free-model rejection (`keyless_free_model_not_allowed`).
+- **`402`** — wallet / Agent payment challenge (`PAYMENT-REQUIRED`). Sign and retry once.
 - **`429`** — rate limit or prepaid **quota** exhaustion (not the normal wallet challenge).
 
-See [Errors](./errors) for the full status table and envelope shapes.
+See [Errors](./errors) and [x402 Agent](./x402-agent) for details.

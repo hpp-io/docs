@@ -1,0 +1,146 @@
+---
+title: x402 Agent (keyless)
+sidebar_label: x402 Agent (keyless)
+description: Call HPP Router chat and image endpoints with x402 without an API key — keyless Agent path, headers, and the public settlement feed.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodePanel from '@site/src/components/CodePanel';
+
+# x402 Agent (keyless)
+
+HPP Router exposes a **keyless Agent** path for chat and image generation: an agent can receive an HTTP **402**, sign an x402 payment, and retry **without** an API key or portal account.
+
+This is different from the keyed **wallet rail**, which still requires an API key plus `X-Payment-Rail: wallet`.
+
+| Path | API key | Client signal | Landing Source badge |
+| --- | --- | --- | --- |
+| Quota | Required | (none) | — |
+| Wallet (keyed) | Required | `X-Payment-Rail: wallet` | — |
+| **Agent (keyless)** | **Omitted** | Anonymous Kong consumer | **Agent** (`auth_mode=keyless`) |
+
+Wallet tooling (hpp-x402, Claude Desktop, Cursor, spend caps) lives in [Pay from an AI agent](/x402/agents). This page covers **Router-specific** behavior only.
+
+## Endpoints
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `POST` | `/llm/v1/chat/completions` | Keyless 402 for paid models |
+| `POST` | `/v1/images/generations` | Same Agent path |
+
+Omit `Authorization` / `apikey`. Do **not** send a consumer API key on this path.
+
+## Challenge and headers
+
+On a paid model without `PAYMENT-SIGNATURE`, the gateway returns **402** with machine-readable payment terms.
+
+Clients (including BlockRun-style agents) should accept these challenge headers:
+
+| Header | Role |
+| --- | --- |
+| `PAYMENT-REQUIRED` | Base64 JSON challenge (primary) |
+| `payment-required` | Same payload (lowercase alias) |
+| `x-payment-required` | Same payload (alias) |
+| `WWW-Authenticate` | `X402 requirements="<base64>"` |
+
+The JSON body also includes `resource`, `accepts[]`, and (on keyless) discovery extensions such as `extensions.bazaar`. Sign `accepts[0]` with `@x402/core` + `@x402/evm` (`upto` / Permit2), then retry **once** with:
+
+```http
+PAYMENT-SIGNATURE: <base64>
+```
+
+(`X-PAYMENT` is also accepted.)
+
+Fund the paying wallet with the asset in `accepts[0]` (commonly USDC.e on HPP). See [Networks & token](/x402/networks-and-token).
+
+`resource.url` is the **public** gateway URL the agent should POST to (for catalog matching and settlement).
+
+## Free models are rejected
+
+On the Agent path, free or zero-price models are **not** allowed. The gateway returns **401** with code `keyless_free_model_not_allowed`. Use a paid model.
+
+Keyed wallet + free providers can still bypass wallet billing in some cases; Agent does not.
+
+## Minimal curl flow
+
+Examples below use the production host `https://router.hpp.io`.
+
+<CodePanel>
+<Tabs groupId="x402-agent-curl" queryString>
+<TabItem value="challenge" label="1) Challenge" default>
+
+```bash showLineNumbers
+# No API key
+curl -i -X POST https://router.hpp.io/llm/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4o-mini",
+    "messages": [{ "role": "user", "content": "Hello!" }],
+    "max_tokens": 32
+  }'
+
+# Expect HTTP 402 + PAYMENT-REQUIRED / body.accepts[0]
+```
+
+</TabItem>
+<TabItem value="retry" label="2) Retry">
+
+```bash showLineNumbers
+# After signing the 402 JSON body → signature.b64
+curl -X POST https://router.hpp.io/llm/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "PAYMENT-SIGNATURE: $(cat signature.b64)" \
+  -d '{
+    "model": "openai/gpt-4o-mini",
+    "messages": [{ "role": "user", "content": "Hello!" }],
+    "max_tokens": 32
+  }'
+```
+
+</TabItem>
+</Tabs>
+</CodePanel>
+
+In code, use a small `fetch` loop (402 → sign → retry). `@hpprouter/sdk` still expects an API key for chat today, so keyless Agent calls are typically raw HTTP + an `@x402` signer, or [hpp-x402](/x402/agents) against the Router URL.
+
+After installing hpp-x402, allow the Router host and call chat:
+
+```bash
+hpp-x402 policy set router.hpp.io --https true --max-per-call 1
+
+hpp-x402 call 'https://router.hpp.io/llm/v1/chat/completions' \
+  --body '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"hi"}],"max_tokens":8}'
+```
+
+## Public settlement feed
+
+Successful wallet settles (keyed and keyless) appear on a public feed used by the landing page.
+
+```
+GET /public/v1/agent-activity?limit=20
+```
+
+No authentication. Response items include public fields only (model, amount, payer, tx, …) — never prompts or consumer IDs.
+
+| Field | Meaning |
+| --- | --- |
+| `authMode` | `keyed` or `keyless` |
+| `isAgent` | `true` when `authMode` is `keyless` |
+
+Example:
+
+```bash
+curl -sS 'https://router.hpp.io/public/v1/agent-activity?limit=5' \
+  | jq '.data[0] | {model, isAgent, authMode, payer}'
+```
+
+On the marketing landing page, the **x402 settlements** table shows Source **Agent** for keyless settles and **—** for keyed wallet settles.
+
+## Related
+
+- [Authentication — x402 Wallet](../authentication#x402-wallet) (keyed wallet rail)
+- [Chat Completions](./chat-completions)
+- [Errors — 402](./errors)
+- [Pay from an AI agent](/x402/agents) (hpp-x402 MCP for any x402 URL)
+- [x402 directory](/x402/directory)

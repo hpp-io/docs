@@ -60,22 +60,24 @@ The Bearer scheme is what most OpenAI-compatible SDKs send by default, which is 
 | Endpoint | Auth | Purpose |
 | --- | --- | --- |
 | `GET /llm/v1/models` | Optional | [List models](./models-and-pricing) |
-| `POST /llm/v1/chat/completions` | Required (wallet: also `X-Payment-Rail: wallet`) | [Chat completions](./guides/chat-completions) |
-| `POST /v1/images/generations` | Required (wallet: also `X-Payment-Rail: wallet`) | [Image generation](./guides/image-generation) |
+| `POST /llm/v1/chat/completions` | Required for quota/keyed wallet; **optional for [Agent (keyless)](./guides/x402-agent)** | [Chat completions](./guides/chat-completions) |
+| `POST /v1/images/generations` | Required for quota/keyed wallet; **optional for [Agent (keyless)](./guides/x402-agent)** | [Image generation](./guides/image-generation) |
 | `GET /api/usage` | Required | [Usage summary](./guides/usage-and-settlement) |
 | `GET /api/quota-check` | Required | [Check prepaid quota](./guides/usage-and-settlement#check-quota) |
 | `GET /api/user/audit/:logId` | Required | [Get user audit log](./api-reference/consumer-api#get-apiuserauditlogid) |
+| `GET /public/v1/agent-activity` | None | Public x402 settlement feed ([Agent guide](./guides/x402-agent#public-settlement-feed)) |
 
-Billed endpoints require an API key so Kong can identify the consumer. Wallet payments still need the key; they additionally use the payment-rail header and x402 payment signature.
+Quota and keyed wallet calls require an API key so Kong can identify the consumer. Keyed wallet payments additionally use `X-Payment-Rail: wallet` and an x402 signature.
 
-For wallet payments, also include the `X-Payment-Rail: wallet` header. See [Chat Completions](./guides/chat-completions) for examples.
+**Agent (keyless)** omits the API key entirely: the gateway issues a **402** for paid models and settles after `PAYMENT-SIGNATURE`. See [x402 Agent (keyless)](./guides/x402-agent).
 
 ## Payment rails
 
 | Rail | Client signal | Notes |
 | --- | --- | --- |
-| Quota (default) | No `X-Payment-Rail` header | Prepaid credit on the API key |
-| Wallet (x402) | `X-Payment-Rail: wallet` | On-chain settlement for paid models |
+| Quota (default) | API key, no `X-Payment-Rail` | Prepaid credit on the API key |
+| Wallet (x402, keyed) | API key + `X-Payment-Rail: wallet` | On-chain settlement for paid models |
+| Agent (x402, keyless) | **No API key** | Anonymous agent consumer; see [x402 Agent](./guides/x402-agent) |
 
 ## x402 Wallet
 
@@ -83,9 +85,12 @@ When you send a request with `X-Payment-Rail: wallet`, the gateway uses the x402
 
 Retry once with the same request body plus `PAYMENT-SIGNATURE` (the gateway also accepts `X-PAYMENT`). Prefer [`@hpprouter/sdk`](./client-sdk/typescript#wallet-x402-payment-rail) with `paymentRail` + `paymentSigner` so this loop is automatic.
 
+For agents that must call **without** an API key, use the [Agent (keyless) path](./guides/x402-agent) instead.
+
 For protocol details, see:
 - [x402 on HPP](/x402)
 - [Chat Completions — wallet](./guides/chat-completions#wallet)
+- [x402 Agent (keyless)](./guides/x402-agent)
 - [Errors — 402](./guides/errors)
 
 ## Errors
