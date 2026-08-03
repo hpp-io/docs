@@ -133,4 +133,5 @@ Budget rule of thumb: `feeAmount × redundancy × executions`, plus any protocol
 The same agent network serves **NoosphereVRF** — epoch-based verifiable randomness that
 contracts can consume on both networks (addresses in
 [Registry & deployments](./registry-and-deployments.md)). Agent operators opt in by running the
-registry's `noosphere-vrng` container and enabling the `vrf` config block.
+registry's `noosphere-vrng` container and enabling the `vrf` config block. Try it live: the
+[Playground](https://dapptest.hpp.io/)'s **Raffle** and **Dice** draw with NoosphereVRF.

@@ -61,11 +61,20 @@ its own docs ([x402 on HPP](/x402)).
 Noosphere is live on **HPP Mainnet** and **HPP Sepolia** — contract addresses in
 [Registry & deployments](./registry-and-deployments.md).
 
+## Try it in your browser first
+
+No setup at all: the **[Noosphere Playground](https://dapptest.hpp.io/)** (HPP Sepolia) lets
+you drive the protocol from a wallet-connected dApp — create a compute subscription and chat
+with an **on-chain LLM**, or draw provably-fair winners with **NoosphereVRF** (Raffle & Dice).
+
+[![Noosphere Playground](/img/noosphere/playground-home.png)](https://dapptest.hpp.io/)
+
 ## Choose your path
 
 | I want to… | Start here |
 | --- | --- |
-| **see it work end to end** (15 min, Sepolia) | **[Tutorial: first request](./first-request.mdx)** |
+| **feel it, zero setup** (browser dApp) | **[Noosphere Playground ↗](https://dapptest.hpp.io/)** |
+| **see it work end to end** (15 min, Sepolia) | **[Tutorial: hello-world](./first-request.mdx)** |
 | understand the protocol | **[How it works](./how-it-works.md)** |
 | call compute **from my contract** | **[Request compute on-chain](./request-onchain-compute.mdx)** |
 | **run an agent** and earn fees | **[Set up the node](./node-setup.mdx)** → [serve the network](./serve-compute-network.mdx) |
