@@ -172,16 +172,16 @@ const config: Config = {
         },
         {
           type: 'docSidebar',
-          sidebarId: 'noosphereSidebar',
-          docsPluginId: 'noosphere',
-          label: 'Noosphere',
+          sidebarId: 'coderSidebar',
+          docsPluginId: 'coder',
+          label: 'HPP Coder',
           position: 'right',
         },
         {
           type: 'docSidebar',
-          sidebarId: 'coderSidebar',
-          docsPluginId: 'coder',
-          label: 'HPP Coder',
+          sidebarId: 'noosphereSidebar',
+          docsPluginId: 'noosphere',
+          label: 'Noosphere',
           position: 'right',
         },
         {
