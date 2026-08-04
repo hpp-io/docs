@@ -15,7 +15,13 @@ There are two ways in:
 | | How it happens | What you get |
 | --- | --- | --- |
 | **Auto-indexed** | Your service's **first settled payment** puts it in the catalog by itself — nothing to do | A listing marked *Auto-indexed*, ownership not proven |
-| **Registered** | You sign in and register it (below) | A *Verified* listing you control, with name, tags, links, and an optional on-chain identity |
+| **Registered** | You sign in, check your endpoints, and register them in one signed batch (below) | A listing with name, tags, links, and an optional on-chain identity |
+
+**Listing and ownership are separate questions.** Registering puts a service in the catalog;
+**verifying ownership** — proving you hold the address the service is paid at — is its own
+one-time signature. It happens automatically when you register with the payout wallet, and can
+be done any time later if you didn't (or if the service was indexed from a payment). Only the
+verified owner can edit a listing, withdraw it, or mint its identity.
 
 Either way, **the Explorer never holds your funds**. Buyers pay your `payTo` address directly on
 chain; listing only publishes metadata.
@@ -40,27 +46,25 @@ Your wallet address *is* your identity here — the Explorer matches listings by
 address. Sign in with the wallet your endpoint's `402` pays to, or you'll see an empty page.
 :::
 
-## Step 2 — Claim what's already yours
+## Step 2 — Verify ownership of what already pays you
 
-If your service has been paid before, it's probably already in the catalog. The Explorer tells you
-so at the top of **My services**:
+If your service has been paid before — or someone registered it on your behalf — it's probably
+already in the catalog. **My services** lists every service whose `402` pays your wallet but
+whose ownership is not yet proven, each with a **Verify ownership** button.
 
-![Unclaimed listings banner](/img/x402/explorer/explorer-claim.png)
+Click it and sign the message your wallet pops up. The statement covers **every endpoint of the
+service in one signature** (`Prove ownership of 2 service endpoints`), so an HTTP route and its
+MCP twin are proven together. The listing gets the **Verified** badge and unlocks management:
+editing, withdrawing, minting an identity.
 
-Click **Claim**, sign the message your wallet pops up, and the listing becomes yours: it gets the
-**Verified** badge and appears in your table below, where you can manage it.
-
-Signing proves you control the payout address. It's a plain **EIP-712 signature — no transaction,
-no gas, nothing spent.**
+Signing proves you control the payout address — nothing more. It's a plain **EIP-712 signature —
+no transaction, no gas**, and it does not move funds or change the price or where the money
+goes.
 
 ## Step 3 — Register a service
 
 To list something new (or something that has never been paid for yet), click
-**+ Register a service**.
-
-![The registration form](/img/x402/explorer/explorer-register.png)
-
-Fill in the service once, then add its endpoints:
+**+ Register a service**. Fill in the service once, then add its endpoints:
 
 **About the service**
 
@@ -84,7 +88,24 @@ One row per callable thing. A service that speaks both HTTP and MCP has two endp
 | **Description** | One line describing what the endpoint does — this is what semantic search matches on |
 | **Payment options** | Network, token, scheme (`exact` / `upto`), and price. Use **+ Add option** if you accept more than one network or scheme |
 
-Then click **🔑 Sign & submit** and approve the signature.
+If your service publishes an OpenAPI document, **⤓ Import from document** reads it and
+pre-fills the endpoints it charges for — you can still edit the rows by hand.
+
+### Check, then sign once
+
+Click **Check endpoints**. The Explorer calls each endpoint once *without* paying and shows you,
+per endpoint, what a buyer would see: the live payment terms (price, scheme, network), **the
+address the `402` pays**, and — if the endpoint refused the request — the endpoint's own error
+text.
+
+Some endpoints validate input *before* charging, so an empty probe never reaches the `402`. In
+that case paste a **sample request** (the JSON body a real call would send) and **Check again**.
+The sample is stored with the listing, so later re-checks work without you.
+
+When every endpoint you care about checks out, click **Sign once & register all** — one
+signature covers the whole batch, and your wallet shows exactly what it approves
+(`Register 2 service endpoints`). Results come back per endpoint; partial success is normal.
+If you edit the list after checking, the Explorer asks you to check again before signing.
 
 :::tip[Declare the input contract on every transport]
 A buyer can't inspect what they haven't paid for, so whatever your `402` advertises is all they get.
@@ -95,17 +116,21 @@ HTTP example carries over: the same service often takes `{"text": …}` over HTT
 :::
 
 :::tip[Your `402` is the source of truth]
-When you submit, the Explorer calls your endpoint once *without* paying and reads the `402` it
-returns. Price, scheme, network, and payment metadata are taken from that live response — so a
-listing can't advertise terms your service doesn't actually charge.
+Price, scheme, network, payment metadata — and the payout address — are taken from the live
+`402` your endpoint returns at check time, so a listing can't advertise terms your service
+doesn't actually charge. Have your endpoint live and returning a `402` before registering; if
+the probe can't reach it, the listing is still created from what you typed, and the real terms
+fill in on the first settlement.
+:::
 
-Two consequences worth knowing:
-
-- **Have your endpoint live and returning a `402` before registering.** If the probe fails, the
-  listing is still created from what you typed, and the real terms fill in on the first settlement.
-- **If your endpoint's `402` pays a different address than the wallet you signed with, registration
-  is rejected** (`the endpoint's 402 pays a different address`). This is the anti-squatting guard —
-  sign with the wallet in your endpoint's `payTo`.
+:::info[Registering with a wallet that isn't the payee]
+The endpoint's `402` is the authority on where the money goes. If you sign the registration
+with that same wallet, the listing is **verified** on the spot. If you sign with a different
+wallet, the listing is still created — **unverified**: it can appear in the catalog and earn,
+but only the payee can edit it, withdraw it, or mint its identity, by proving ownership later
+([Step 2](#step-2--verify-ownership-of-what-already-pays-you)). Overwriting an existing listing
+is gated on the wallet that registered it, and if an endpoint's payout address changes, its
+verification is cleared.
 :::
 
 New registrations enter **pending review**; an operator approves them before they show up in the
@@ -122,8 +147,8 @@ public catalog. You'll see them in your own table the whole time.
 | **Service** | Your service and its network — the ↗ opens its public page |
 | **Transports** | Every endpoint of the service, its scheme, and its state (`active`, `pending`, `withdrawn`) |
 | **Settlements** | On-chain payments counted across the whole service |
-| **Identity** | Its ERC-8004 identity — an agent number, or a button to mint one |
-| **Manage** | Delist a single transport (**Remove http** / **Remove mcp**) |
+| **Identity** | Its ERC-8004 identity — an agent number, or a button to mint one (verified owners only) |
+| **Manage** | Delist a single transport, or relist one you withdrew — for services you've verified |
 
 **Removing** a transport delists it from discovery — it stops appearing in the catalog. Your
 endpoint keeps working and your funds are untouched; you can list it again later with the same name
@@ -131,8 +156,9 @@ and price, and it keeps its identity.
 
 ## Step 5 (optional) — Mint an on-chain identity
 
-Click **⬡ Register service identity** to mint an [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004)
-identity for the service. **Gas is sponsored — it costs you nothing.**
+Once a service's ownership is verified, click **⬡ Register service identity** to mint an
+[ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) identity for it. **Gas is sponsored — it
+costs you nothing.**
 
 One identity covers *every* transport of the service, so your HTTP route and your MCP tool are one
 agent rather than two. Once minted, the badge shows the agent number (e.g. `⬡ #1487`), and your
