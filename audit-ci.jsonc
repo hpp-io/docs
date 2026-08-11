@@ -1,0 +1,18 @@
+{
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  // Fail CI on high/critical advisories only, matching the previous
+  // `npm audit --audit-level=high` behaviour.
+  "high": true,
+  "allowlist": [
+    // image-size — unpatched DoS in the ICNS and JXL/HEIF parsers.
+    // No fixed release exists (2.0.2 is the latest, published 2025-04-02) and
+    // upstream Docusaurus tracks the swap as a breaking change targeted at v4,
+    // so this will not clear on the 3.x line:
+    //   https://github.com/facebook/docusaurus/issues/12231
+    // Reached only through `@docusaurus/mdx-loader` at build time; the parser
+    // never runs in the deployed static site, and the images it measures are
+    // the ones committed to this repo. Re-check when Docusaurus v4 lands.
+    "GHSA-w3rx-r6r6-pgpr", // CVE-2025-71330 — ICNS parser infinite loop
+    "GHSA-5p2g-fcmc-qvqq"  // CVE-2025-71329 — JXL/HEIF parser infinite loop
+  ]
+}

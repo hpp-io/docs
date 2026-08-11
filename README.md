@@ -102,7 +102,21 @@ redirects here.
 
 Transitive advisories from the Docusaurus toolchain are pinned to patched versions
 via npm `overrides` in `package.json` (including `serialize-javascript`, `uuid`,
-`brace-expansion`, `minimatch`, `fast-uri`, `js-yaml`, `postcss`, `shell-quote`,
-`svgo`, `webpack-dev-server`, `body-parser`, and `dompurify`). Most of these packages are
-build-time or local-dev only and are **not present in the deployed static site**.
-CI fails on **high/critical** advisories (`npm audit --audit-level=high`).
+`brace-expansion`, `mermaid`, `minimatch`, `nanoid`, `fast-uri`, `js-yaml`, `postcss`,
+`shell-quote`, `svgo`, `webpack-dev-server`, `body-parser`, and `dompurify`). Most of these
+packages are build-time or local-dev only and are **not present in the deployed static site**.
+
+CI fails on **high/critical** advisories (`npx audit-ci --config audit-ci.jsonc`).
+Advisories that have no upstream fix are allowlisted one by one in `audit-ci.jsonc`, each
+with the reasoning recorded next to it — the gate still fails on anything not listed there.
+
+Currently allowlisted: the two `image-size` parser DoS advisories
+([CVE-2025-71330](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr),
+[CVE-2025-71329](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq)). `image-size` has had
+no release since 2025-04-02 and no patched version exists; Docusaurus tracks replacing it as
+a breaking change targeted at v4 ([#12231](https://github.com/facebook/docusaurus/issues/12231)),
+so it will not clear on the 3.x line. It is reached only through `@docusaurus/mdx-loader`
+when measuring images at build time, never in the deployed site.
+
+Build and deploy jobs carry a `timeout-minutes` bound so that an infinite-loop advisory of
+this kind can cost at most one short job rather than a 6-hour runner hold.
