@@ -21,6 +21,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
@@ -39,6 +40,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    # The `pages` concurrency group does not cancel in-progress runs, so a hung
+    # deploy would block every later deploy until it times out.
+    timeout-minutes: 15
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

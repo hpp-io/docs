@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # An unbounded job is the real cost of the infinite-loop DoS advisories we
+    # tolerate below: without this, a hung build holds a runner for 6 hours.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
@@ -18,8 +21,8 @@ jobs:
         run: npm ci
       - name: Build website
         run: npm run build
-      # Fail the PR on high/critical advisories. The single known moderate
-      # (js-yaml, build-time only, via Docusaurus' own deps) is tolerated and
-      # documented in the README "Security" section.
+      # Fail the PR on high/critical advisories. Advisories with no upstream fix
+      # are allowlisted individually in audit-ci.jsonc, with the reasoning next
+      # to each entry; see also the README "Security" section.
       - name: Security audit (high/critical)
-        run: npm audit --audit-level=high
+        run: npx audit-ci --config audit-ci.jsonc
