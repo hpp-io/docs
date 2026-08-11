@@ -1,0 +1,6 @@
+# Catch-all: Assign these reviewers to every PR by default
+*       @hayarobi
+
+# Assign specific experts to JavaScript files
+#*.js    @org-name/js-team-name
+
