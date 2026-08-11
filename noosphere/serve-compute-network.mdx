@@ -1,0 +1,85 @@
+---
+title: Serve the compute network
+sidebar_label: Serve the compute network
+description: The on-chain rail — fund delivery gas, earn subscription fees per delivery, level up with verifiers and VRF, and troubleshoot the earning loop.
+---
+
+# Serve the compute network
+
+The **on-chain rail**: consumers create subscriptions on-chain, the protocol routes requests to
+agents, and your node earns the subscription's fee for every valid delivery.
+*(Prerequisite: a [running node](./node-setup.mdx).)*
+
+## 1. Fund delivery gas
+
+Every delivery is a transaction your **agent address** signs, so it needs ETH on the target
+network (HPP Sepolia for testnet). The address was printed by `npm run init` and is shown on
+the [dashboard's](./dashboard.mdx) Agent Wallet card, along with its live balance.
+
+## 2. Create the agent's payment wallet (one-time)
+
+Deliveries are only accepted from agents whose **payment wallet** was created by the
+protocol's WalletFactory — without it, delivery transactions revert (`InvalidWallet`):
+
+```bash
+PRIVATE_KEY=0x<agent key> KEYSTORE_PASSWORD=<password> \
+WALLET_FACTORY_ADDRESS=<factory for your network> \
+npm run setup:wallet
+```
+
+```text
+✅ Agent wallet setup completed successfully!
+  ✓ Agent EOA: 0xYourAgent…
+  ✓ Payment Wallet (CA): 0xYourPaymentWallet…
+```
+
+Factory addresses per network: [Registry & deployments](./registry-and-deployments.md).
+(Running in Docker? Copy the updated `config.json` over `docker/config.docker.json` and
+restart.)
+
+## 3. How you earn
+
+```
+subscription (consumer)  →  request  →  your agent runs the container
+        →  delivery tx (your gas)  →  Billing pays feeAmount to you
+```
+
+- The [dashboard](./dashboard.mdx) **Events** card counts it: *Completed* rising = earning.
+- **Computing History** shows each delivery's fee earned vs gas spent — profit per job.
+- One delivery per request — the first valid delivery wins, so being fast and reliable wins requests.
+
+**See it happen end to end**: the [first-request tutorial](./first-request.mdx) sends a real
+subscription + request to your own node on Sepolia and reads the result back on-chain.
+
+## 4. Levels of participation
+
+| Level | What you run | What it earns |
+| --- | --- | --- |
+| **Basic worker** | Registry containers (`hello-world`, `llm`, …) | Subscription fees for plain deliveries |
+| **Verified compute** | A container **plus its proof service**, configured under `verifiers[]` | Fees from subscriptions that require proof-checked results |
+| **VRF operator** | The `noosphere-vrng` container + the `vrf` config block | Fees from NoosphereVRF epochs |
+
+## Serving your own container
+
+Anything that speaks the [container contract](./container-contract.md)
+(`POST /computation` → `{ output }`) can be served. Add it to `containers[]`; to make it
+requestable by *other* consumers, publish it to the
+[community registry](./registry-and-deployments.md#contributing-to-the-registry) so
+subscriptions can reference its ID.
+
+## Troubleshooting (earning loop)
+
+| Symptom | Fix |
+| --- | --- |
+| No requests arriving | Agent wallet funded? Active subscriptions exist for a container you serve? [Send one yourself](./first-request.mdx) |
+| Requests *Skipped* in Events | The request was for a container you don't serve, or another agent won it |
+| Delivery reverts | Agent wallet gas balance; container ID must match the subscription's |
+| Fee barely covers gas | Computing History shows fee vs gas per job — that subscription's `feeAmount` is too low to be worth serving |
+
+---
+
+:::tip The other rail
+The same node and containers can also earn **per-call over HTTP/MCP with zero funds** — see
+[Sell from an agent](/x402/sell-from-an-agent) in the x402 docs. Both flows side by side:
+[How it works](./how-it-works.md#for-comparison-the-x402-per-call-flow-separate-rail).
+:::

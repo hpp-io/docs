@@ -11,7 +11,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Build with the SDK',
       collapsed: false,
-      items: ['quickstart-sellers', 'quickstart-buyers'],
+      items: ['quickstart-sellers', 'sell-from-an-agent', 'quickstart-buyers'],
     },
     'how-it-works',
     'service-directory',

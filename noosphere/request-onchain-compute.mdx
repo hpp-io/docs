@@ -1,0 +1,115 @@
+---
+title: Request compute on-chain
+sidebar_label: Request compute on-chain
+description: Call off-chain compute from a smart contract — extend TransientComputeClient or ScheduledComputeClient, create a subscription, and receive results in a callback.
+---
+
+# Request compute on-chain
+
+Smart contracts request Noosphere compute through **subscriptions**. You extend a client base
+contract from [`noosphere-evm`](https://github.com/hpp-io/noosphere-evm), point it at the
+Router, and implement one callback.
+
+## Minimal one-shot client
+
+`TransientComputeClient` is the one-shot flavor: create a subscription, send a request with
+inputs, receive the output in a callback.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.23;
+
+import {TransientComputeClient} from "noosphere-evm/v1_0_0/client/TransientComputeClient.sol";
+import {Commitment} from "noosphere-evm/v1_0_0/types/Commitment.sol";
+import {PayloadData} from "noosphere-evm/v1_0_0/types/PayloadData.sol";
+
+contract MyClient is TransientComputeClient {
+    bytes32 public lastOutputHash;
+
+    constructor(address router) TransientComputeClient(router) {}
+
+    function createSubscription(
+        string memory containerId,   // which container agents must run, e.g. "noosphere-hello-world"
+        address feeToken,            // fee currency (address(0) = native)
+        uint256 feeAmount,           // fee paid per delivery
+        address wallet,              // your compute wallet (funds the fees; must approve this contract)
+        address verifier,            // optional proof verifier (address(0) = none)
+        bytes32 routeId              // coordinator route, e.g. bytes32("Coordinator_v1.0.0")
+    ) external returns (uint64) {
+        return _createComputeSubscription(
+            containerId, false, feeToken, feeAmount, wallet, verifier, routeId
+        );
+    }
+
+    function request(uint64 subscriptionId, bytes memory inputs)
+        external
+        returns (uint64, Commitment memory)
+    {
+        return _requestCompute(subscriptionId, inputs);   // inputs stored HERE for agents to fetch
+    }
+
+    // Called by the protocol when an agent delivers. Payloads arrive as
+    // PayloadData { contentHash, uri } — inline data or an off-chain URI.
+    function _receiveCompute(
+        uint64 subscriptionId,
+        uint32 interval,
+        bool useDeliveryInbox,
+        address node,
+        PayloadData calldata input,
+        PayloadData calldata output,
+        PayloadData calldata proof,
+        bytes32 containerId
+    ) internal override {
+        lastOutputHash = output.contentHash;
+        // resolve output.uri off-chain, or decode inline data — then act on it
+    }
+
+    function typeAndVersion() external pure override returns (string memory) {
+        return "MyClient 1.0.0";
+    }
+}
+```
+
+> Signatures above match the **deployed v1.0.0 protocol** (verified against the live Sepolia
+> Router). The repo's newest `main` targets the next protocol version — compile against the
+> deployed interfaces, or `createSubscription` will revert with no data.
+
+The repo ships a complete example:
+[`src/v1_0_0/sample/MyTransientClient.sol`](https://github.com/hpp-io/noosphere-evm/blob/80bce17f1c679142c161197a5ddd612e70864f6e/src/v1_0_0/sample/MyTransientClient.sol).
+
+## The subscription parameters
+
+| Parameter | Meaning |
+| --- | --- |
+| `containerId` | The compute to run — any agent running this container can serve you (first valid delivery wins) |
+| `useDeliveryInbox` | `true` → results land in the DeliveryInbox for you to pull, instead of a push callback |
+| `feeToken` / `feeAmount` | What each delivery pays, from your compute wallet |
+| `wallet` | Your **compute wallet** — created via the WalletFactory, funded by you, and **approved** for this consumer contract (`Wallet.approve(consumer, token, amount)`) |
+| `verifier` | Optional `IVerifier` contract; deliveries only count once their proof verifies |
+| `routeId` | Which Coordinator serves the subscription — `bytes32("Coordinator_v1.0.0")` on today's networks ([Registry & deployments](./registry-and-deployments.md)) |
+
+## Recurring work
+
+`ScheduledComputeClient` adds a schedule: `maxExecutions` runs, one every `intervalSeconds`.
+Agents watch upcoming intervals and deliver each one — price feeds, periodic scoring, batch
+pipelines. The callback is the same.
+
+## Paying for it
+
+Fund a compute wallet, **approve your consumer contract to spend from it**, and pass it as
+`wallet`. Every delivery, the protocol's Billing moves `feeAmount` in `feeToken` from that
+wallet to the delivering agent (minus a small protocol cut taken out of `feeAmount`, not
+added on top). Budget `feeAmount × executions`.
+
+## Trust levels
+
+- Start with `verifier = address(0)` for cheap, fast results — the first valid delivery wins.
+- Set a `verifier` for proof-checked compute — agents attach proofs (from a companion proof
+  service) and only verified deliveries reach your callback.
+
+Router addresses and available container IDs per network:
+[Registry & deployments](./registry-and-deployments.md).
+
+> **See it live:** the [Noosphere Playground](https://dapptest.hpp.io/)'s on-chain LLM chat is
+> exactly this pattern behind a UI — "Setup Compute Subscription", then every question is a
+> `requestCompute` and every answer arrives through the callback.

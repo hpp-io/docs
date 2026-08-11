@@ -105,6 +105,18 @@ const config: Config = {
         editUrl: 'https://github.com/hpp-io/docs/tree/main/',
       },
     ],
+    // Noosphere docs — the verifiable off-chain compute network on HPP, served
+    // at /noosphere as a standalone product section (same pattern as /x402).
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'noosphere',
+        path: 'noosphere',
+        routeBasePath: 'noosphere',
+        sidebarPath: './sidebarsNoosphere.ts',
+        editUrl: 'https://github.com/hpp-io/docs/tree/main/',
+      },
+    ],
   ],
   themes: [
     '@docusaurus/theme-mermaid',
@@ -113,7 +125,7 @@ const config: Config = {
       {
         hashed: true,
         indexDocs: true,
-        docsRouteBasePath: ['/', 'hub', 'hpp-router', 'x402', 'hpp-coder'],
+        docsRouteBasePath: ['/', 'hub', 'hpp-router', 'x402', 'hpp-coder', 'noosphere'],
         highlightSearchTermsOnTargetPage: true,
         language: ['en'],
       },
@@ -163,6 +175,13 @@ const config: Config = {
           sidebarId: 'coderSidebar',
           docsPluginId: 'coder',
           label: 'HPP Coder',
+          position: 'right',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'noosphereSidebar',
+          docsPluginId: 'noosphere',
+          label: 'Noosphere',
           position: 'right',
         },
         {
