@@ -133,6 +133,8 @@ const config: Config = {
   ],
 
   themeConfig: {
+    // Default social card for link previews (LinkedIn, X, Slack, Discord).
+    image: 'img/og-image.png',
     colorMode: {
       respectPrefersColorScheme: true,
     },
