@@ -21,6 +21,13 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: ['explorer/browse', 'explorer/sell', 'explorer/agents'],
     },
+    {
+      type: 'category',
+      label: 'Smart Accounts (AA)',
+      collapsed: false,
+      link: {type: 'doc', id: 'smart-accounts/overview'},
+      items: ['smart-accounts/quickstart', 'smart-accounts/agents-and-sessions', 'smart-accounts/gas-sponsorship', 'smart-accounts/reference'],
+    },
     'networks-and-token',
     'facilitator',
     'sdk',

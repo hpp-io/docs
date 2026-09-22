@@ -1,0 +1,73 @@
+---
+title: Gas sponsorship
+sidebar_label: Gas sponsorship
+description: Let users and agents transact on HPP with zero ETH — the HPP paymaster pays gas under a policy your app is granted.
+---
+
+# Gas sponsorship
+
+The HPP paymaster (ERC-7677) pays gas for UserOperations that match a **policy**. The account can hold **0 ETH**
+from its first transaction onward. Sponsorship is available on the same URL as the bundler.
+
+## Using it
+
+```ts
+const user = await createHppAccount({
+  owner, chain: hppSepolia,
+  paymaster: { policyId, anchorId },     // from HPP — see "Getting a policy"
+});
+await user.sendCalls([...]);             // gas paid by the paymaster
+```
+
+`paymaster` takes the same shape on `createHppSessionClient`, so agent operations are sponsored under the same policy.
+
+| Value | What it is | Who holds it |
+|---|---|---|
+| `policyId` | Your app's sponsorship program: budget, per-user cap, allowed actions, end date | Your app config |
+| `anchorId` | A per-user entitlement issued for a signed-in user, bound to one or more policies | **Your backend** attaches it per user. Never shown to or typed by the end user |
+
+Your backend should verify the user (e.g. an embedded-wallet access token), look up or request their anchor, and return
+`{ policyId, anchorId }` to the client. The [example app](https://github.com/hpp-io/hpp-aa-examples) has this route.
+
+## How a sponsored operation flows
+
+```
+pm_getPaymasterStubData   → dummy signature for gas estimation (not policy-checked, reserves nothing)
+eth_estimateUserOperationGas
+pm_getPaymasterData       → policy evaluated, budget reserved, real signature (valid ~5 min)
+eth_sendUserOperation
+```
+
+The SDK performs all four inside `sendCalls`. Signatures are short-lived — the SDK submits right away; if you build
+operations by hand, do the same.
+
+## Costs and caps
+
+On HPP most of a UserOperation's gas is L1 data cost, so a typical operation **reserves ≈ $0.17** against the policy
+at signing time and **settles at ≈ $0.09** once mined; the difference is released. Caps are checked against the
+reservation. Plan per-user caps in whole operations: a first payment plus an agent session plus the agent's first
+payment is **three operations**.
+
+Operations rejected at validation (over a session cap, wrong target) never reach `pm_getPaymasterData`, so they do not
+consume budget.
+
+## Rejections
+
+Denials come back as JSON-RPC error `-32000` with `data.reason`:
+
+| `reason` | Meaning |
+|---|---|
+| `policy_required` / `policy_not_found` / `policy_inactive` / `policy_ended` | Missing, unknown, paused or expired policy |
+| `anchor_required` / `anchor_unknown` / `anchor_not_entitled` | Policy needs a per-user anchor; it is missing, not issued, or not bound to this policy |
+| `action_not_allowed` | Call target/function outside the policy's allow-list |
+| `op_cost_exceeded` / `budget_exceeded` / `count_exceeded` | Per-op, total budget, or total count cap |
+| `anchor_daily_count_exceeded` / `anchor_budget_exceeded` | Per-user daily count or monthly budget cap |
+
+A stale signature (older than the policy's expiry) is refused by the bundler with `-32500 expired`.
+
+## Getting a policy
+
+Sponsorship on HPP Sepolia is granted per app. To request one, open an issue at
+[hpp-io/hpp-aa-sdk](https://github.com/hpp-io/hpp-aa-sdk/issues/new?template=sponsorship-request.md) with your app
+name, the contracts/functions you need sponsored, and the expected users per month. You receive a `policyId` and a way
+to issue anchors for your users. Without a policy, accounts pay their own gas — everything else on these pages still works.

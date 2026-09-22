@@ -1,0 +1,46 @@
+---
+title: Smart Accounts (Account Abstraction)
+sidebar_label: Overview
+description: Gasless users, agents that pay within a limit, and one-signature batches on HPP with ERC-4337 smart accounts and EIP-7702.
+---
+
+# Smart Accounts on HPP
+
+x402 lets a wallet **pay** for an API call. Smart accounts change **what a wallet is**: rules live in code, so an
+account can have its gas paid by someone else, hand an agent a spending limit, or run several actions under one
+signature. HPP runs the full ERC-4337 stack itself — EntryPoint, bundler, paymaster, and the Kernel account —
+and exposes it through one public endpoint and one SDK.
+
+:::info Status
+**HPP Sepolia only** (chain `181228`). Mainnet is not deployed yet. Everything on these pages has been verified
+with real transactions on Sepolia.
+:::
+
+## What you get
+
+| Scenario | Plain wallet (EOA) | Smart account on HPP |
+|---|---|---|
+| **A new user's first payment** | Buy ETH somewhere, bridge, then pay | Sign in with email, tap once. Gas is sponsored — the account holds **0 ETH** |
+| **Delegating payments to an AI agent** | Hand over the private key; the agent can drain everything | Grant a **session**: "USDC.e transfers only, 5 USDC.e total, 30 days". The chain enforces it; revoke any time |
+| **Approve + pay** | Two pop-ups, two gas fees | One `UserOperation`, executed atomically |
+| **Lost phone** | Seed phrase or nothing | Embedded-wallet login restores the same address on a new device |
+
+## How it fits with x402
+
+- **x402** moves USDC.e from a payer to a seller through a signed authorization. It already works from any wallet
+  and needs no smart account.
+- **Smart accounts** sit underneath the wallet. Use them when you need what an EOA cannot do: sponsored gas,
+  agent sessions with on-chain limits, or batching arbitrary contract calls. An agent can pay x402 endpoints
+  *from* a session it was granted.
+
+## Pieces
+
+| Piece | What it is | On HPP |
+|---|---|---|
+| Account | [Kernel v3.3](https://github.com/zerodevapp/kernel) (ERC-7579 modular). An existing EOA becomes one via **EIP-7702**, same address | Standard addresses, same as other chains |
+| Sessions | [Smart Sessions](https://github.com/erc7579/smartsessions) — scoped keys with spend / count / time / target policies | Deployed |
+| Bundler + paymaster | Rundler + an ERC-7677 verifying paymaster, **one URL** | `https://aa-sepolia.hpp.io/rpc` |
+| SDK | [`@hpp-io/aa-sdk`](https://www.npmjs.com/package/@hpp-io/aa-sdk) — accounts, batches, sessions, sponsorship; HPP quirks handled inside | npm |
+
+Start with the [Quickstart](./quickstart.mdx). If you are building an agent, read [Agents & sessions](./agents-and-sessions.mdx).
+For zero-ETH users, see [Gas sponsorship](./gas-sponsorship.mdx).

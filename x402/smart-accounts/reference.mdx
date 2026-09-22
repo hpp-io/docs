@@ -1,0 +1,76 @@
+---
+title: 'Smart Accounts: Reference'
+sidebar_label: Reference
+description: HPP smart-account endpoint, chain ids, deployed contract addresses, SDK surface, limits, and notes for teams bypassing the SDK.
+---
+
+# Smart Accounts: Reference
+
+## Endpoint & network
+
+| | HPP Sepolia | HPP Mainnet |
+|---|---|---|
+| Chain id | `181228` | `190415` |
+| Chain RPC | `https://sepolia-node1.hpp.io` | `https://mainnet-node1.hpp.io` |
+| **Bundler + paymaster (one URL)** | **`https://aa-sepolia.hpp.io/rpc`** | not deployed |
+| Methods | `eth_*` (ERC-4337), `rundler_*`, `pm_*` (ERC-7677) | — |
+| Gas | base fee 0.01 gwei fixed, **priority fee 0** | — |
+
+The endpoint sits behind Cloudflare and is rate-limited per IP (HTTP 429 when exceeded). `debug_*` and any
+non-RPC path are not exposed. The SDK uses this URL by default (`HPP_AA_ENDPOINTS[181228]`); pass `bundlerUrl` to override.
+
+## Contracts (Sepolia) — canonical addresses
+
+All deployed at the same addresses as on other chains, so `@rhinestone/module-sdk` and `permissionless` defaults match.
+
+| Contract | Address | Role |
+|---|---|---|
+| EntryPoint v0.7 | `0x0000000071727De22E5E9d8BAf0edAc6f37da032` | Used by Kernel — **SDK default** |
+| EntryPoint v0.8 | `0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108` | For Simple7702Account |
+| Kernel v3.3 | `0xd6CEDDe84be40893d153Be9d467CD6aD37875b28` | Account logic; EIP-7702 delegation target |
+| KernelFactory | `0x2577507b78c2008Ff367261CB6285d44ba5eF2E9` | Factory-mode accounts (browser wallets) |
+| ECDSAValidator | `0x845ADb2C711129d4f3966735eD98a9F09fC4cE57` | Root signer of factory accounts |
+| Smart Sessions | `0x00000000008bDABA73cD9815d79069c247Eb4bDA` | Session validator |
+| OwnableValidator | `0x000000000013fdB5234E4E3162a810F54d9f7E98` | Session signer check |
+| Policies: SpendingLimits / UsageLimit / TimeFrame / ValueLimit / Sudo | `0x000000000033212E…77A6` / `0x00000000001d4479…e4B` / `0x0000000000D30f61…6930` / `0x000000000021dC45…0278` / `0x0000000000FEEc8D…d869` | Mapped from `grantSession` options |
+| VerifyingPaymaster v0.7 | `0x686f803a2c8c7f7e88e5e6abfedc1dbea1e2b5bc` | HPP paymaster |
+| USDC.e | `0x401eCb1D350407f13ba348573E5630B83638E30D` | `TOKENS[181228].USDCe` |
+| Multicall3 | `0xcA11bde05977b3631167028862bE2a173976CA11` | |
+
+## SDK surface (`@hpp-io/aa-sdk`)
+
+| Export | Purpose |
+|---|---|
+| `createHppAccount({ owner, chain, bundlerUrl?, paymaster?, mode?, salt? })` | User account. `owner` = viem `LocalAccount` or `WalletClient` |
+| `HppAccount.ensureReady({ sponsor? })` | One-time setup: 7702 delegation or factory deploy |
+| `HppAccount.sendCalls(calls, { setup? })` | One atomic UserOperation. Returns `{ success, txHash, userOpHash, receipt }` |
+| `HppAccount.grantSession(spec)` / `revokeSession(id)` / `isSessionEnabled(id)` | Sessions |
+| `createHppSessionClient({ account, permissionId, signer, paymaster? })` | Agent side |
+| `toEmbeddedOwner({ address, signMessage, signAuthorization? })` | Wrap Privy / Dynamic / KMS signers |
+| `RemoteSponsor` | Browser signs, backend broadcasts setup tx |
+| `hppSepolia`, `hppMainnet`, `HPP_AA_ENDPOINTS`, `ADDRESSES`, `TOKENS` | Constants |
+
+Source and issues: [github.com/hpp-io/hpp-aa-sdk](https://github.com/hpp-io/hpp-aa-sdk). Example app:
+[hpp-io/hpp-aa-examples](https://github.com/hpp-io/hpp-aa-examples) (Privy login → 7702 account → sponsored payment → agent session).
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| Concurrent nonce lanes per account | 4 |
+| Bundle size | 32 operations |
+| Mempool time-to-live | 300 s (an under-priced op is dropped after this) |
+| Sponsorship signature validity | policy default 300 s |
+| Public endpoint | per-IP rate limit (429) |
+
+## If you bypass the SDK
+
+Facts you need when talking to the endpoint with raw viem / permissionless:
+
+1. **Fees**: ask `rundler_getUserOperationGasPrice`; generic estimators over-price (priority fee is 0).
+2. **`preVerificationGas`**: ~2.5k gas per calldata byte (L1 data). Add a buffer or the op sits in the mempool and is dropped.
+3. **EIP-7702**: land the delegation as a separate type-4 transaction. The bundler rejects viem's 2-byte `factory: "0x7702"` marker (it requires 20-byte right-padding).
+4. **7702 root signature**: Kernel verifies an **EIP-191 prefixed** userOpHash against `address(this)`. ECDSAValidator (factory accounts) accepts raw or prefixed.
+5. **Installing a validator on Kernel**: `initData = hook(20 bytes, sentinel 0x…01) ‖ abi.encode(validatorData, hookData, selectorData)` with `selectorData = 0xe9ae5c53` (`execute(bytes32,bytes)`). Selectors cannot be added later.
+6. **Session nonce key**: `[mode 1B][type 1B = 0x01][validator 20B][lane 2B]`. `@rhinestone/module-sdk`'s `encodeValidatorNonce` emits type `0x00` (routes to the root key) — build it yourself.
+7. **Factory accounts**: deploying inside the first UserOperation (`initCode`) is rejected because KernelFactory is not staked with the EntryPoint (ERC-7562). Deploy with a normal transaction first.

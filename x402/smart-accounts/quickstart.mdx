@@ -1,0 +1,122 @@
+---
+title: 'Quickstart: Smart Accounts'
+sidebar_label: Quickstart
+description: Create a Kernel smart account on HPP Sepolia, send a batched UserOperation, and grant an agent a spending session with @hpp-io/aa-sdk.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Quickstart: Smart Accounts
+
+Three calls: create the account, send calls, grant a session. The SDK talks to the public HPP endpoint by default.
+
+```bash
+npm i @hpp-io/aa-sdk viem
+```
+
+### 1. Create an account
+
+The **owner** is whatever signs for the user. Pick the tab that matches your app.
+
+<Tabs>
+<TabItem value="key" label="Local / server key" default>
+
+```ts
+import { createHppAccount, hppSepolia } from "@hpp-io/aa-sdk";
+import { privateKeyToAccount } from "viem/accounts";
+
+const user = await createHppAccount({ owner: privateKeyToAccount(KEY), chain: hppSepolia });
+await user.ensureReady({ sponsor });   // once per account — see "Who pays for setup" below
+console.log(user.address, user.mode);  // mode "7702": the EOA itself became the smart account
+```
+
+</TabItem>
+<TabItem value="privy" label="Embedded wallet (Privy)">
+
+```ts
+import { createHppAccount, hppSepolia, toEmbeddedOwner } from "@hpp-io/aa-sdk";
+import { useWallets, useSign7702Authorization } from "@privy-io/react-auth";
+
+const { wallets } = useWallets();
+const { signAuthorization } = useSign7702Authorization();
+const w = wallets.find((x) => x.walletClientType === "privy")!;
+const provider = await w.getEthereumProvider();
+
+const owner = toEmbeddedOwner({
+  address: w.address as `0x${string}`,
+  signMessage: (hash) => provider.request({ method: "personal_sign", params: [hash, w.address] }),
+  signAuthorization: (a) => signAuthorization({ contractAddress: a.contractAddress, chainId: a.chainId, nonce: a.nonce }, { address: w.address })
+    .then((s) => ({ address: a.contractAddress, chainId: a.chainId, nonce: a.nonce, r: s.r, s: s.s, yParity: s.yParity })),
+});
+const user = await createHppAccount({ owner, chain: hppSepolia });
+await user.ensureReady({ sponsor });
+```
+
+Register HPP Sepolia in Privy with viem's `defineChain` (the SDK's `hppSepolia` is exactly that) — no vendor approval needed,
+signing is chain-agnostic. Sign 32-byte hashes through the wallet's EIP-1193 `personal_sign`; Privy's `signMessage()` treats input as text.
+
+</TabItem>
+<TabItem value="browser" label="Browser wallet (MetaMask …)">
+
+```ts
+import { createHppAccount, hppSepolia } from "@hpp-io/aa-sdk";
+import { createWalletClient, custom } from "viem";
+
+const wallet = createWalletClient({ account: address, chain: hppSepolia, transport: custom(window.ethereum) });
+const user = await createHppAccount({ owner: wallet, chain: hppSepolia });   // mode "factory"
+await user.ensureReady({ sponsor });
+console.log(user.address);   // a NEW address — show the user where to deposit
+```
+
+Browser wallets do not expose EIP-7702 signing to dapps, so the account is a separate Kernel deployed by a factory.
+Everything after this step is identical.
+
+</TabItem>
+</Tabs>
+
+**Who pays for setup.** `ensureReady()` lands one transaction: the EIP-7702 delegation (same address) or the factory
+deployment (new address). Pass a funded viem `WalletClient` as `sponsor` from a server, or a `RemoteSponsor` whose two
+callbacks post the signed authorization / deploy request to your backend, so the user never needs ETH. Without a
+sponsor the owner sends it and must hold a little ETH.
+
+### 2. Send calls
+
+```ts
+import { encodeFunctionData, parseAbi } from "viem";
+import { TOKENS } from "@hpp-io/aa-sdk";
+
+const erc20 = parseAbi(["function transfer(address,uint256) returns (bool)"]);
+const USDCe = TOKENS[181228].USDCe;
+
+const r = await user.sendCalls([
+  { to: USDCe, data: encodeFunctionData({ abi: erc20, functionName: "transfer", args: [to, 1_000_000n] }) },
+  // add more calls — they execute atomically in ONE UserOperation
+]);
+if (!r.success) throw new Error(`reverted: ${r.txHash}`);
+```
+
+`sendCalls` returns `{ success, txHash, userOpHash, receipt }`. It **does not throw** when the operation was mined but
+reverted (`success: false`); it throws when the bundler or paymaster rejects the request before inclusion.
+The first `sendCalls` also installs the session module, so step 3 needs no extra transaction.
+
+### 3. Grant an agent a session
+
+```ts
+const { permissionId } = await user.grantSession({
+  signer: agent.address,                                              // the agent's key
+  actions: [{ target: USDCe, signature: "transfer(address,uint256)" }], // what it may call
+  spend: [{ token: USDCe, limit: 5_000_000n }],                        // 5 USDC.e, cumulative
+  validUntil: Math.floor(Date.now() / 1000) + 30 * 86400,
+});
+```
+
+One owner signature. From now on the agent acts on its own — see [Agents & sessions](./agents-and-sessions.mdx).
+Revoke with `await user.revokeSession(permissionId)`; it takes effect immediately.
+
+### What the SDK handles for you
+
+HPP is an Arbitrum Orbit chain and Kernel is a modular account, which produces a handful of traps for hand-rolled
+ERC-4337 code (priority fee is 0, `preVerificationGas` is ~98% L1 data cost, EIP-7702 markers, validator install data,
+session nonce keys). The SDK absorbs all of them. If you use viem or permissionless directly, read the
+[reference](./reference.mdx#if-you-bypass-the-sdk).

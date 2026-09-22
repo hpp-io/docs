@@ -1,0 +1,92 @@
+---
+title: Agents & sessions
+sidebar_label: Agents & sessions
+description: Give an AI agent a scoped, on-chain-enforced spending session on a user's HPP smart account, and drive it from the agent side.
+---
+
+# Agents & sessions
+
+A **session** is a key with rules attached, installed on the user's account. The agent signs with its own key; the
+account's validator checks the rules on-chain before anything executes. Over the limit, wrong target, expired, or
+revoked → the operation is rejected at validation and **no gas is spent**.
+
+## Granting (user side)
+
+```ts
+const { permissionId } = await user.grantSession({
+  signer: agent.address,
+  actions: [
+    { target: USDCe, signature: "transfer(address,uint256)" },
+    { target: MARKET, selector: "0xa9059cbb" },        // selector or human signature
+  ],
+  spend:      [{ token: USDCe, limit: 5_000_000n }],   // cumulative cap per token (SpendingLimits)
+  usageLimit: 20n,                                     // max UserOperations (UsageLimit)
+  validUntil: nowSec + 30 * 86400,                     // and/or validAfter (TimeFrame)
+  valueLimit: 0n,                                      // max native value per op (ValueLimit)
+});
+```
+
+| Field | Enforced by | Notes |
+|---|---|---|
+| `actions[]` | Smart Sessions | Allow-list of `target + function`. Anything else is rejected |
+| `spend` | SpendingLimits policy | Applied to actions whose target is that token. Cumulative for the session's life |
+| `usageLimit` | UsageLimit policy | Number of UserOperations |
+| `validUntil` / `validAfter` | TimeFrame policy | Unix seconds |
+| `valueLimit` | ValueLimit policy | Native value per operation |
+
+Axes you leave out are unlimited. For an agent, set **target, function, amount and time** — all four.
+
+`permissionId` identifies the session; store it with the agent's config. Check `await user.isSessionEnabled(permissionId)`;
+revoke with `await user.revokeSession(permissionId)`.
+
+## Acting (agent side)
+
+```ts
+import { createHppSessionClient, hppSepolia } from "@hpp-io/aa-sdk";
+
+const agentClient = await createHppSessionClient({
+  account: userAddress,       // the user's account
+  permissionId,
+  signer: agentKey,           // viem LocalAccount — must support raw `sign({ hash })`
+  chain: hppSepolia,
+  paymaster,                  // optional — same option as createHppAccount; sponsored under the same policy
+});
+
+const r = await agentClient.sendCalls([{ to: USDCe, data: transferCalldata }]);
+```
+
+No user prompt. A rejected call throws before inclusion with a message containing `validateUserOp … reverted` —
+that is the policy saying no. Catch it and ask the user for a new or larger session.
+
+### Paying x402 endpoints from a session
+
+An agent holding a session can settle x402 `exact`/`upto` payments by transferring USDC.e from the user's account
+within the session's cap — the same `transfer` action as above. Combine with the
+[x402 buyer flow](../quickstart-buyers.mdx) to let one grant cover many paid API calls.
+
+## Throughput: one account, one operation per ~12 s
+
+Operations from the **same account** are sequential — the next one is accepted only after the previous is mined
+(`AA25 invalid account nonce` otherwise). The bundler as a whole handles dozens per second; a single account hits this
+first. Three ways to do 10 payments:
+
+| | How | Time | Gas |
+|---|---|---|---|
+| A. One by one | 10 × `sendCalls` | ~2 min | baseline |
+| B. Parallel lanes | `getNonce({ key: 0n..3n })` — up to **4** lanes per account | ~38 s | same |
+| **C. One batch** | `sendCalls([c1, …, c10])` | **~13 s** | **~4× cheaper** |
+
+Batch when you know the work up front; use lanes when it trickles in. A **service account acting for many users**
+cannot get around this with batching — split into one account per user.
+
+## Rejection messages
+
+| Code | Message | Meaning |
+|---|---|---|
+| -32500 | `AA25 invalid account nonce` | Same nonce reused, or previous op not yet mined |
+| -32500 | `AA23 reverted` / `validateUserOp … reverted` | Policy rejected: over cap, wrong target, revoked, expired |
+| -32500 | `expired or has an invalid time range` | Session's `validUntil` passed |
+| -32505 | `Max operations (4) reached for account` | More than 4 lanes in flight |
+| -32505 | `Max operations (N) reached for factory` | EIP-7702 onboarding burst cap right after a bundler restart — retry shortly |
+| -32602 | `already known` | Identical operation already queued |
+| -32000 | `sponsorship denied` + `data.reason` | Paymaster policy — see [Gas sponsorship](./gas-sponsorship.mdx) |
