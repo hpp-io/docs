@@ -15,13 +15,18 @@ Vision-capable models accept images alongside text in the same chat completion r
 
 Use an array of content parts in a message, mixing `text` and `image_url`:
 
+### Wallet (with API key)
+
+Include both the payment rail header and your API key:
+
 <CodePanel>
 <Tabs groupId="vision-request" queryString>
-<TabItem value="curl" label="cURL" default>
+<TabItem value="curl" label="curl" default>
 
 ```bash showLineNumbers
 curl -X POST https://router.hpp.io/llm/v1/chat/completions \
   -H "apikey: $HPPROUTER_API_KEY" \
+  -H "X-Payment-Rail: wallet" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-4o",

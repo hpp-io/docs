@@ -64,6 +64,10 @@ paths:
     get:
       operationId: listModels
       summary: List available models
+      description: >
+        OpenAI-compatible model catalog with pricing and capability metadata.
+        Authentication is optional for this endpoint.
+      security: []
       responses:
         "200":
           description: OpenAI-compatible model list.
@@ -71,8 +75,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ModelListResponse"
-        "401":
-          $ref: "#/components/responses/ErrorResponse"
         "500":
           $ref: "#/components/responses/ErrorResponse"
   /v1/images/generations:
@@ -105,6 +107,18 @@ paths:
     get:
       operationId: getUsage
       summary: Get current consumer usage
+      description: >
+        Usage and prepaid quota summary for the authenticated consumer.
+        Pass `rail=wallet` to scope stats to the wallet payment rail and include
+        on-chain USDC.e settlement fields.
+      parameters:
+        - name: rail
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [wallet, quota]
+          description: Optional payment-rail filter. `wallet` adds settlement fields.
       responses:
         "200":
           description: Usage and quota summary for the authenticated consumer.
@@ -280,25 +294,66 @@ components:
           const: model
         owned_by:
           type: string
+        name:
+          oneOf:
+            - type: string
+            - type: "null"
+        description:
+          oneOf:
+            - type: string
+            - type: "null"
         pricing:
           oneOf:
             - $ref: "#/components/schemas/ModelPricing"
             - type: "null"
+        context:
+          oneOf:
+            - type: number
+            - type: "null"
+        max_output:
+          oneOf:
+            - type: number
+            - type: "null"
+        tool:
+          oneOf:
+            - type: boolean
+            - type: "null"
+        structured:
+          oneOf:
+            - type: boolean
+            - type: "null"
+        knowledge_cutoff:
+          oneOf:
+            - type: string
+            - type: "null"
+        input_modalities:
+          type: array
+          items:
+            type: string
+        output_modalities:
+          type: array
+          items:
+            type: string
     ModelPricing:
       type: object
+      description: USD rates per token (multiply by 1_000_000 for $/1M).
       properties:
         input:
           type: number
+          description: USD per input token.
         output:
           type: number
+          description: USD per output token.
         cache_write:
           oneOf:
             - type: number
             - type: "null"
+          description: USD per cache-write token, when applicable.
         cache_read:
           oneOf:
             - type: number
             - type: "null"
+          description: USD per cache-read token, when applicable.
     ImageGenerationRequest:
       type: object
       required:
@@ -375,16 +430,37 @@ components:
             - type: "null"
         quota:
           type: number
+          description: Prepaid quota limit (credit/quota rail snapshot).
         used:
           type: number
+          description: Prepaid quota consumed.
         remaining:
           type: number
+          description: Prepaid quota remaining.
+        rail:
+          type: string
+          enum: [wallet, quota]
+          description: Present when the request filtered by `?rail=`.
+        spent_usdc_micro:
+          type: number
+          description: >
+            Total USDC.e settled on-chain in atomic/micro units.
+            Present when `rail=wallet`.
+        settle_success_count:
+          type: integer
+          description: Successful on-chain settlements. Present when `rail=wallet`.
+        settle_failed_count:
+          type: integer
+          description: Failed on-chain settlements. Present when `rail=wallet`.
         requests:
           type: integer
         total_tokens:
           type: integer
         total_cost:
           type: number
+          description: >
+            Dollar cost. For `rail=wallet`, reflects wallet-settled spend from
+            usage logs rather than prepaid `used`.
     QuotaCheckResponse:
       type: object
       required:
