@@ -4,5 +4,8 @@
   // `npm audit --audit-level=high` behaviour.
   "high": true,
   "allowlist": [
+    // GHSA-vfj7-8cjw-p6xm (CVE-2026-93687): braces <= 3.0.3 stack overflow DoS.
+    // Transitive build-time dependency with no upstream patch release available yet.
+    "GHSA-vfj7-8cjw-p6xm"
   ]
 }

@@ -103,7 +103,7 @@ redirects here.
 Transitive advisories from the Docusaurus toolchain are pinned to patched versions
 via npm `overrides` in `package.json` (including `serialize-javascript`, `uuid`,
 `brace-expansion`, `mermaid`, `minimatch`, `nanoid`, `fast-uri`, `js-yaml`, `postcss`,
-`shell-quote`, `svgo`, `webpack-dev-server`, `body-parser`, and `dompurify`). Most of these
+`shell-quote`, `svgo`, `tinypool`, `webpack-dev-server`, `body-parser`, and `dompurify`). Most of these
 packages are build-time or local-dev only and are **not present in the deployed static site**.
 
 CI fails on **high/critical** advisories (`npx audit-ci --config audit-ci.jsonc`).
