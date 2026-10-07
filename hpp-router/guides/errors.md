@@ -5,17 +5,18 @@ description: HTTP status codes and the error envelope returned by HPP Router.
 
 # Errors
 
-HPP Router returns standard HTTP status codes and a JSON error envelope. Handle these in your client to distinguish auth, quota, and upstream failures.
+HPP Router returns standard HTTP status codes and a JSON error envelope. Handle these in your client to distinguish auth, payment, quota, and upstream failures.
 
 ## Status codes
 
 | Code | Meaning | Typical cause |
 | --- | --- | --- |
 | `400` | Bad Request | Malformed body, or an unroutable/unsupported model. |
-| `401` | Unauthorized | Missing or invalid API key. See [Authentication](../authentication). |
-| `429` | Too Many Requests / Quota Exceeded | Rate limit hit, or insufficient [quota](./quota-and-usage). |
+| `401` | Unauthorized | Missing or invalid API key; or Agent (keyless) called a free/zero-price model (`keyless_free_model_not_allowed`). See [Authentication](../authentication) and [x402 Agent](./x402-agent). |
+| `402` | Payment Required | Wallet rail (`X-Payment-Rail: wallet`) or **Agent (keyless)** needs an x402 signature. Response includes `PAYMENT-REQUIRED` (and aliases) plus a JSON body with `accepts`. Sign and retry with `PAYMENT-SIGNATURE` (or `X-PAYMENT`). See [Authentication — x402 Wallet](../authentication#x402-wallet) and [x402 Agent](./x402-agent). |
+| `429` | Too Many Requests / Quota exhausted | Rate limit hit, or prepaid **quota** insufficient. This is not the normal wallet-rail payment challenge (that is `402`). |
 | `500` | Internal Server Error | Unexpected gateway or upstream error. |
-| `503` | Service Unavailable | Quota state could not be verified (fail-closed). |
+| `503` | Service Unavailable | Wallet rail / facilitator not configured, or settlement could not proceed (fail-closed). |
 
 ## Error envelope
 
@@ -54,6 +55,21 @@ Errors are returned as JSON. Two shapes are possible.
 | `error.upstream_status` | The provider's HTTP status, when applicable. |
 | `error.retryable` | Whether the request can be safely retried. |
 
+### Wallet / Agent `402` challenge
+
+On the keyed wallet rail or the [Agent (keyless)](./x402-agent) path, a missing or unsigned payment typically returns **`402`** with:
+
+- Headers: `PAYMENT-REQUIRED` (primary), plus `payment-required` / `x-payment-required` / `WWW-Authenticate` aliases
+- Body: `{ "x402Version": 2, "accepts": [ { "scheme": "upto", "asset", "amount", "payTo", "network", ... } ], ... }`
+
+Retry the **same** request once with:
+
+- Keyed wallet: `X-Payment-Rail: wallet` and your API key
+- Agent: **no** API key (still omit `Authorization` / `apikey`)
+- Either path: `PAYMENT-SIGNATURE: <base64 payload>` (the gateway also accepts `X-PAYMENT`)
+
+[`@hpprouter/sdk`](../client-sdk/typescript#wallet-x402-payment-rail) runs the keyed loop automatically when you pass `paymentRail: 'wallet'` and a `paymentSigner`. For keyless Agent calls, use raw HTTP or [hpp-x402](/x402/agents) (see also [x402 Agent](./x402-agent)).
+
 ## Smart-routing errors
 
 When using [`hpprouter/auto`](../smart-routing), you may encounter:
@@ -66,6 +82,7 @@ When using [`hpprouter/auto`](../smart-routing), you may encounter:
 ## Handling guidance
 
 - **`401`** — fix your API key; do not retry blindly.
-- **`429`** — back off and retry; if it's a quota issue, top up via [HPP Hub](https://hub.hpp.io).
+- **`402`** — sign the x402 challenge and retry once; ensure the paying wallet holds the payment asset on the challenged network (commonly USDC.e on HPP — see [Networks & token](/x402/networks-and-token)). Prefer `@hpprouter/sdk` over hand-rolling the loop in the OpenAI SDK.
+- **`429`** — back off and retry for rate limits; for quota exhaustion, top up prepaid credit or switch to the wallet rail.
 - **`5xx`** with `retryable: true` — retry with exponential backoff.
 - **`5xx`** with `retryable: false` — surface the error; retrying will not help.

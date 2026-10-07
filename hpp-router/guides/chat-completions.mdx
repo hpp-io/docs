@@ -15,11 +15,25 @@ The chat completions endpoint is the core of HPP Router. It is OpenAI-compatible
 POST https://router.hpp.io/llm/v1/chat/completions
 ```
 
-## Basic request
+## Payment methods
+
+HPP Router supports prepaid quota, keyed x402 wallet, and a **keyless Agent** path.
+
+| Rail | How to enable | When to use |
+| --- | --- | --- |
+| **Quota** (default) | API key, omit `X-Payment-Rail` | Prepaid credit on the API key |
+| **Wallet (x402)** | API key + `X-Payment-Rail: wallet` | On-chain settlement per request |
+| **Agent (keyless)** | **No API key** | Autonomous agents / `hpp-x402` — see [x402 Agent](./x402-agent) |
+
+On the wallet or Agent path, paid models typically return **`402`** until you attach a payment signature. On Agent, free or zero-price models are rejected (`keyless_free_model_not_allowed`).
+
+See [Authentication](../authentication) for key schemes, [TypeScript SDK — Wallet](../client-sdk/typescript#wallet-x402-payment-rail) for the keyed SDK loop, and [x402 Agent (keyless)](./x402-agent) for no-API-key agents.
+
+### Basic request (quota)
 
 <CodePanel>
-<Tabs groupId="chat-completions-request" queryString>
-<TabItem value="curl" label="cURL" default>
+<Tabs groupId="chat-completions-quota" queryString>
+<TabItem value="curl" label="curl" default>
 
 ```bash showLineNumbers
 curl -X POST https://router.hpp.io/llm/v1/chat/completions \
@@ -38,6 +52,47 @@ curl -X POST https://router.hpp.io/llm/v1/chat/completions \
 </TabItem>
 </Tabs>
 </CodePanel>
+
+### Basic request (wallet)
+
+<a name="wallet"></a>
+
+Include `X-Payment-Rail: wallet` and your API key. The first call for a paid model usually returns **`402`** with a `PAYMENT-REQUIRED` challenge — then sign and retry with `PAYMENT-SIGNATURE` (also accepted as `X-PAYMENT`).
+
+<CodePanel>
+<Tabs groupId="chat-completions-wallet" queryString>
+<TabItem value="curl" label="curl" default>
+
+```bash showLineNumbers
+# 1) First request — expect HTTP 402 for paid models
+curl -i -X POST https://router.hpp.io/llm/v1/chat/completions \
+  -H "apikey: $HPPROUTER_API_KEY" \
+  -H "X-Payment-Rail: wallet" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5",
+    "messages": [
+      { "role": "system", "content": "You are a helpful assistant." },
+      { "role": "user", "content": "Hello!" }
+    ],
+    "max_completion_tokens": 100
+  }'
+
+# 2) Sign PAYMENT-REQUIRED / JSON body with @x402/core + @x402/evm (upto / Permit2)
+# 3) Retry once with the same body + signature header:
+curl -X POST https://router.hpp.io/llm/v1/chat/completions \
+  -H "apikey: $HPPROUTER_API_KEY" \
+  -H "X-Payment-Rail: wallet" \
+  -H "PAYMENT-SIGNATURE: <base64-payload>" \
+  -H "Content-Type: application/json" \
+  -d '{ ...same body... }'
+```
+
+</TabItem>
+</Tabs>
+</CodePanel>
+
+For production apps and agents, prefer [`@hpprouter/sdk`](../client-sdk/typescript#wallet-x402-payment-rail) with `paymentRail: 'wallet'` and a `paymentSigner` so the SDK performs the 402 → sign → retry loop.
 
 ## Request fields
 
@@ -89,4 +144,8 @@ The `usage` block drives [billing](../models-and-pricing). When you use `hpprout
 
 ## Errors
 
-Requests are checked against your quota before being forwarded. Insufficient quota returns **`429`**; auth failures return **`401`**. See [Errors](./errors).
+- **`401`** — missing or invalid API key; on Agent path, also free-model rejection (`keyless_free_model_not_allowed`).
+- **`402`** — wallet / Agent payment challenge (`PAYMENT-REQUIRED`). Sign and retry once.
+- **`429`** — rate limit or prepaid **quota** exhaustion (not the normal wallet challenge).
+
+See [Errors](./errors) and [x402 Agent](./x402-agent) for details.

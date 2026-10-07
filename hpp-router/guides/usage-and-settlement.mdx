@@ -1,0 +1,147 @@
+---
+title: Usage & Settlement
+description: Check prepaid quota, review usage, and inspect x402 wallet settlement with HPP Router.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodePanel from '@site/src/components/CodePanel';
+
+# Usage & Settlement
+
+HPP Router meters token usage for every authenticated request. Billing uses one of two payment rails:
+
+| Rail | How requests are billed | Where to inspect |
+| --- | --- | --- |
+| **Quota** (default) | Prepaid credit on the API key | `GET /api/quota-check`, default `GET /api/usage` |
+| **Wallet (x402)** | On-chain settlement after a signed request (`X-Payment-Rail: wallet`) | `GET /api/usage?rail=wallet` |
+
+All of these endpoints require an API key. Enabling the wallet rail on inference is described in [Authentication](../authentication#x402-wallet) and [Chat Completions — wallet](./chat-completions#wallet). The payment asset is commonly USDC.e; the challenged `accepts[0].asset` (and on-chain settlement) is authoritative for a given deployment.
+
+## Check quota
+
+A lightweight pre-flight check for the authenticated consumer's prepaid quota (independent of wallet-rail settlement):
+
+<a name="check-quota"></a>
+
+<CodePanel>
+<Tabs groupId="quota-check-request" queryString>
+<TabItem value="curl" label="curl" default>
+
+```bash showLineNumbers
+curl https://router.hpp.io/api/quota-check \
+  -H "apikey: $HPPROUTER_API_KEY"
+```
+
+</TabItem>
+</Tabs>
+</CodePanel>
+
+```json showLineNumbers
+{
+  "has_quota": true,
+  "quota": 100,
+  "used": 12.5,
+  "remaining": 87.5
+}
+```
+
+If the quota state cannot be verified (e.g. a backend datastore is unavailable), the endpoint may return **`503`**. The quota policy is **fail-closed**: when state cannot be trusted, requests are denied rather than allowed, to protect billing correctness.
+
+## Usage summary
+
+A summary of consumption for the authenticated consumer. The default response always includes prepaid quota fields (`quota`, `used`, `remaining`). Pass `?rail=wallet` to scope stats to the wallet payment rail and include on-chain settlement fields.
+
+### Default (quota fields)
+
+<CodePanel>
+<Tabs groupId="usage-summary-request" queryString>
+<TabItem value="curl" label="curl" default>
+
+```bash showLineNumbers
+curl https://router.hpp.io/api/usage \
+  -H "apikey: $HPPROUTER_API_KEY"
+```
+
+</TabItem>
+</Tabs>
+</CodePanel>
+
+```json showLineNumbers
+{
+  "consumer_id": "....",
+  "username": "alice",
+  "custom_id": "user-001",
+  "quota": 100,
+  "used": 12.5,
+  "remaining": 87.5,
+  "requests": 42,
+  "total_tokens": 18500,
+  "total_cost": 12.5
+}
+```
+
+### Wallet rail (`?rail=wallet`)
+
+<CodePanel>
+<Tabs groupId="usage-summary-wallet" queryString>
+<TabItem value="curl" label="curl" default>
+
+```bash showLineNumbers
+curl "https://router.hpp.io/api/usage?rail=wallet" \
+  -H "apikey: $HPPROUTER_API_KEY"
+```
+
+</TabItem>
+</Tabs>
+</CodePanel>
+
+```json showLineNumbers
+{
+  "consumer_id": "....",
+  "username": "alice",
+  "custom_id": "user-001",
+  "quota": 100,
+  "used": 12.5,
+  "remaining": 87.5,
+  "rail": "wallet",
+  "spent_usdc_micro": 2500000,
+  "settle_success_count": 3,
+  "settle_failed_count": 0,
+  "requests": 42,
+  "total_tokens": 18500,
+  "total_cost": 12.5
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `consumer_id` | The authenticated consumer's id. |
+| `username` / `custom_id` | Optional identifiers (may be `null`). |
+| `quota` / `used` / `remaining` | Prepaid quota snapshot (always present). |
+| `rail` | Present when filtered, e.g. `"wallet"`. |
+| `spent_usdc_micro` | Total wallet-rail spend settled on-chain (atomic/micro units; field name is historical — commonly USDC.e). Present when `rail=wallet`. |
+| `settle_success_count` | Successful on-chain settlements (`rail=wallet`). Distinct from the initial HTTP **402** payment challenge. |
+| `settle_failed_count` | Failed settlements after an authorized request (`rail=wallet`). |
+| `requests` | Number of requests recorded (scoped by `rail` when set). |
+| `total_tokens` | Total tokens consumed (scoped by `rail` when set). |
+| `total_cost` | Dollar cost; for `rail=wallet`, reflects wallet-settled spend from usage logs. |
+
+## How usage is metered
+
+1. The response from the provider is captured asynchronously (no added latency).
+2. Token usage is extracted from the response `usage` block.
+3. Cost is computed from the [resolved model's pricing](../models-and-pricing).
+4. The request is logged:
+   - **Quota rail** — the consumer's prepaid `used` / `remaining` values are updated.
+   - **Wallet rail** — on-chain settlement proceeds via x402 after the request is authorized (signature present). A missing signature returns **402** before inference; that challenge is not a settle failure. See [Errors](./errors).
+
+For `hpprouter/auto`, cost uses the **resolved** model's pricing, not a price for `auto`. See [Smart Routing](../smart-routing).
+
+## Performance note
+
+The usage endpoint is backed by a short-lived in-memory cache to reduce database load under bursts of traffic, with concurrent lookups for the same consumer collapsed into a single read. Cached values are kept fresh for a few seconds and invalidated immediately when an admin changes a consumer's quota, so the figures you read stay accurate.
+
+## Local models
+
+Requests to local models (e.g. `ollama/*`) are tracked at **$0 cost**, but token usage is still recorded in your usage logs. Free providers are typically not wallet-billed even when `X-Payment-Rail: wallet` is set.
