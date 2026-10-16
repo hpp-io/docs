@@ -66,3 +66,7 @@ Pick your side of the payment.
 - **[Service directory](service-directory.mdx)** — the curated catalog buyers and agents discover.
 - **[Networks & Token](./networks-and-token.mdx)** — chain IDs, RPC endpoints, and the USDC.e asset.
 - **[Facilitator](./facilitator.mdx)** — endpoints, supported schemes, gasless settlement, and self-hosting.
+
+:::tip Smart accounts
+Want users who sign in with email and pay no ETH for gas, or an AI agent that pays from a user's wallet within an on-chain limit? See [Smart Accounts](/smart-accounts) — ERC-4337 and EIP-7702 on HPP.
+:::

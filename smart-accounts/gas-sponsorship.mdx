@@ -1,0 +1,150 @@
+---
+title: Gas sponsorship
+sidebar_label: Gas sponsorship
+description: Let your users transact on HPP without holding ETH — operations sponsored by HPP's paymaster, or gas charged in USDC.e. How policies and anchors work, what users are charged, and how to apply.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Gas sponsorship
+
+Every transaction on HPP costs gas in ETH. With sponsorship, your users do not need ETH: HPP's
+**paymaster** covers the gas for the operations your policy allows, and — if you choose — charges the gas in
+**USDC.e** once the free ones are used up.
+
+This is the mechanism [HPP Smart Wallet](./wallet.mdx) uses for its "first operations free, then USDC.e"
+model.
+
+:::caution[Early access]
+Sponsorship on HPP Mainnet is set up per app, by application, with limits agreed with you. There is no
+self-serve dashboard yet and no uptime guarantee. Develop on HPP Sepolia first.
+:::
+
+## Policies and anchors
+
+Two IDs decide whether an operation is sponsored:
+
+| | What it is | Where it comes from |
+| --- | --- | --- |
+| **`policyId`** | Your app's rules: fee mode, monthly budget, limits per user, per day, and per operation, start and end dates | Issued by HPP for your app |
+| **`anchorId`** | One **user** of your app. Limits count per anchor, so a user cannot get more free operations by creating more addresses | Registered with HPP for each user — how this works for your app is agreed during onboarding |
+
+```ts
+const user = await createHppAccount({
+  owner, chain, bundlerUrl,
+  paymaster: { policyId: "<your policy>", anchorId: "<this user's anchor>" },
+});
+```
+
+The paymaster shares the bundler endpoint (`/rpc`) and speaks the standard
+[ERC-7677](https://eips.ethereum.org/EIPS/eip-7677) paymaster API, with `{ policyId, anchorId }` as the
+context. Sponsorship is available for **EntryPoint v0.7** (the SDK default).
+
+:::warning[Keep anchors private]
+An anchor ID is all the paymaster needs to count an operation against that user's quota. Treat anchor IDs
+like session tokens: do not derive them from public data (usernames, addresses, GitHub IDs), do not expose
+other users' anchors, and prefer sending sponsored requests **from your backend** — or through a backend
+proxy — rather than embedding anchors in a public frontend.
+:::
+
+## Fee modes
+
+A policy has one of three modes:
+
+| Mode | Who pays the gas | What the user needs |
+| --- | --- | --- |
+| `sponsored` | HPP | Nothing |
+| `token` | The user, in USDC.e, charged after the operation runs | A USDC.e balance |
+| `sponsored_then_token` | HPP for the first *N* operations per user, then the user in USDC.e | USDC.e once the free ones are used |
+
+The SDK switches automatically: the same `sendCalls` goes through the free paymaster while free operations
+remain, and through the USDC.e paymaster afterwards. Each result tells you which:
+
+```ts
+const r = await user.sendCalls([...]);
+r.fee;   // { mode: "sponsored", freeRemaining: 2 }
+         // { mode: "token", symbol: "USDC.e", decimals: 6, maxToken, charged, … }   ← charged = actual USDC.e taken
+```
+
+### What a user pays in USDC.e
+
+The user pays the operation's actual gas cost, converted to USDC.e at HPP's current ETH/USD rate plus a 5%
+markup. The rate is updated periodically from public market prices. Before signing, the user approves a
+**maximum** (never less than 0.001 USDC.e); the actual charge is usually lower.
+
+**Show the maximum before the user signs:**
+
+```ts
+import { formatUnits } from "viem";
+
+const q = await user.quoteFee(calls);
+if (q.mode === "token" && q.maxToken !== null) {
+  ui.show(`up to ${formatUnits(q.maxToken, q.decimals)} ${q.symbol} (actual cost is charged)`);
+}
+```
+
+Users need no separate "approve" step. When an operation will be charged in USDC.e and the allowance is not
+enough, `sendCalls` adds a small `approve` for the paymaster to that same operation — one signature in total.
+
+## Apply
+
+Open a **[Gas sponsorship request](https://github.com/hpp-io/hpp-aa-sdk/issues/new/choose)** issue on
+GitHub. The issue is public, so include only what you are happy to share:
+
+- your app's name, website, and what users do with it;
+- the network — **Sepolia** (sandbox, for development) or **Mainnet**;
+- the fee mode you want (`sponsored`, `token`, or `sponsored_then_token` with how many free operations);
+- the contracts and functions your users will call;
+- expected users and operations per month;
+- how users sign in (embedded wallet, browser wallet, or server keys).
+
+We reply on the issue and send the `policyId` and anchor details to you **privately** — never post them in
+the issue.
+
+<Tabs groupId="network">
+<TabItem value="sepolia" label="HPP Sepolia" default>
+
+For development you get a sandbox policy (`sponsored`, free) with small monthly and daily caps. Use it for
+your own testing; ask for a policy of your own before you onboard real users.
+
+</TabItem>
+<TabItem value="mainnet" label="HPP Mainnet">
+
+Mainnet policies are set up per app, with limits agreed with you. Until yours is ready, your users can
+already use smart accounts on Mainnet and pay their own gas — just leave out the `paymaster` option.
+
+</TabItem>
+</Tabs>
+
+## When a request is refused
+
+If an operation does not fit the policy, the paymaster refuses it **before** anything is sent, so nobody pays
+gas. Read the reason with the SDK's helper:
+
+```ts
+import { paymasterReason } from "@hpp-io/aa-sdk";
+
+try {
+  await user.sendCalls(calls);
+} catch (e) {
+  const reason = paymasterReason(e);   // e.g. "fee_balance_insufficient", or null if it was not the paymaster
+}
+```
+
+The SDK retries the transient ones (`free_exhausted`, `fee_quote_stale`, `fee_allowance_missing`) by itself.
+The most common of the rest:
+
+| `reason` | Meaning |
+| --- | --- |
+| `fee_balance_insufficient` | Not enough USDC.e for the fee |
+| `anchor_budget_exceeded` / `anchor_daily_count_exceeded` | This user's monthly budget or daily count is used up |
+| `budget_exceeded` / `count_exceeded` | The policy's overall budget or count is used up |
+| `would_revert` | The calls would fail on-chain |
+| `anchor_unknown` | The anchor is not registered for this policy |
+
+When a limit is reached the operation fails by default; your app can retry **without** the paymaster so the
+user pays their own gas. Every reason, with fixes: [Errors & troubleshooting](./errors.mdx#paymaster-policy).
+
+Paymaster approvals are short-lived (5 minutes by default) and cover the operation exactly as it was when
+approved: sign and send right away, and do not change any field afterwards.
