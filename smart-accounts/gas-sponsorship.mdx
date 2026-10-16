@@ -1,0 +1,123 @@
+---
+title: Gas sponsorship
+sidebar_label: Gas sponsorship
+description: Let your users transact on HPP without holding ETH — free operations sponsored by HPP's paymaster, then gas paid in USDC.e. How policies and anchors work, what users are charged, and how to get access.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Gas sponsorship
+
+Every transaction on HPP costs gas in ETH. With sponsorship, your users never need ETH: HPP's
+**paymaster** covers the gas for the operations your policy allows, and — if you choose — charges the
+gas in **USDC.e** once the free ones are used up.
+
+This is the same mechanism [HPP Smart Wallet](./wallet.mdx) uses for its "first operations free, then
+USDC.e" model.
+
+## Policies and anchors
+
+Two IDs decide whether an operation is sponsored:
+
+| | What it is | Who sets it |
+| --- | --- | --- |
+| **`policyId`** | Your app's rules: which fee mode, how much per month, per user, per operation, per day, and until when | HPP issues it to your app |
+| **`anchorId`** | One **user** of your app, as your app identifies them (an account ID, not an address) | **Your backend** attaches it for the logged-in user |
+
+Limits count per anchor, not per address — a user cannot get more free operations by creating more
+addresses. Never let the end user type their own `anchorId`; your backend decides it after login.
+
+```ts
+const user = await createHppAccount({
+  owner, chain, bundlerUrl,
+  paymaster: { policyId: "<your policy>", anchorId: "<user id from your backend>" },
+});
+```
+
+The paymaster shares the bundler endpoint (`/rpc`) and speaks the standard
+[ERC-7677](https://eips.ethereum.org/EIPS/eip-7677) paymaster API, with `{ policyId, anchorId }` as the
+context.
+
+## Fee modes
+
+A policy has one of three modes:
+
+| Mode | Who pays the gas | What the user needs |
+| --- | --- | --- |
+| `sponsored` | HPP | Nothing |
+| `token` | The user, in USDC.e, charged after the operation runs | A USDC.e balance |
+| `sponsored_then_token` | HPP for the first *N* operations per user, then the user in USDC.e | USDC.e once the free ones are used |
+
+The SDK switches automatically: the same `sendCalls` goes through the free paymaster while free
+operations remain, and through the USDC.e paymaster afterwards. Each result tells you which:
+
+```ts
+const r = await user.sendCalls([...]);
+r.fee;   // { mode: "sponsored", freeRemaining: 2 }
+         // { mode: "token", symbol: "USDC.e", decimals: 6, maxToken, charged, … }   ← charged = actual USDC.e taken
+```
+
+### What a user pays in USDC.e
+
+The charge is the operation's actual gas cost, converted at the current ETH/USD price plus 5%, with a
+minimum of 0.001 USDC.e. HPP keeps the exchange rate in line with public market prices.
+
+**Show the fee before the user signs.** `quoteFee` returns the most the operation can cost:
+
+```ts
+const q = await user.quoteFee(calls);
+if (q.mode === "token") ui.show(`up to ${formatUnits(q.maxToken, q.decimals)} ${q.symbol} (actual cost is charged)`);
+```
+
+Users need no separate "approve" step. When an operation will be charged in USDC.e and the allowance is
+not enough, `sendCalls` adds a small `approve` for the paymaster to that same operation — one signature
+in total.
+
+## Get access
+
+<Tabs groupId="network">
+<TabItem value="sepolia" label="HPP Sepolia" default>
+
+A shared **sandbox policy** is available for development. Email [support@hpp.io](mailto:support@hpp.io)
+with your GitHub ID and a one-line description of your app; you will get:
+
+- `policyId`: `dev-sandbox`
+- `anchorId`: `dev:<your-github-id>`
+
+Sandbox operations are free (`sponsored`), with a small monthly and daily cap per anchor. Use the anchor
+for your own testing; when you are ready to onboard real users, ask for a policy of your own.
+
+</TabItem>
+<TabItem value="mainnet" label="HPP Mainnet">
+
+Mainnet sponsorship is set up per app. Email [support@hpp.io](mailto:support@hpp.io) with what your app
+does, the fee mode you want, and your expected volume. We will agree on the limits and issue a `policyId`.
+
+Until then, your users can still use smart accounts on Mainnet and pay their own gas — leave out the
+`paymaster` option.
+
+</TabItem>
+</Tabs>
+
+## When a request is refused
+
+If an operation does not fit the policy, the paymaster refuses it **before** anything is sent, so nobody
+pays gas. The SDK throws with a JSON-RPC error whose `data.reason` says why. The SDK retries the first
+three by itself:
+
+| `reason` | Meaning | What to do |
+| --- | --- | --- |
+| `free_exhausted` | Another operation took the last free slot | Retried automatically (now in USDC.e) |
+| `fee_quote_stale` | The exchange rate moved more than 3% since the quote | Retried automatically |
+| `fee_allowance_missing` | Gas was re-estimated above the approved amount | Retried automatically |
+| `fee_balance_insufficient` | Not enough USDC.e for the fee (also when the operation itself spends the USDC.e it needs for the fee) | Ask the user to top up, or send less |
+| `would_revert` | The operation would fail on-chain | Fix the call |
+| `budget_exceeded` | A policy limit is reached (monthly, per user, or per day) | Wait for the next period, or contact us to raise it |
+| `op_cost_exceeded` | This single operation costs more than the policy allows per operation | Split it into smaller operations |
+| `policy_inactive` / `policy_ended` | The policy is switched off or past its end date | Contact us |
+| `policy_required` / `anchor_unknown` | Missing or unknown `policyId` / `anchorId` | Check the IDs |
+| `sender_blocked` / `anchor_blocked` | Repeated failed operations from this account or user | Contact us |
+
+Signatures from the paymaster are short-lived (5 minutes by default): send the operation right away.
+

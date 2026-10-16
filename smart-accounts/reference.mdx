@@ -1,0 +1,102 @@
+---
+title: Reference
+sidebar_label: Reference
+description: Endpoints, contract addresses, SDK exports, limits, and rejection messages for smart accounts on HPP Mainnet and HPP Sepolia.
+---
+
+# Reference
+
+## Endpoints
+
+| | HPP Mainnet | HPP Sepolia |
+| --- | --- | --- |
+| Chain ID | `190415` | `181228` |
+| Chain RPC | `https://mainnet.hpp.io` | `https://sepolia.hpp.io` |
+| **Bundler + paymaster** | **`https://aa.hpp.io/rpc`** | **`https://aa-sepolia.hpp.io/rpc`** |
+| Wallet | [aa.hpp.io](https://aa.hpp.io) | [aa-sepolia.hpp.io](https://aa-sepolia.hpp.io) |
+| Block explorer | [explorer.hpp.io](https://explorer.hpp.io) | [sepolia-explorer.hpp.io](https://sepolia-explorer.hpp.io) |
+
+The bundler endpoint serves the standard ERC-4337 methods (`eth_sendUserOperation`,
+`eth_estimateUserOperationGas`, …), `rundler_*`, and the ERC-7677 paymaster methods (`pm_*`). It is
+rate-limited per IP (HTTP 429 when exceeded); `debug_*` methods are not exposed. Pass the URL as
+`bundlerUrl` to the SDK.
+
+## Contracts
+
+The account and module contracts are at the same addresses on both networks (and on other chains), so
+`permissionless` and `@rhinestone/module-sdk` defaults match.
+
+| Contract | Address | Role |
+| --- | --- | --- |
+| EntryPoint v0.7 | `0x0000000071727De22E5E9d8BAf0edAc6f37da032` | Used by Kernel — SDK default |
+| EntryPoint v0.8 | `0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108` | For Simple7702Account |
+| Kernel v3.3 | `0xd6CEDDe84be40893d153Be9d467CD6aD37875b28` | Account logic; EIP-7702 delegation target |
+| KernelFactory | `0x2577507b78c2008Ff367261CB6285d44ba5eF2E9` | Factory-mode accounts (browser wallets) |
+| ECDSAValidator | `0x845ADb2C711129d4f3966735eD98a9F09fC4cE57` | Root signer of factory accounts |
+| Smart Sessions | `0x00000000008bDABA73cD9815d79069c247Eb4bDA` | Session validator |
+| OwnableValidator | `0x000000000013fdB5234E4E3162a810F54d9f7E98` | Session signer check |
+| USDC.e | `0x401eCb1D350407f13ba348573E5630B83638E30D` | `TOKENS[chainId].USDCe` |
+
+These differ per network:
+
+| Contract | HPP Mainnet | HPP Sepolia |
+| --- | --- | --- |
+| VerifyingPaymaster (free gas) | `0xAC177f9d80E2c2feA17A44Cca9c3c76235C30345` | `0x686f803a2c8C7f7e88e5E6ABFEDc1DbEA1e2b5bC` |
+| SingletonPaymasterV7 (gas in USDC.e) | `0xa56ee8524BCf81397bA29f069Bfc695a3E703B97` | `0xb4c0E1b0498A35330fd1DE0C85977A6721638db4` |
+| ERC-7710 DelegationManager | `0xEf6d2D01af8e6313f9D544DC2AaC6a438590c2A9` | `0x20248e5193B1Ef08298812AdA31F4B0D75e99652` |
+
+The ERC-7710 enforcer addresses are listed in the facilitator's [`/supported`](/x402/facilitator) response.
+
+## SDK (`@hpp-io/aa-sdk`)
+
+| Export | Purpose |
+| --- | --- |
+| `createHppAccount({ owner, chain, bundlerUrl, paymaster?, mode? })` | A user's account. `owner` is a viem `LocalAccount` or `WalletClient` |
+| `account.ensureReady({ sponsor? })` | One-time setup: EIP-7702 delegation or factory deployment |
+| `account.sendCalls(calls)` | One atomic UserOperation → `{ success, txHash, userOpHash, receipt, fee }` |
+| `account.quoteFee(calls)` | Upper bound of the fee before signing |
+| `account.grantPaymentDelegation(…)` / `revokePaymentDelegation(…)` | ERC-7710 payment delegations |
+| `account.grantSession(…)` / `revokeSession(id)` / `sessionUsage(id)` | Sessions |
+| `createHppSessionClient({ account, permissionId, signer, chain, bundlerUrl, paymaster? })` | Agent side of a session |
+| `buildPaymentRedelegation` / `signPaymentRedelegation` | Agent side of a payment delegation |
+| `toEmbeddedOwner({ address, signMessage, signAuthorization? })` | Wrap an embedded-wallet signer (Privy, Dynamic, …) |
+| `feeApproveAction(…)` | Session action that lets an agent's operations pay gas in USDC.e |
+| `hppMainnet`, `hppSepolia`, `TOKENS` | Constants |
+
+Source and issues: [github.com/hpp-io/hpp-aa-sdk](https://github.com/hpp-io/hpp-aa-sdk).
+
+## Limits
+
+| Limit | Value |
+| --- | --- |
+| Parallel nonce lanes per account | 4 |
+| Operations per bundle | 32 |
+| Mempool time-to-live | 300 s — an under-priced operation is dropped after this |
+| Paymaster signature validity | 300 s by default |
+| Public endpoint | Per-IP rate limit (HTTP 429) |
+
+## Rejection reasons
+
+Paymaster refusals (`data.reason`) are listed in [Gas sponsorship](./gas-sponsorship.mdx#when-a-request-is-refused).
+Messages from the bundler:
+
+| Code | Message | Meaning |
+| --- | --- | --- |
+| -32500 | `AA25 invalid account nonce` | Nonce reused, or the previous operation is not mined yet |
+| -32500 | `AA23 reverted` / `validateUserOp … reverted` | The account rejected it — for a session: over the limit, wrong contract, revoked, or expired |
+| -32500 | `AA21 didn't pay prefund` | No sponsorship and not enough ETH in the account |
+| -32505 | `Max operations (4) reached for account` | More than 4 lanes in flight |
+| -32602 | `already known` | The same operation is already queued |
+
+## If you bypass the SDK
+
+Things you need to know when you talk to the endpoint with raw viem or permissionless:
+
+1. **Fees**: use `rundler_getUserOperationGasPrice`. Generic estimators over-price — the priority fee on HPP is 0.
+2. **`preVerificationGas`** is mostly L1 data cost (roughly 2.5k gas per calldata byte). Add a buffer, or the operation sits in the mempool and is dropped.
+3. **EIP-7702**: land the delegation as a separate type-4 transaction. The bundler rejects viem's 2-byte `factory: "0x7702"` marker. When the account sends its own type-4 transaction, the authorization nonce is the account nonce **+ 1**.
+4. **7702 root signature**: Kernel verifies an **EIP-191-prefixed** userOpHash against `address(this)`.
+5. **Installing a validator on Kernel**: `initData = hook (20 bytes, sentinel 0x…01) ‖ abi.encode(validatorData, hookData, selectorData)` with `selectorData = 0xe9ae5c53`. Selectors cannot be added later.
+6. **Session nonce key**: `[mode 1B][type 1B = 0x01][validator 20B][lane 2B]`. `@rhinestone/module-sdk`'s `encodeValidatorNonce` emits type `0x00` (the root key) — build it yourself.
+7. **Factory accounts**: deploying inside the first UserOperation (`initCode`) is rejected because KernelFactory is not staked. Deploy with a normal transaction first.
+8. **Signing EIP-712 payloads** (x402, Permit): a delegated account has code, so tokens call `isValidSignature`. Sign through the account (Kernel-wrapped hash), not with the raw owner key.

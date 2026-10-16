@@ -1,0 +1,176 @@
+---
+title: 'Quickstart: Smart Accounts'
+sidebar_label: Quickstart
+description: Create a smart account on HPP, send a batched transaction, and turn on gas sponsorship with @hpp-io/aa-sdk.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Quickstart: Smart Accounts
+
+Three steps: create an account, make it ready, send calls. [`@hpp-io/aa-sdk`](https://www.npmjs.com/package/@hpp-io/aa-sdk)
+talks to HPP's bundler and paymaster and handles the chain-specific details for you.
+
+```bash
+npm i @hpp-io/aa-sdk viem
+```
+
+Pick the network once and reuse it:
+
+<Tabs groupId="network">
+<TabItem value="sepolia" label="HPP Sepolia" default>
+
+```ts
+import { hppSepolia, TOKENS } from "@hpp-io/aa-sdk";
+
+const chain = hppSepolia;
+const bundlerUrl = "https://aa-sepolia.hpp.io/rpc";
+const USDCe = TOKENS[181228].USDCe;
+```
+
+</TabItem>
+<TabItem value="mainnet" label="HPP Mainnet">
+
+```ts
+import { hppMainnet, TOKENS } from "@hpp-io/aa-sdk";
+
+const chain = hppMainnet;
+const bundlerUrl = "https://aa.hpp.io/rpc";
+const USDCe = TOKENS[190415].USDCe;
+```
+
+</TabItem>
+</Tabs>
+
+## 1. Create an account
+
+The **owner** is whatever signs for the user. Pick the tab that matches your app.
+
+<Tabs groupId="owner">
+<TabItem value="key" label="Server or local key" default>
+
+```ts
+import { createHppAccount } from "@hpp-io/aa-sdk";
+import { privateKeyToAccount } from "viem/accounts";
+
+const user = await createHppAccount({ owner: privateKeyToAccount(KEY), chain, bundlerUrl });
+console.log(user.address, user.mode);   // mode "7702": the key's own address becomes the smart account
+```
+
+</TabItem>
+<TabItem value="privy" label="Embedded wallet (Privy, …)">
+
+```ts
+import { createHppAccount, toEmbeddedOwner } from "@hpp-io/aa-sdk";
+import { useWallets, useSign7702Authorization } from "@privy-io/react-auth";
+
+const { wallets } = useWallets();
+const { signAuthorization } = useSign7702Authorization();
+const w = wallets.find((x) => x.walletClientType === "privy")!;
+const provider = await w.getEthereumProvider();
+
+const owner = toEmbeddedOwner({
+  address: w.address as `0x${string}`,
+  signMessage: (hash) => provider.request({ method: "personal_sign", params: [hash, w.address] }),
+  signAuthorization: (a) =>
+    signAuthorization({ contractAddress: a.contractAddress, chainId: a.chainId, nonce: a.nonce }, { address: w.address })
+      .then((s) => ({ address: a.contractAddress, chainId: a.chainId, nonce: a.nonce, r: s.r, s: s.s, yParity: s.yParity })),
+});
+const user = await createHppAccount({ owner, chain, bundlerUrl });
+```
+
+Register HPP with viem's `defineChain` in your embedded-wallet provider (`hppSepolia` / `hppMainnet` are
+exactly that) — signing is chain-agnostic, so no vendor approval is needed. Sign 32-byte hashes with the
+wallet's EIP-1193 `personal_sign`; some SDKs' `signMessage()` treats the input as text.
+
+</TabItem>
+<TabItem value="browser" label="Browser wallet (MetaMask, …)">
+
+```ts
+import { createHppAccount } from "@hpp-io/aa-sdk";
+import { createWalletClient, custom } from "viem";
+
+const wallet = createWalletClient({ account: address, chain, transport: custom(window.ethereum) });
+const user = await createHppAccount({ owner: wallet, chain, bundlerUrl });   // mode "factory"
+console.log(user.address);   // a NEW address — show the user where to deposit
+```
+
+Browser wallets do not let dapps sign EIP-7702 authorizations, so the account is a separate Kernel
+contract with its own address. Everything after this step is identical.
+
+</TabItem>
+</Tabs>
+
+## 2. Make it ready (once per account)
+
+```ts
+await user.ensureReady({ sponsor });
+```
+
+This lands one transaction: the EIP-7702 delegation (same address) or the account deployment (new
+address). **Who pays for it:**
+
+- pass a funded viem `WalletClient` as `sponsor` from your backend, or
+- pass a `RemoteSponsor` — two callbacks that post the signed request to your backend — from a browser, or
+- omit `sponsor` and the owner pays, which needs a little ETH on that address.
+
+```ts
+// browser → your backend pays the setup transaction; the user never needs ETH
+const sponsor = {
+  submitDelegation: ({ account, authorization }) => post("/api/sponsor", { type: "delegate", account, authorization }),
+  submitDeploy: ({ account, initData, salt }) => post("/api/sponsor", { type: "deploy", account, initData, salt }),
+};
+```
+
+## 3. Send calls
+
+```ts
+import { encodeFunctionData, parseAbi } from "viem";
+
+const erc20 = parseAbi(["function transfer(address,uint256) returns (bool)"]);
+
+const r = await user.sendCalls([
+  { to: USDCe, data: encodeFunctionData({ abi: erc20, functionName: "transfer", args: [to, 1_000_000n] }) },
+  // add more calls — they run together in ONE UserOperation, or not at all
+]);
+if (!r.success) throw new Error(`reverted: ${r.txHash}`);
+```
+
+`sendCalls` returns `{ success, txHash, userOpHash, receipt, fee }`.
+
+- It **does not throw** when the operation was included but reverted — check `success`.
+- It **throws** when the bundler or paymaster rejects the request before inclusion (for example, the
+  account cannot pay its gas). The error carries a reason — see [Reference](./reference.mdx#rejection-reasons).
+
+Without sponsorship the account pays its own gas in ETH, so it needs a little ETH at its address.
+
+## 4. Turn on gas sponsorship (optional)
+
+To let users transact with **no ETH at all**, add the paymaster option with the policy HPP issued to your
+app:
+
+```ts
+const user = await createHppAccount({
+  owner, chain, bundlerUrl,
+  paymaster: { policyId: "<your policy>", anchorId: "<this user>" },
+});
+const r = await user.sendCalls([...]);
+console.log(r.fee);   // { mode: "sponsored", freeRemaining: 2 }  or  { mode: "token", charged, symbol: "USDC.e", … }
+```
+
+On **HPP Sepolia** you can try this today with sandbox access — [Gas sponsorship](./gas-sponsorship.mdx)
+explains policies, anchors, paying gas in USDC.e, and how to request access.
+
+## What the SDK handles for you
+
+HPP is an Arbitrum Orbit chain and Kernel is a modular account. Hand-written ERC-4337 code hits a handful of
+traps here — a priority fee of 0, `preVerificationGas` that is mostly L1 data cost, EIP-7702 delegation
+details, validator install data, and nonce keys for sessions. The SDK takes care of all of them. If you
+use viem or permissionless directly, read [Reference → If you bypass the SDK](./reference.mdx#if-you-bypass-the-sdk).
+
+## Next
+
+- [Gas sponsorship](./gas-sponsorship.mdx) — free operations for your users, then gas in USDC.e
+- [Agent permissions](./agent-permissions.mdx) — let an agent or backend act within limits
+- [Reference](./reference.mdx) — endpoints, contract addresses, limits

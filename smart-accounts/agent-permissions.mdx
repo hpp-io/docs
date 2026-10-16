@@ -1,0 +1,144 @@
+---
+title: Agent permissions
+sidebar_label: Agent permissions
+description: Give an AI agent or a backend limited, revocable permissions on a user's smart account — payment delegations (ERC-7710) for x402 payments, and sessions for calling contracts.
+---
+
+# Agent permissions
+
+A smart account can hand someone else — an AI agent, a bot, your backend — a **limited** permission. The
+limits are enforced by the chain, and the user can revoke them at any time. There are two kinds:
+
+| | **Payment delegation** (ERC-7710) | **Session** |
+| --- | --- | --- |
+| For | Paying x402 services | Sending your own transactions to specific contracts |
+| The agent's key holds | Nothing — payments come from the user's account | Nothing — operations run on the user's account |
+| Limits | Total USDC.e (or per period), expiry, number of payments; each payment exact amount + recipient | Allowed contracts and functions, token spend, number of operations, time window, native value |
+| Who submits | The HPP facilitator settles each payment | The agent sends UserOperations through the bundler |
+| Gas | None for the agent — the facilitator pays settlement gas | Under the user's sponsorship policy, or paid in USDC.e |
+| In HPP Smart Wallet | **Pay x402 services** | **Call contracts (session)** |
+
+A session cannot sign an x402 payment: x402's signature is checked through the account's ERC-1271
+validation and never passes the session's rules. For x402, use a payment delegation.
+
+## Payment delegations (ERC-7710)
+
+The account signs a delegation to the agent's address with caps attached
+([MetaMask Delegation Framework](https://github.com/MetaMask/delegation-framework) enforcers, deployed on
+HPP). For each x402 payment the agent signs a narrower re-delegation — this amount, this seller, short
+expiry — and the HPP facilitator redeems it through the user's account.
+
+**User side** — one operation the first time (installs the delegation executor), then signatures only:
+
+```ts
+import { parseUnits } from "viem";
+
+const grant = await user.grantPaymentDelegation({
+  agent: agentAddress,
+  token: USDCe,
+  limit: parseUnits("5", 6),                              // or period: { amount, seconds } for a rolling cap
+  validUntil: BigInt(Math.floor(Date.now() / 1000) + 30 * 86400),
+  maxCalls: 100n,
+});
+// give the agent grant.permissionContext; keep grant.delegation to revoke later
+await user.revokePaymentDelegation(grant.delegation);    // one operation, effective immediately
+```
+
+**Agent side** — for a 402 whose accept lists `extra.assetTransferMethod === "erc7710"`:
+
+```ts
+import { buildPaymentRedelegation, signPaymentRedelegation } from "@hpp-io/aa-sdk";
+
+const leaf = buildPaymentRedelegation(chain.id, agentKey.address, {
+  parentPermissionContext: grant.permissionContext,
+  facilitatorAddresses: requirements.extra.facilitatorAddresses,
+  token, amount, payTo,
+});
+const payload = await signPaymentRedelegation({ chainId: chain.id, agent: agentKey, leaf, parentPermissionContext: grant.permissionContext });
+// → x402 payload { delegationManager, permissionContext, delegator } for the exact scheme
+```
+
+The easiest agent side is the MCP bridge: set `HPP_PAYMENT_DELEGATION` to the permission context and it
+handles every `erc7710` payment — see [Pay from an agent](./pay-from-an-agent.mdx).
+
+Payment delegations work with sellers settled by the **HPP facilitator** — its [`/supported`](/x402/facilitator)
+response carries an `erc7710` block (DelegationManager and enforcer addresses) under the `exact` scheme. `@metamask/x402` with `@metamask/smart-accounts-kit` produces the same
+bytes if you register HPP's contracts with `erc7710Environment(chain.id)`.
+
+## Sessions
+
+A session is a key with rules, installed on the user's account. The agent signs with its own key; the
+account checks the rules on-chain before anything runs. Over the limit, wrong contract, expired, or
+revoked → the operation is rejected at validation and **no gas is spent**.
+
+**User side:**
+
+```ts
+const { permissionId } = await user.grantSession({
+  signer: agentAddress,
+  actions: [
+    { target: USDCe, signature: "transfer(address,uint256)" },
+    { target: MARKET, selector: "0x12345678" },          // a function selector or a human-readable signature
+  ],
+  spend: [{ token: USDCe, limit: 5_000_000n }],          // cumulative cap per token
+  usageLimit: 20n,                                       // max operations
+  validUntil: Math.floor(Date.now() / 1000) + 30 * 86400,
+  valueLimit: 0n,                                        // max native value per operation
+});
+// revoke: await user.revokeSession(permissionId)
+```
+
+| Field | What it limits |
+| --- | --- |
+| `actions[]` | Which contract + function the agent may call. Anything else is rejected |
+| `spend` | Total of a token the agent may move through those actions, over the session's life |
+| `usageLimit` | Number of operations |
+| `validUntil` / `validAfter` | Time window (Unix seconds) |
+| `valueLimit` | Native ETH per operation |
+
+Anything you leave out is unlimited — for an agent, set the contract, the function, the amount, and the
+time window.
+
+**Agent side:**
+
+```ts
+import { createHppSessionClient } from "@hpp-io/aa-sdk";
+
+const agentClient = await createHppSessionClient({
+  account: userAddress,   // the user's smart account
+  permissionId,
+  signer: agentKey,       // viem LocalAccount that supports sign({ hash })
+  chain, bundlerUrl,
+  paymaster,              // optional — same option as createHppAccount
+});
+const r = await agentClient.sendCalls([{ to: USDCe, data: transferCalldata }]);
+```
+
+If the agent's operations should be sponsored or charged in USDC.e under the user's policy, also allow
+the fee approval in the session with `feeApproveAction` — it can approve only the paymaster, capped per
+operation and in total, and does not count against `spend`:
+
+```ts
+import { feeApproveAction } from "@hpp-io/aa-sdk";
+
+actions: [
+  { target: USDCe, signature: "transfer(address,uint256)" },
+  feeApproveAction({ token: USDCe, paymaster: ERC20_PAYMASTER, perCall: 300_000n, total: 5_000_000n }),
+],
+```
+
+`user.sessionUsage(permissionId, { feeToken: USDCe })` reads how much a session has used from its on-chain
+policies.
+
+## Throughput: one account, one operation at a time
+
+Operations from the **same account** are sequential: the next one is accepted only after the previous
+one is mined. To do several things quickly:
+
+| | How | Notes |
+| --- | --- | --- |
+| **One batch** | `sendCalls([c1, …, c10])` | Fastest and cheapest when you know the work up front |
+| Parallel lanes | Up to **4** nonce keys per account | When work arrives over time |
+| One by one | Repeated `sendCalls` | Slowest |
+
+A service acting for many users cannot get around this by batching — use one account per user.

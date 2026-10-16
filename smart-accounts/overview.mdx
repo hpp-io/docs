@@ -1,0 +1,66 @@
+---
+title: Smart Accounts on HPP
+sidebar_label: Overview
+slug: /
+description: Wallets that sign in with email, pay no gas for their first operations, and hand an AI agent a spending limit — ERC-4337 and EIP-7702 smart accounts on HPP.
+---
+
+# Smart Accounts on HPP
+
+A plain wallet is a private key: whoever holds it can do anything, and every action costs gas in ETH.
+A **smart account** puts rules in code instead. On HPP that means a user can sign in with an email,
+send their first transactions without owning any ETH, and give an AI agent a budget it cannot exceed —
+enforced on-chain, revocable at any time.
+
+HPP runs the whole [ERC-4337](https://eips.ethereum.org/EIPS/eip-4337) stack itself — bundler,
+paymaster, and smart-account contracts — behind one endpoint, `https://aa.hpp.io`, and ships a
+ready-to-use wallet on top of it.
+
+<div className="margin-bottom--md">
+  <a href="https://aa.hpp.io" className="button button--primary">Open HPP Smart Wallet →</a>
+</div>
+
+## What you get
+
+| | Plain wallet (EOA) | Smart account on HPP |
+| --- | --- | --- |
+| **Getting started** | Install an extension, write down a seed phrase, buy ETH for gas | Sign in with email. Your address is ready in about five seconds |
+| **Gas** | Every action needs ETH | Your first operations are free; after that, gas is paid in **USDC.e** — no ETH needed |
+| **Letting an AI agent pay** | Hand over a key that can spend everything | Grant a **limit** ("up to 5 USDC.e, for 30 days"). The chain enforces it; revoke with one click |
+| **Several actions at once** | One pop-up and one fee each | One signature, executed together or not at all |
+
+## Choose your path
+
+### 👛 I want to use a wallet
+
+| I want to… | Start here |
+| --- | --- |
+| send and receive USDC.e, pay x402 services | **[HPP Smart Wallet](./wallet.mdx)** |
+| let an AI agent (Claude, Cursor, …) pay from my wallet within a limit | **[Pay from an agent](./pay-from-an-agent.mdx)** |
+
+### 🛠️ I want to build with it
+
+| I want to… | Start here |
+| --- | --- |
+| create smart accounts and send transactions from my app | **[Quickstart](./quickstart.mdx)** |
+| let my users transact without holding ETH | **[Gas sponsorship](./gas-sponsorship.mdx)** |
+| give an agent or a backend limited, revocable permissions | **[Agent permissions](./agent-permissions.mdx)** |
+| look up endpoints, contract addresses, limits | **[Reference](./reference.mdx)** |
+
+## Networks
+
+| | HPP Mainnet | HPP Sepolia (testnet) |
+| --- | --- | --- |
+| Chain ID | `190415` | `181228` |
+| Wallet | [aa.hpp.io](https://aa.hpp.io) | [aa-sepolia.hpp.io](https://aa-sepolia.hpp.io) |
+| Bundler + paymaster endpoint | `https://aa.hpp.io/rpc` | `https://aa-sepolia.hpp.io/rpc` |
+| Free gas for your app | On request — [contact us](mailto:support@hpp.io) | Sandbox access on request |
+
+Build and test on **HPP Sepolia** first: everything on these pages works there with test USDC.e.
+
+## How it relates to x402
+
+[x402](/x402) is how an app or agent **pays** for an API call. Smart accounts change **what the wallet
+is**. The two meet in one place: a smart account can grant an agent a *payment delegation*
+([ERC-7710](https://eips.ethereum.org/EIPS/eip-7710)), and the agent then pays x402 services from the
+user's account — within the limit — without ever holding funds of its own.

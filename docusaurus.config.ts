@@ -105,6 +105,18 @@ const config: Config = {
         editUrl: 'https://github.com/hpp-io/docs/tree/main/',
       },
     ],
+    // Smart Accounts (account abstraction) docs — ERC-4337 / EIP-7702 on HPP, served
+    // at /smart-accounts as a standalone product section (same pattern as /x402).
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'smart-accounts',
+        path: 'smart-accounts',
+        routeBasePath: 'smart-accounts',
+        sidebarPath: './sidebarsSmartAccounts.ts',
+        editUrl: 'https://github.com/hpp-io/docs/tree/main/',
+      },
+    ],
     // Noosphere docs — the verifiable off-chain compute network on HPP, served
     // at /noosphere as a standalone product section (same pattern as /x402).
     [
@@ -125,7 +137,7 @@ const config: Config = {
       {
         hashed: true,
         indexDocs: true,
-        docsRouteBasePath: ['/', 'hub', 'hpp-router', 'x402', 'hpp-coder', 'noosphere'],
+        docsRouteBasePath: ['/', 'hub', 'hpp-router', 'x402', 'hpp-coder', 'noosphere', 'smart-accounts'],
         highlightSearchTermsOnTargetPage: true,
         language: ['en'],
       },
@@ -184,6 +196,13 @@ const config: Config = {
           sidebarId: 'noosphereSidebar',
           docsPluginId: 'noosphere',
           label: 'Noosphere',
+          position: 'right',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'smartAccountsSidebar',
+          docsPluginId: 'smart-accounts',
+          label: 'Smart Accounts',
           position: 'right',
         },
         {
