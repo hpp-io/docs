@@ -90,7 +90,9 @@ Every payment is checked by the chain, not by HPP's servers:
 - each payment moves **exactly the quoted amount** to **exactly the seller's address**;
 - only the HPP facilitator can redeem it, and each signed payment is valid for a short time.
 
-So the limits hold even if the agent is compromised or misbehaves.
+So the limits hold even if the agent misbehaves. The value you paste is not enough to spend on its own —
+it also needs the agent's key, which stays in your OS keychain. If that key is ever exposed, revoke the
+permission. Full details: [security model](./agent-permissions.mdx#security-model-of-payment-delegations).
 
 ## Revoke
 

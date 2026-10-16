@@ -145,6 +145,10 @@ if (!r.success) throw new Error(`reverted: ${r.txHash}`);
 
 Without sponsorship the account pays its own gas in ETH, so it needs a little ETH at its address.
 
+**Check it worked:** open the transaction on the explorer —
+`https://explorer.hpp.io/tx/${r.txHash}` (Mainnet) or `https://sepolia-explorer.hpp.io/tx/${r.txHash}`
+(Sepolia). The transaction is the bundler's; your calls appear inside it, from your account's address.
+
 ## 4. Turn on gas sponsorship (optional)
 
 To let users transact with **no ETH at all**, add the paymaster option with the policy HPP issued to your

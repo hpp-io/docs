@@ -91,8 +91,16 @@ for your own testing; when you are ready to onboard real users, ask for a policy
 </TabItem>
 <TabItem value="mainnet" label="HPP Mainnet">
 
-Mainnet sponsorship is set up per app. Email [support@hpp.io](mailto:support@hpp.io) with what your app
-does, the fee mode you want, and your expected volume. We will agree on the limits and issue a `policyId`.
+Mainnet sponsorship is set up per app — there is no self-serve dashboard yet. Email
+[support@hpp.io](mailto:support@hpp.io) with:
+
+- your app's name, website, and what users do with it;
+- the fee mode you want (`sponsored`, `token`, or `sponsored_then_token` with how many free operations);
+- the contracts your users will call;
+- expected users and operations per month;
+- how your backend identifies a user (this becomes the `anchorId`).
+
+We agree on limits with you and issue a `policyId`.
 
 Until then, your users can still use smart accounts on Mainnet and pay their own gas — leave out the
 `paymaster` option.
@@ -103,21 +111,17 @@ Until then, your users can still use smart accounts on Mainnet and pay their own
 ## When a request is refused
 
 If an operation does not fit the policy, the paymaster refuses it **before** anything is sent, so nobody
-pays gas. The SDK throws with a JSON-RPC error whose `data.reason` says why. The SDK retries the first
-three by itself:
+pays gas. The SDK throws with a JSON-RPC error whose `data.reason` says why, and retries the transient
+ones (`free_exhausted`, `fee_quote_stale`, `fee_allowance_missing`) by itself. The most common:
 
-| `reason` | Meaning | What to do |
-| --- | --- | --- |
-| `free_exhausted` | Another operation took the last free slot | Retried automatically (now in USDC.e) |
-| `fee_quote_stale` | The exchange rate moved more than 3% since the quote | Retried automatically |
-| `fee_allowance_missing` | Gas was re-estimated above the approved amount | Retried automatically |
-| `fee_balance_insufficient` | Not enough USDC.e for the fee (also when the operation itself spends the USDC.e it needs for the fee) | Ask the user to top up, or send less |
-| `would_revert` | The operation would fail on-chain | Fix the call |
-| `budget_exceeded` | A policy limit is reached (monthly, per user, or per day) | Wait for the next period, or contact us to raise it |
-| `op_cost_exceeded` | This single operation costs more than the policy allows per operation | Split it into smaller operations |
-| `policy_inactive` / `policy_ended` | The policy is switched off or past its end date | Contact us |
-| `policy_required` / `anchor_unknown` | Missing or unknown `policyId` / `anchorId` | Check the IDs |
-| `sender_blocked` / `anchor_blocked` | Repeated failed operations from this account or user | Contact us |
+| `reason` | Meaning |
+| --- | --- |
+| `fee_balance_insufficient` | Not enough USDC.e for the fee |
+| `budget_exceeded` | A monthly, per-user, or daily limit is reached — by default the operation fails; your app can retry without the paymaster so the user pays their own gas |
+| `would_revert` | The calls would fail on-chain |
+| `policy_required` / `anchor_unknown` | Missing or unknown IDs |
 
-Signatures from the paymaster are short-lived (5 minutes by default): send the operation right away.
+The full list, with fixes: [Errors & troubleshooting](./errors.mdx#paymaster-policy).
 
+Paymaster approvals are short-lived (5 minutes by default) and cover the operation exactly as it was
+when approved: sign and send right away, and do not change any field afterwards.

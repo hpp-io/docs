@@ -42,19 +42,25 @@ ready-to-use wallet on top of it.
 
 | I want to… | Start here |
 | --- | --- |
+| understand smart accounts, bundlers and paymasters first | **[How it works](./how-it-works.mdx)** |
 | create smart accounts and send transactions from my app | **[Quickstart](./quickstart.mdx)** |
 | let my users transact without holding ETH | **[Gas sponsorship](./gas-sponsorship.mdx)** |
 | give an agent or a backend limited, revocable permissions | **[Agent permissions](./agent-permissions.mdx)** |
 | look up endpoints, contract addresses, limits | **[Reference](./reference.mdx)** |
+| fix an error | **[Errors & troubleshooting](./errors.mdx)** · **[FAQ](./faq.mdx)** |
 
 ## Networks
 
 | | HPP Mainnet | HPP Sepolia (testnet) |
 | --- | --- | --- |
 | Chain ID | `190415` | `181228` |
-| Wallet | [aa.hpp.io](https://aa.hpp.io) | [aa-sepolia.hpp.io](https://aa-sepolia.hpp.io) |
 | Bundler + paymaster endpoint | `https://aa.hpp.io/rpc` | `https://aa-sepolia.hpp.io/rpc` |
-| Free gas for your app | On request — [contact us](mailto:support@hpp.io) | Sandbox access on request |
+| EntryPoint | v0.7 (SDK default), v0.8 | v0.7 (SDK default), v0.8 |
+| Account | Kernel v3.3 — EIP-7702 (same address) or factory | same |
+| Gas paid by | The account (ETH), HPP (sponsored), or the user in USDC.e | same |
+| Gas sponsorship for your app | By request — [support@hpp.io](mailto:support@hpp.io) | Sandbox policy on request |
+| Agent payments (ERC-7710) | ✅ | ✅ |
+| Wallet | [aa.hpp.io](https://aa.hpp.io) | [aa-sepolia.hpp.io](https://aa-sepolia.hpp.io) |
 
 Build and test on **HPP Sepolia** first: everything on these pages works there with test USDC.e.
 

@@ -65,11 +65,31 @@ Payment delegations work with sellers settled by the **HPP facilitator** — its
 response carries an `erc7710` block (DelegationManager and enforcer addresses) under the `exact` scheme. `@metamask/x402` with `@metamask/smart-accounts-kit` produces the same
 bytes if you register HPP's contracts with `erc7710Environment(chain.id)`.
 
+### Security model of payment delegations
+
+| | |
+| --- | --- |
+| **Who can spend** | Only the agent's key. Every payment is a re-delegation the agent signs; the facilitator cannot pay with the user's permission on its own |
+| **What enforces the limits** | Caveat contracts checked by the DelegationManager on every redemption — total (or per-period) USDC.e, expiry, number of payments. Each payment is further narrowed to one exact amount, one recipient, the HPP facilitator as the only redeemer, and a short expiry |
+| **Restrictions only narrow** | A re-delegation can add restrictions to the user's permission but never remove or widen them |
+| **What the agent cannot do** | Move tokens other than the one granted, exceed the limit, act after expiry, or change the account |
+| **If `HPP_PAYMENT_DELEGATION` leaks** | Not enough on its own — spending also needs the agent's private key |
+| **If the agent's key leaks** | Whoever has it, together with the delegation, can spend up to the **remaining** limit before it expires. Revoke at once |
+| **Revoking** | One operation (sponsored, free for the user) disables the permission on-chain; payments fail from the next block |
+
+Keep limits small and expiries short, and give each agent its own key so one revoke never affects
+another.
+
 ## Sessions
 
 A session is a key with rules, installed on the user's account. The agent signs with its own key; the
 account checks the rules on-chain before anything runs. Over the limit, wrong contract, expired, or
 revoked → the operation is rejected at validation and **no gas is spent**.
+
+:::warning
+A session without `actions` limits — or with a `sudo` policy — lets the key do anything the account can.
+Always set the contract, function, amount, and time window.
+:::
 
 **User side:**
 
