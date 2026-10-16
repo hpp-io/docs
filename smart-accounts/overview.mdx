@@ -16,6 +16,11 @@ HPP runs the whole [ERC-4337](https://eips.ethereum.org/EIPS/eip-4337) stack its
 paymaster, and smart-account contracts — behind one endpoint, `https://aa.hpp.io`, and ships a
 ready-to-use wallet on top of it.
 
+:::caution[Early access]
+Smart Accounts on HPP Mainnet are newly launched. Sponsored (free) operations are limited and may change,
+and there is no uptime guarantee yet. Start on HPP Sepolia, and use small amounts on Mainnet.
+:::
+
 <div className="margin-bottom--md">
   <a href="https://aa.hpp.io" className="button button--primary">Open HPP Smart Wallet →</a>
 </div>
@@ -25,7 +30,7 @@ ready-to-use wallet on top of it.
 | | Plain wallet (EOA) | Smart account on HPP |
 | --- | --- | --- |
 | **Getting started** | Install an extension, write down a seed phrase, buy ETH for gas | Sign in with email. Your address is ready in about five seconds |
-| **Gas** | Every action needs ETH | Your first operations are free; after that, gas is paid in **USDC.e** — no ETH needed |
+| **Gas** | Every action needs ETH | A limited number of operations are covered by HPP; after that, gas is paid in **USDC.e** — no ETH in the wallet |
 | **Letting an AI agent pay** | Hand over a key that can spend everything | Grant a **limit** ("up to 5 USDC.e, for 30 days"). The chain enforces it; revoke with one click |
 | **Several actions at once** | One pop-up and one fee each | One signature, executed together or not at all |
 
@@ -55,14 +60,19 @@ ready-to-use wallet on top of it.
 | --- | --- | --- |
 | Chain ID | `190415` | `181228` |
 | Bundler + paymaster endpoint | `https://aa.hpp.io/rpc` | `https://aa-sepolia.hpp.io/rpc` |
-| EntryPoint | v0.7 (SDK default), v0.8 | v0.7 (SDK default), v0.8 |
+| EntryPoint | v0.7 (SDK default, sponsorship); v0.8 self-paid only | same |
 | Account | Kernel v3.3 — EIP-7702 (same address) or factory | same |
 | Gas paid by | The account (ETH), HPP (sponsored), or the user in USDC.e | same |
-| Gas sponsorship for your app | By request — [support@hpp.io](mailto:support@hpp.io) | Sandbox policy on request |
+| Gas sponsorship for your app | [Apply on GitHub](./gas-sponsorship.mdx#apply) | Sandbox policy — [apply on GitHub](./gas-sponsorship.mdx#apply) |
 | Agent payments (ERC-7710) | ✅ | ✅ |
 | Wallet | [aa.hpp.io](https://aa.hpp.io) | [aa-sepolia.hpp.io](https://aa-sepolia.hpp.io) |
 
 Build and test on **HPP Sepolia** first: everything on these pages works there with test USDC.e.
+
+## Get help
+
+- **Developers:** [hpp-io/hpp-aa-sdk issues](https://github.com/hpp-io/hpp-aa-sdk/issues) — questions, bugs, sponsorship requests
+- **Wallet users:** [HPP Telegram](https://t.me/aergoofficial)
 
 ## How it relates to x402
 

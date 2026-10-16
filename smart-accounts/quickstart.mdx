@@ -16,6 +16,12 @@ talks to HPP's bundler and paymaster and handles the chain-specific details for 
 npm i @hpp-io/aa-sdk viem
 ```
 
+**Requirements:** Node.js 20+, ESM (`"type": "module"` or `.mjs`), `viem` 2.56+. The SDK runs in Node and
+in the browser.
+
+**Test funds (Sepolia):** test ETH from the [HPP Sepolia Faucet](https://faucet.hpp.io/). For test USDC.e or
+sandbox sponsorship, see [Gas sponsorship → Apply](./gas-sponsorship.mdx#apply).
+
 Pick the network once and reuse it:
 
 <Tabs groupId="network">
@@ -73,6 +79,7 @@ const provider = await w.getEthereumProvider();
 const owner = toEmbeddedOwner({
   address: w.address as `0x${string}`,
   signMessage: (hash) => provider.request({ method: "personal_sign", params: [hash, w.address] }),
+  signTypedData: (td) => provider.request({ method: "eth_signTypedData_v4", params: [w.address, JSON.stringify(td, (_, v) => (typeof v === "bigint" ? v.toString() : v))] }),
   signAuthorization: (a) =>
     signAuthorization({ contractAddress: a.contractAddress, chainId: a.chainId, nonce: a.nonce }, { address: w.address })
       .then((s) => ({ address: a.contractAddress, chainId: a.chainId, nonce: a.nonce, r: s.r, s: s.s, yParity: s.yParity })),
@@ -80,6 +87,7 @@ const owner = toEmbeddedOwner({
 const user = await createHppAccount({ owner, chain, bundlerUrl });
 ```
 
+`signTypedData` is needed for x402 payments and payment delegations; without it those calls fail.
 Register HPP with viem's `defineChain` in your embedded-wallet provider (`hppSepolia` / `hppMainnet` are
 exactly that) — signing is chain-agnostic, so no vendor approval is needed. Sign 32-byte hashes with the
 wallet's EIP-1193 `personal_sign`; some SDKs' `signMessage()` treats the input as text.
@@ -111,17 +119,26 @@ await user.ensureReady({ sponsor });
 This lands one transaction: the EIP-7702 delegation (same address) or the account deployment (new
 address). **Who pays for it:**
 
-- pass a funded viem `WalletClient` as `sponsor` from your backend, or
-- pass a `RemoteSponsor` — two callbacks that post the signed request to your backend — from a browser, or
-- omit `sponsor` and the owner pays, which needs a little ETH on that address.
+- a funded viem `WalletClient` passed as `sponsor` (scripts, servers), or
+- a `RemoteSponsor` from the browser — two callbacks that hand the signed request to **your backend**, which
+  sends the transaction and returns its hash, or
+- the owner itself, if you omit `sponsor` — only for a plain private-key owner holding a little ETH.
+  Embedded-wallet owners cannot send transactions themselves, so they need a sponsor.
 
 ```ts
-// browser → your backend pays the setup transaction; the user never needs ETH
-const sponsor = {
+import type { RemoteSponsor } from "@hpp-io/aa-sdk";
+
+// browser → your backend sends the setup transaction; the user never needs ETH
+const sponsor: RemoteSponsor = {
   submitDelegation: ({ account, authorization }) => post("/api/sponsor", { type: "delegate", account, authorization }),
   submitDeploy: ({ account, initData, salt }) => post("/api/sponsor", { type: "deploy", account, initData, salt }),
-};
+};   // each callback resolves to the transaction hash
 ```
+
+On the backend: for `delegate`, send a type-4 transaction with `authorizationList: [authorization]` (set gas
+explicitly, e.g. 3M — estimates on HPP can be low); for `deploy`, call `KernelFactory.createAccount(initData,
+salt)`. Check that the authorization targets Kernel v3.3 on the right chain, and rate-limit the endpoint —
+it spends your ETH. When posting JSON, serialize `bigint` fields (such as `v`) as strings.
 
 ## 3. Send calls
 
@@ -137,7 +154,8 @@ const r = await user.sendCalls([
 if (!r.success) throw new Error(`reverted: ${r.txHash}`);
 ```
 
-`sendCalls` returns `{ success, txHash, userOpHash, receipt, fee }`.
+`sendCalls` returns `{ success, txHash, userOpHash, receipt, fee }`. The first `sendCalls` on a new account
+also installs the session module, so it is slightly heavier than later ones.
 
 - It **does not throw** when the operation was included but reverted — check `success`.
 - It **throws** when the bundler or paymaster rejects the request before inclusion (for example, the

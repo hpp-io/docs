@@ -10,58 +10,71 @@ description: Common questions about HPP Smart Wallet, gas sponsorship, EIP-7702,
 
 ### Does becoming a smart account change my address?
 No. Email sign-in uses [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702): your existing address starts
-using smart-account code, and the address stays the same. (Only browser wallets such as MetaMask get a
-new address — see [How it works](./how-it-works.mdx#same-address-eip-7702).)
+using smart-account code, and the address stays the same. (Only browser wallets such as MetaMask get a new
+address — see [How it works](./how-it-works.mdx#same-address-eip-7702).)
 
 ### What happens after my free operations are used?
-Gas is paid in USDC.e from your balance — you never need ETH. The wallet shows the fee before you
-confirm; it is the gas cost at the current ETH price plus 5%, at least 0.001 USDC.e. x402 payments and
-payments your agents make are signatures, not transactions, so they cost no gas at all.
+The network fee is taken in USDC.e from your balance — you do not need ETH in the wallet. The wallet shows
+the most the fee can be before you confirm; you are charged the actual amount, usually less. Free operations
+are also limited per day and per month, and those limits may change during early access.
 
-### Does HPP hold my keys or my money?
-No. Your key stays with the sign-in provider on your device, and your USDC.e stays in your own account.
-HPP only pays (or charges) gas for operations you sign.
+### What costs a fee and what does not?
+Sends, setting up agents, and revoking agents are **operations** (free while your free operations last, then
+a small USDC.e fee). Paying an x402 service — by you or by your agent — is only a signature and has **no fee**.
 
-### I lost my device. Is my account gone?
-No. Sign in with the same email on a new device and you get the same account.
+### Who holds my key? Can HPP move my money?
+Your key is managed by [Privy](https://www.privy.io), the sign-in provider; HPP does not store it. HPP can
+only cover (or charge) the fee for operations **you** sign — it cannot move your USDC.e.
 
-### Can I revoke an agent from another device?
-Yes. The **Agents** page lists agents issued in this browser, and it also lets you revoke a permission
-issued elsewhere.
+### I lost my device. Is my wallet gone?
+No. Sign in with the same email on a new device and you get the same wallet. If you lose access to the
+**email** itself, you lose the wallet — turn on two-factor authentication for your email, and see
+**Settings** for exporting your key.
+
+### How do I revoke an agent I added on another device?
+Open **Agents → Revoke a payment delegation that is not in this list** and paste the HPP_PAYMENT_DELEGATION
+value you saved when you issued it.
 
 ### What can an agent do with the permission I give it?
-Only pay x402 services in USDC.e, up to the limit and before the expiry you chose. It cannot move your
-other funds or change your account. See
-[the security model](./agent-permissions.mdx#security-model-of-payment-delegations).
+Only pay x402 services in USDC.e, up to the limit and before the expiry you chose. It cannot move your other
+funds or change your account. See [the security model](./agent-permissions.mdx#security-model-of-payment-delegations).
+
+### Where do I ask for help?
+In [HPP Telegram](https://t.me/aergoofficial). Never share your email code or private key with anyone.
 
 ## Developers
 
 ### Do I need HPP's SDK?
-No, any ERC-4337 client works against `aa.hpp.io/rpc`. The SDK saves you from several HPP-specific traps —
-see [Reference → If you bypass the SDK](./reference.mdx#if-you-bypass-the-sdk).
+No — any ERC-4337 client can use `aa.hpp.io/rpc`, within these limits: sponsorship goes through HPP's
+paymaster only, sponsorship is for EntryPoint v0.7, and accounts must be Kernel, SimpleAccount, or EIP-7702.
+The SDK also saves you from several HPP-specific traps — see
+[Reference → If you bypass the SDK](./reference.mdx#if-you-bypass-the-sdk).
 
 ### Can my users pay gas in USDC.e without a policy from HPP?
-Not yet. Paying gas in USDC.e goes through HPP's token paymaster, which needs a policy. Without a policy,
-the account pays its own gas in ETH.
+Not yet. Paying gas in USDC.e goes through HPP's token paymaster, which needs a policy. Without a policy, the
+account pays its own gas in ETH.
 
-### How do I get gas sponsorship on Mainnet?
-Email [support@hpp.io](mailto:support@hpp.io) — see [Gas sponsorship → Get access](./gas-sponsorship.mdx#get-access)
-for what to include. Develop on HPP Sepolia with the sandbox policy in the meantime.
+### How do I get gas sponsorship?
+Open a [Gas sponsorship request](https://github.com/hpp-io/hpp-aa-sdk/issues/new/choose) on GitHub — see
+[Gas sponsorship → Apply](./gas-sponsorship.mdx#apply). Start on HPP Sepolia.
 
-### Is it safe to use `policyId` and `anchorId` from the browser?
-The `policyId` is not a secret — limits are enforced by HPP's paymaster, per anchor. The `anchorId` is
-what limits are counted against, so **your backend** should decide it after the user logs in; never let
-users type or choose it.
+### Can I put `policyId` and `anchorId` in my frontend?
+Be careful with anchors. An anchor ID is all the paymaster needs to count an operation against that user's
+quota, so treat it like a session token: never derive it from public data, and prefer sending sponsored
+requests from your backend or through a backend proxy. See [Keep anchors private](./gas-sponsorship.mdx#policies-and-anchors).
 
 ### Why can one account send only one operation at a time?
-Operations from the same account share a nonce, so each waits for the previous one. Batch calls into one
-operation, or use up to 4 nonce lanes — see
-[Agent permissions → Throughput](./agent-permissions.mdx#throughput-one-account-one-operation-at-a-time).
+Operations from the same account share a nonce, so each waits for the previous one. Batch the calls into one
+operation with `sendCalls([...])`.
 
 ### Payment delegation or session — which do I need?
 A **payment delegation** if an agent pays x402 services. A **session** if a bot or backend sends its own
 operations to specific contracts. [Agent permissions](./agent-permissions.mdx) compares them.
 
 ### Which EntryPoint does HPP use?
-Both v0.7 (`0x0000000071727De22E5E9d8BAf0edAc6f37da032`, used by Kernel and the SDK) and v0.8
-(`0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108`).
+v0.7 (`0x0000000071727De22E5E9d8BAf0edAc6f37da032`) — used by Kernel, the SDK, and sponsorship. The bundler
+also accepts v0.8 (`0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108`) for self-paid operations.
+
+### Where do I report a bug?
+[hpp-io/hpp-aa-sdk issues](https://github.com/hpp-io/hpp-aa-sdk/issues). Never post private keys, anchors,
+or policy IDs.

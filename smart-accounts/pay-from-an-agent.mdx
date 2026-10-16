@@ -6,6 +6,11 @@ description: Let Claude, Cursor, or any MCP host pay x402 services from your HPP
 
 # Pay from an agent with your wallet
 
+:::note[For technical users]
+This setup uses a terminal and edits a configuration file of your AI app. You need **Node.js 20+** and an
+MCP host such as Claude Desktop, Claude Code, or Cursor.
+:::
+
 [Pay from an AI agent](/x402/agents) gives an agent its own small wallet that you fund. This page shows
 the other way: the agent pays **from your HPP Smart Wallet**, under a limit you set there. The agent's key
 holds nothing, and one click in the wallet stops it.
@@ -53,8 +58,11 @@ In the wallet, open **Agents → Add agent**:
 
 ## 3. Add it to your agent host
 
-Add two values to the `hpp-x402` entry in your host's MCP configuration — `HPP_NETWORK` picks the network
-your wallet is on, `HPP_PAYMENT_DELEGATION` is the value you copied:
+`hpp-x402 setup --install <host>` (step 2 of the [x402 guide](/x402/agents)) already added an `hpp-x402`
+entry to your host's MCP configuration and printed the file's path — for Claude Desktop that is
+`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS and
+`%APPDATA%\Claude\claude_desktop_config.json` on Windows. Add two values to that entry's `env` —
+`HPP_NETWORK` picks the network your wallet is on, `HPP_PAYMENT_DELEGATION` is the value you copied:
 
 ```json title="claude_desktop_config.json (Claude Desktop) — other hosts use the same env block"
 {
@@ -72,6 +80,8 @@ your wallet is on, `HPP_PAYMENT_DELEGATION` is the value you copied:
 ```
 
 Use `eip155:181228` for the Sepolia wallet. Restart the host. The bridge checks the value when it starts.
+
+Keep a copy of the value somewhere safe: you need it to revoke this agent from another device.
 
 ## 4. Let the agent pay
 
@@ -96,8 +106,9 @@ permission. Full details: [security model](./agent-permissions.mdx#security-mode
 
 ## Revoke
 
-In the wallet, open **Agents** and choose **Revoke** on the agent. It takes effect immediately and costs
-nothing. Any payment the agent tries afterwards fails.
+In the wallet, open **Agents** and choose **Revoke** on the agent. It is one operation, usually effective
+within seconds, and HPP normally covers its fee. Any payment the agent tries afterwards fails. Then remove
+`HPP_PAYMENT_DELEGATION` from the host's configuration.
 
 ## Troubleshooting
 

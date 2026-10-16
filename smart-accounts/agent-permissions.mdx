@@ -41,22 +41,29 @@ const grant = await user.grantPaymentDelegation({
   maxCalls: 100n,
 });
 // give the agent grant.permissionContext; keep grant.delegation to revoke later
-await user.revokePaymentDelegation(grant.delegation);    // one operation, effective immediately
+await user.revokePaymentDelegation(grant.delegation);    // one operation; effective once confirmed
 ```
 
-**Agent side** — for a 402 whose accept lists `extra.assetTransferMethod === "erc7710"`:
+**Agent side** — for a 402 accept whose `extra.assetTransferMethod` is `"erc7710"`. The seller copies the
+HPP facilitator's signer addresses into `extra.facilitatorAddresses` (they come from the facilitator's
+[`/supported`](/x402/facilitator) response):
 
 ```ts
 import { buildPaymentRedelegation, signPaymentRedelegation } from "@hpp-io/aa-sdk";
+import type { Address } from "viem";
 
 const leaf = buildPaymentRedelegation(chain.id, agentKey.address, {
   parentPermissionContext: grant.permissionContext,
-  facilitatorAddresses: requirements.extra.facilitatorAddresses,
-  token, amount, payTo,
+  facilitatorAddresses: requirements.extra.facilitatorAddresses as Address[],
+  token, amount, payTo,              // from the 402 accept: asset, amount, payTo
 });
 const payload = await signPaymentRedelegation({ chainId: chain.id, agent: agentKey, leaf, parentPermissionContext: grant.permissionContext });
 // → x402 payload { delegationManager, permissionContext, delegator } for the exact scheme
 ```
+
+Put that payload in a standard x402 `PaymentPayload` for the accept you chose and retry the request with
+the payment header, as in the [x402 buyer quickstart](/x402/quickstart-buyers). Each re-delegation is valid
+for 10 minutes by default.
 
 The easiest agent side is the MCP bridge: set `HPP_PAYMENT_DELEGATION` to the permission context and it
 handles every `erc7710` payment — see [Pay from an agent](./pay-from-an-agent.mdx).
@@ -75,7 +82,7 @@ bytes if you register HPP's contracts with `erc7710Environment(chain.id)`.
 | **What the agent cannot do** | Move tokens other than the one granted, exceed the limit, act after expiry, or change the account |
 | **If `HPP_PAYMENT_DELEGATION` leaks** | Not enough on its own — spending also needs the agent's private key |
 | **If the agent's key leaks** | Whoever has it, together with the delegation, can spend up to the **remaining** limit before it expires. Revoke at once |
-| **Revoking** | One operation (sponsored, free for the user) disables the permission on-chain; payments fail from the next block |
+| **Revoking** | One operation disables the permission on-chain; payments fail once it is confirmed (usually seconds). Under HPP Smart Wallet's policy its fee is normally covered, with a daily cap on sponsored revokes |
 
 Keep limits small and expiries short, and give each agent its own key so one revoke never affects
 another.
@@ -134,12 +141,15 @@ const agentClient = await createHppSessionClient({
 const r = await agentClient.sendCalls([{ to: USDCe, data: transferCalldata }]);
 ```
 
-If the agent's operations should be sponsored or charged in USDC.e under the user's policy, also allow
-the fee approval in the session with `feeApproveAction` — it can approve only the paymaster, capped per
-operation and in total, and does not count against `spend`:
+If the agent's operations should be charged in USDC.e under the user's policy, also allow the fee approval
+in the session with `feeApproveAction` — it can approve only the paymaster, capped per operation and in
+total, and does not count against `spend`:
 
 ```ts
 import { feeApproveAction } from "@hpp-io/aa-sdk";
+
+// the USDC.e paymaster for your network — see Reference → Contracts, or read it from a token-mode quote:
+const ERC20_PAYMASTER = "0xa56ee8524BCf81397bA29f069Bfc695a3E703B97";   // HPP Mainnet
 
 actions: [
   { target: USDCe, signature: "transfer(address,uint256)" },
@@ -152,13 +162,9 @@ policies.
 
 ## Throughput: one account, one operation at a time
 
-Operations from the **same account** are sequential: the next one is accepted only after the previous
-one is mined. To do several things quickly:
-
-| | How | Notes |
-| --- | --- | --- |
-| **One batch** | `sendCalls([c1, …, c10])` | Fastest and cheapest when you know the work up front |
-| Parallel lanes | Up to **4** nonce keys per account | When work arrives over time |
-| One by one | Repeated `sendCalls` | Slowest |
+Operations from the **same account** are sequential: the next one is accepted only after the previous one
+is mined. To do several things quickly, **batch** them: `sendCalls([c1, …, c10])` runs them in one operation
+— faster and cheaper than ten separate ones. (The bundler accepts up to 4 operations per account in flight
+using different nonce keys, but `sendCalls` does not expose that; it needs the low-level bundler client.)
 
 A service acting for many users cannot get around this by batching — use one account per user.

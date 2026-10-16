@@ -17,9 +17,17 @@ description: Endpoints, contract addresses, SDK exports, limits, and rejection m
 | Block explorer | [explorer.hpp.io](https://explorer.hpp.io) | [sepolia-explorer.hpp.io](https://sepolia-explorer.hpp.io) |
 
 The bundler endpoint serves the standard ERC-4337 methods (`eth_sendUserOperation`,
-`eth_estimateUserOperationGas`, …), `rundler_*`, and the ERC-7677 paymaster methods (`pm_*`). It is
-rate-limited per IP (HTTP 429 when exceeded); `debug_*` methods are not exposed. Pass the URL as
-`bundlerUrl` to the SDK.
+`eth_estimateUserOperationGas`, …), `rundler_*`, and the ERC-7677 paymaster methods (`pm_*`). Pass the URL
+as `bundlerUrl` to the SDK.
+
+What the endpoint accepts:
+
+- **Paymasters:** HPP's two paymasters only (`unsupported_paymaster` otherwise). Operations without a
+  paymaster are accepted.
+- **Accounts:** Kernel, SimpleAccount (v0.7 / v0.8), and EIP-7702 accounts (`unsupported_factory`
+  otherwise).
+- **EntryPoint:** v0.7 and v0.8; **sponsorship is v0.7 only**.
+- Rate-limited per IP (HTTP 429). `debug_*` methods are not exposed.
 
 ## Contracts
 
@@ -61,11 +69,16 @@ The ERC-7710 enforcer addresses are listed in the facilitator's [`/supported`](/
 | `buildPaymentRedelegation` / `signPaymentRedelegation` | Agent side of a payment delegation |
 | `toEmbeddedOwner({ address, signMessage, signAuthorization? })` | Wrap an embedded-wallet signer (Privy, Dynamic, …) |
 | `feeApproveAction(…)` | Session action that lets an agent's operations pay gas in USDC.e |
-| `hppMainnet`, `hppSepolia`, `TOKENS` | Constants |
+| `paymasterReason(e)` / `HppPaymasterError` | Read the paymaster's refusal reason from an error |
+| `account.ensureFeeAllowance({ amount, calls })` | Pre-approve a fixed USDC.e amount for gas instead of the automatic per-operation approve |
+| `erc7710Environment(chainId)` | HPP's ERC-7710 contract addresses, for `@metamask/smart-accounts-kit` |
+| `hppMainnet`, `hppSepolia`, `TOKENS`, `ADDRESSES` | Constants. `chain` defaults to `hppSepolia` if omitted |
 
-Source and issues: [github.com/hpp-io/hpp-aa-sdk](https://github.com/hpp-io/hpp-aa-sdk).
+Requires Node.js 20+, ESM, and `viem` 2.56+. Source and issues: [github.com/hpp-io/hpp-aa-sdk](https://github.com/hpp-io/hpp-aa-sdk).
 
 ## Limits
+
+Current values — they may change.
 
 | Limit | Value |
 | --- | --- |
