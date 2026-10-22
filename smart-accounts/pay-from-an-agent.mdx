@@ -62,7 +62,7 @@ Paste the command into a terminal on the computer where the agent's key lives (t
 address in step 1). It looks like this, with the value filled in:
 
 ```bash
-npx -y -p @hpp-io/x402-mcp-bridge hpp-x402 install claude-code -n eip155:190415 --delegation 0x…
+npx -y -p @hpp-io/x402-mcp-bridge@latest hpp-x402 install claude-code -n eip155:190415 --delegation 0x…
 ```
 
 It writes the value into the app's MCP configuration and checks, before writing, that the value belongs to
@@ -137,5 +137,6 @@ within seconds, and HPP normally covers its fee. Any payment the agent tries aft
 | …says the paying account is not set up on this network | The value was issued by the wallet on the other network (Sepolia ↔ Mainnet). Re-run with the matching `-n`, or issue one from the right wallet |
 | …says the delegation expired or was revoked | Issue a new one in **Agents** and run the new command |
 | The bridge does not start after editing the file by hand | The value was cut off when copying, or `HPP_NETWORK` does not match the wallet it came from |
+| The agent pays from its own key, or the bridge's start-up log shows an old version | An older global install shadows `npx -y @hpp-io/x402-mcp-bridge`. Run `npm i -g @hpp-io/x402-mcp-bridge@latest` (or uninstall the global copy) and restart the host |
 | A service is not paid from the wallet | The service does not accept `erc7710` (it is not settled by the HPP facilitator). The agent falls back to its own key, which holds nothing, so the call is not paid |
 | Payments stopped | The limit is used up or the permission expired — issue a new one in **Agents** |
