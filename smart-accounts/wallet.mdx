@@ -56,16 +56,18 @@ add a **passkey**.
 | Where | What it is |
 | --- | --- |
 | **Balance** | Your USDC.e |
-| **N free operations left** | How many more operations HPP will pay the fee for. After that, fees are taken in USDC.e |
-| **Sponsored gas this month** · **sponsored operations today** | The monthly amount and the daily number of operations HPP covers for you. When either runs out, fees are taken in USDC.e until the next day or month |
+| **N free sends/agent setups left** | How many more sends or agent setups HPP will pay the network fee for. After that, each one costs a small amount of USDC.e |
+| **Pay x402 services: always free** | Paying a service is only your signature — it never uses up a free send and never has a fee |
+| **Free-fee credit this month** · **free sends/setups used today** | The monthly amount and the daily number HPP covers for you. When either runs out, fees are taken in USDC.e until the next day or month |
 | **Pay** · **Send** · **Receive** | The main actions, described below. **Receive** shows your address to copy |
 | **Agents** | Agents you have given a budget to |
 | **Recent activity** | Sends, payments, agent payments, and USDC.e you received |
 
-An **operation** is anything that changes your account on the network: a send, setting up an agent, or
-revoking one. Paying an x402 service is not an operation — it is only a signature, and has no fee.
+A send, setting up an agent, revoking one, and the one-time setups mentioned below are the things that
+change your account on the network — those are what the free allowance covers. Paying an x402 service is
+only a signature, so it is always free.
 
-The menu on the left has **Home**, **Pay**, **Agents**, **Activity**, and **Settings**.
+The menu on the left has **Home**, **Pay**, **Agents**, **Prepaid**, **Activity**, and **Settings**.
 
 ## Receive USDC.e
 
@@ -97,18 +99,46 @@ wallet, the wallet asks you to confirm it can receive USDC.e.
 
 ## Pay an x402 service
 
-[x402](/x402) services are online APIs that charge a small amount of USDC.e per use. To pay one by hand:
+[x402](/x402) services are online APIs that charge a small amount of USDC.e per use.
 
-1. Choose **Pay** and paste the service's **x402 endpoint** (an `https://` address the service gives you).
-   Open **Request body** only if the service asks for JSON input.
+The easiest way in is the [x402 Explorer](/x402/explorer/browse): open a service, and press **Pay with
+HPP Smart Wallet** next to the endpoint you want. The wallet opens with the price already checked — you
+only approve.
+
+To pay by hand:
+
+1. Choose **Pay** and either paste the service's **x402 endpoint** (an `https://` address) or **type a
+   name** — *text to speech*, *sanctions* — to search the Explorer and pick a service. Open **Request
+   body** only if the service asks for JSON input; **Use the seller's example** fills in a sample.
 2. **Check price**. The wallet shows the service, who gets paid, and the price.
-3. **Send**, and approve the signature prompt. There is **no fee** — a payment is only your signature. The
-   service's answer appears below, with a link to the receipt.
+3. Approve the signature prompt. There is **no fee** — a payment is only your signature. The service's
+   answer appears below, with a link to the receipt.
 
 ![Paying an x402 service](/img/smart-accounts/wallet-pay.png)
 
-To find services, browse the [x402 Explorer](/x402/explorer/browse) — each service page shows its endpoint
-and price.
+Services price their work in one of three ways, and the confirm screen tells you which:
+
+| Price shown as | What it means |
+| --- | --- |
+| **0.001 USDC.e** | A fixed price. You pay exactly that |
+| **up to 0.0015 USDC.e** | Usage-based (an LLM gateway, long audio): you approve a cap and are charged only for what the request used — never more. The first time you pay a usage-based service, the wallet does a **one-time setup** (one account operation, free while you have free sends left) that lets these payments go through as signatures afterwards |
+| **Deposit 0.05 USDC.e & pay** | Prepaid: the service bills from a balance you keep with it. You deposit a few calls' worth once, later calls draw from it, and unused balance is yours to take back — see [Prepaid balances](#prepaid-balances) |
+
+## Prepaid balances
+
+Some services settle in batches instead of per call. The first time you pay one, the wallet deposits a
+small balance with that service (about five calls' worth); later calls are just signatures that draw from
+it, and the service collects in batches.
+
+**Prepaid** lists those balances — how much is left, deposited, and settled so far — and gives you two
+ways to take unused balance back:
+
+- **Refund** — one signature; the service co-signs and the balance returns in a single transaction.
+- **Withdraw without seller** — for a service that no longer answers. It is two account operations: start
+  the withdrawal, then finish it after the waiting period the service declared (shown on the button).
+
+Balances are read from the network. If you paid a service from another device, pay it once from this
+browser and it appears here.
 
 ## Give an AI agent a budget
 
@@ -120,14 +150,14 @@ agent never gets your key and never holds your money.
    (the agent's tool shows it). Never paste a private key.
 3. Pick a **Limit (USDC.e)** — the most it may spend in total — and a **Duration**.
 4. Keep **Pay x402 services** selected and choose **Issue (one signature)**. The first time you add an
-   agent, the wallet also sets up your account for agents — that counts as one operation.
-5. Copy the **HPP_PAYMENT_DELEGATION** value the wallet shows into the agent's configuration, and **keep a
-   copy somewhere safe** — you need it to revoke the agent from another device.
+   agent, the wallet also sets up your account for agents — that counts as one free send/setup.
+5. The wallet then shows **one command** for your AI app (Claude Desktop, Claude Code, Cursor, Windsurf,
+   OpenClaw). Copy it and run it on the computer where the agent runs, then restart the app — that is
+   all. [Pay from an agent](./pay-from-an-agent.mdx) has the details, including editing the configuration
+   by hand. Keep a copy of the value under **Manual** somewhere safe — you need it to revoke the agent
+   from another device.
 
 ![Issuing a payment permission to an agent](/img/smart-accounts/wallet-agent-new.png)
-
-Setting up the agent's side (Claude Desktop, Cursor, …) needs some technical steps —
-[Pay from an agent](./pay-from-an-agent.mdx) walks through them.
 
 The limits are enforced **by the network**, for every payment: the total amount, the expiry, and the exact
 amount and recipient of each payment. The agent cannot go past them.

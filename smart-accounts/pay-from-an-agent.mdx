@@ -7,8 +7,8 @@ description: Let Claude, Cursor, or any MCP host pay x402 services from your HPP
 # Pay from an agent with your wallet
 
 :::note[For technical users]
-This setup uses a terminal and edits a configuration file of your AI app. You need **Node.js 20+** and an
-MCP host such as Claude Desktop, Claude Code, or Cursor.
+This setup uses a terminal once. You need **Node.js 20+** and an MCP host such as Claude Desktop, Claude
+Code, Cursor, Windsurf, or OpenClaw.
 :::
 
 [Pay from an AI agent](/x402/agents) gives an agent its own small wallet that you fund. This page shows
@@ -52,19 +52,34 @@ In the wallet, open **Agents → Add agent**:
 1. **Name** it (e.g. *Claude on my laptop*) and paste the **agent's address** from step 1.
 2. Set the **Limit (USDC.e)** — the most it may spend in total — and the **Duration**.
 3. Keep **Pay x402 services** selected and choose **Issue (one signature)**.
-4. Copy the **HPP_PAYMENT_DELEGATION** value.
+4. The wallet opens **Connect**: pick your AI app and copy the command it shows.
 
 ![Issuing a payment permission to an agent](/img/smart-accounts/wallet-agent-new.png)
 
-## 3. Add it to your agent host
+## 3. Run the command where the agent runs
 
-`hpp-x402 setup --install <host>` (step 2 of the [x402 guide](/x402/agents)) already added an `hpp-x402`
-entry to your host's MCP configuration and printed the file's path — for Claude Desktop that is
-`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS and
-`%APPDATA%\Claude\claude_desktop_config.json` on Windows. Add two values to that entry's `env` —
-`HPP_NETWORK` picks the network your wallet is on, `HPP_PAYMENT_DELEGATION` is the value you copied:
+Paste the command into a terminal on the computer where the agent's key lives (the one that printed the
+address in step 1). It looks like this, with the value filled in:
 
-```json title="claude_desktop_config.json (Claude Desktop) — other hosts use the same env block"
+```bash
+npx -y -p @hpp-io/x402-mcp-bridge hpp-x402 install claude-code -n eip155:190415 --delegation 0x…
+```
+
+It writes the value into the app's MCP configuration and checks, before writing, that the value belongs to
+this key on this network. The bridge checks it again every time it starts, so a value issued on the other
+network, revoked, or expired stops the bridge with the reason instead of failing on the first payment.
+
+Restart the app. That is all.
+
+<details>
+<summary>Editing the configuration by hand</summary>
+
+The wallet's **Manual** tab shows the same thing as a configuration block. Add `HPP_NETWORK` and
+`HPP_PAYMENT_DELEGATION` to the `env` of the `hpp-x402` entry that `hpp-x402 setup --install <host>`
+created — for Claude Desktop that file is `~/Library/Application Support/Claude/claude_desktop_config.json`
+on macOS and `%APPDATA%\Claude\claude_desktop_config.json` on Windows:
+
+```json
 {
   "mcpServers": {
     "hpp-x402": {
@@ -79,9 +94,13 @@ entry to your host's MCP configuration and printed the file's path — for Claud
 }
 ```
 
-Use `eip155:181228` for the Sepolia wallet. Restart the host. The bridge checks the value when it starts.
+Use `eip155:181228` for the Sepolia wallet.
 
-Keep a copy of the value somewhere safe: you need it to revoke this agent from another device.
+</details>
+
+Keep a copy of the value somewhere safe: you need it to revoke this agent from another device. It can
+only be used by the agent's key, within the limit, until the expiry — but it does end up in your shell
+history, so treat it like a card with a spending cap.
 
 ## 4. Let the agent pay
 
@@ -114,6 +133,9 @@ within seconds, and HPP normally covers its fee. Any payment the agent tries aft
 
 | Symptom | What to check |
 | --- | --- |
-| The bridge does not start after adding the value | The value was cut off when copying, or it was issued on the other network — check `HPP_NETWORK` |
+| `install --delegation` says the delegation is for another key | The wallet issued it to a different address than this machine's key. Check `hpp-x402 wallet address`; if the key is stored under another keychain account, add `-a <name>` (the wallet's Connect screen has a field for it) |
+| …says the paying account is not set up on this network | The value was issued by the wallet on the other network (Sepolia ↔ Mainnet). Re-run with the matching `-n`, or issue one from the right wallet |
+| …says the delegation expired or was revoked | Issue a new one in **Agents** and run the new command |
+| The bridge does not start after editing the file by hand | The value was cut off when copying, or `HPP_NETWORK` does not match the wallet it came from |
 | A service is not paid from the wallet | The service does not accept `erc7710` (it is not settled by the HPP facilitator). The agent falls back to its own key, which holds nothing, so the call is not paid |
 | Payments stopped | The limit is used up or the permission expired — issue a new one in **Agents** |
