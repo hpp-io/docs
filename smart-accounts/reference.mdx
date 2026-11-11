@@ -49,8 +49,9 @@ These differ per network:
 
 | Contract | HPP Mainnet | HPP Sepolia |
 | --- | --- | --- |
+| HPP token (ERC-20, 18 decimals) | `0xB48334E7938367bC24Fe1F19000D6f06C622E6c7` | `0x8ebCaf48D2D91b8CEcF1668A4519823881Bf8fc3` |
 | VerifyingPaymaster (free gas) | `0xAC177f9d80E2c2feA17A44Cca9c3c76235C30345` | `0x686f803a2c8C7f7e88e5E6ABFEDc1DbEA1e2b5bC` |
-| SingletonPaymasterV7 (gas in USDC.e) | `0xa56ee8524BCf81397bA29f069Bfc695a3E703B97` | `0xb4c0E1b0498A35330fd1DE0C85977A6721638db4` |
+| SingletonPaymasterV7 (gas in USDC.e or HPP) | `0xa56ee8524BCf81397bA29f069Bfc695a3E703B97` | `0xb4c0E1b0498A35330fd1DE0C85977A6721638db4` |
 | ERC-7710 DelegationManager | `0xEf6d2D01af8e6313f9D544DC2AaC6a438590c2A9` | `0x20248e5193B1Ef08298812AdA31F4B0D75e99652` |
 
 The ERC-7710 enforcer addresses are listed in the facilitator's [`/supported`](/x402/facilitator) response.
@@ -63,14 +64,15 @@ The ERC-7710 enforcer addresses are listed in the facilitator's [`/supported`](/
 | `account.ensureReady({ sponsor? })` | One-time setup: EIP-7702 delegation or factory deployment |
 | `account.sendCalls(calls)` | One atomic UserOperation → `{ success, txHash, userOpHash, receipt, fee }` |
 | `account.quoteFee(calls)` | Upper bound of the fee before signing |
+| `account.feeTokens()` / `account.setFeeToken(token \| null)` | The fee tokens the policy accepts (first = default), and which one this account pays in |
 | `account.grantPaymentDelegation(…)` / `revokePaymentDelegation(…)` | ERC-7710 payment delegations |
 | `account.grantSession(…)` / `revokeSession(id)` / `sessionUsage(id)` | Sessions |
 | `createHppSessionClient({ account, permissionId, signer, chain, bundlerUrl, paymaster? })` | Agent side of a session |
 | `buildPaymentRedelegation` / `signPaymentRedelegation` | Agent side of a payment delegation |
 | `toEmbeddedOwner({ address, signMessage, signAuthorization? })` | Wrap an embedded-wallet signer (Privy, Dynamic, …) |
-| `feeApproveAction(…)` | Session action that lets an agent's operations pay gas in USDC.e |
+| `feeApproveAction(…)` | Session action that lets an agent's operations pay gas in a fee token |
 | `paymasterReason(e)` / `HppPaymasterError` | Read the paymaster's refusal reason from an error |
-| `account.ensureFeeAllowance({ amount, calls })` | Pre-approve a fixed USDC.e amount for gas instead of the automatic per-operation approve |
+| `account.ensureFeeAllowance({ amount, calls, token? })` | Pre-approve a fixed amount of a fee token for gas instead of the automatic per-operation approve |
 | `erc7710Environment(chainId)` | HPP's ERC-7710 contract addresses, for `@metamask/smart-accounts-kit` |
 | `hppMainnet`, `hppSepolia`, `TOKENS`, `ADDRESSES` | Constants. `chain` defaults to `hppSepolia` if omitted |
 

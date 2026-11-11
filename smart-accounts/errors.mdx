@@ -27,10 +27,10 @@ retries the first three by itself.
 
 | `reason` | Meaning | Fix |
 | --- | --- | --- |
-| `free_exhausted` | Another operation took the last free slot | Retried automatically (now charged in USDC.e) |
+| `free_exhausted` | Another operation took the last free slot | Retried automatically (now charged in the fee token) |
 | `fee_quote_stale` | The exchange rate moved more than 3% since the quote | Retried automatically |
 | `fee_allowance_missing` | Gas was re-estimated above the approved amount | Retried automatically |
-| `fee_balance_insufficient` | Not enough USDC.e for the fee — also when the operation itself spends the USDC.e the fee needs | Top up, or send less |
+| `fee_balance_insufficient` | Not enough of the fee token (USDC.e or HPP) for the fee — also when the operation itself spends the balance the fee needs | Top up, send less, or pay the fee in the other token |
 | `would_revert` | Simulation shows the calls would fail | Fix the call (recipient, amount, permissions) |
 | `anchor_budget_exceeded` | This user's monthly budget under the policy is used up | Wait for next month, or retry without the paymaster |
 | `anchor_daily_count_exceeded` | This user's daily number of sponsored operations is used up | Wait until tomorrow, or retry without the paymaster |
@@ -42,7 +42,8 @@ retries the first three by itself.
 | `anchor_required` / `anchor_unknown` / `anchor_not_entitled` | Missing anchor, an anchor not registered, or not allowed under this policy | Check the anchor your backend sends |
 | `action_not_allowed` / `calldata_unrecognized` | The policy only sponsors certain contracts or functions, and this call is not one of them (or could not be decoded) | Check what your policy covers |
 | `sender_blocked` / `anchor_blocked` | Too many failed operations from this account or user | Open an issue (see [Help](#help)) |
-| `token_mode_unavailable` / `fee_token_not_allowed` / `fee_token_unconfigured` / `fee_price_unavailable` | Gas in USDC.e cannot be offered right now, or the token is not accepted | Retry later; check the token |
+| `token_mode_unavailable` / `fee_token_not_allowed` / `fee_token_unconfigured` / `fee_price_unavailable` | Gas in a token cannot be offered right now, or the token is not accepted by this policy | Retry later; check the token (`feeTokens()`) |
+| `fee_price_stale` | The market rate for this fee token has not been confirmed recently, so it is refused for now | Pay in the other fee token (`setFeeToken`), or retry later |
 | `gas_missing` | The request did not include gas limits | Let the SDK estimate gas first |
 
 ## Bundler
