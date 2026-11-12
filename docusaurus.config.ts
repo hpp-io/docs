@@ -220,6 +220,9 @@ const config: Config = {
           items: [
             {label: 'Getting Started', to: '/getting-started/network-information'},
             {label: 'Building on HPP', to: '/building-on-hpp/deploy-a-smart-contract'},
+            {label: 'Token Address', to: '/getting-started/hpp-contracts'},
+            {label: 'Ecosystem', to: '/ecosystem/overview'},
+            {label: 'Whitepaper', href: 'https://paper.hpp.io/HPP_Whitepaper_v2_EN.pdf'},
           ],
         },
         {
