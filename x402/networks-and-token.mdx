@@ -1,7 +1,7 @@
 ---
 title: Networks & Token
 sidebar_label: Networks & Token
-description: HPP Mainnet and Sepolia network parameters and the USDC.e settlement token used by x402.
+description: HPP Mainnet and Sepolia network parameters and the tokens x402 payments settle in — USDC.e, CHIP and HPP.
 ---
 
 import Tabs from '@theme/Tabs';
@@ -10,8 +10,8 @@ import TabItem from '@theme/TabItem';
 # Networks & Token
 
 x402 on HPP runs on two networks. Both are recognized natively by the `@x402` SDK using their
-[CAIP-2](https://chainagnostic.org/CAIPs/caip-2) identifiers (`eip155:<chainId>`), and both settle in
-the same **USDC.e** stablecoin.
+[CAIP-2](https://chainagnostic.org/CAIPs/caip-2) identifiers (`eip155:<chainId>`). Payments settle in
+**USDC.e** by default; sellers can also price in **CHIP** or **HPP**.
 
 ## Networks
 
@@ -48,10 +48,21 @@ Get testnet ETH from the [HPP Sepolia Faucet](https://faucet.hpp.io/).
 
 See [Network Information](/getting-started/network-information) for WSS endpoints and Chainlist links.
 
-## Token: USDC.e
+## Tokens
 
-All x402 payments on HPP settle in **USDC.e** (Bridged USDC). The contract address is the **same on
-both networks**:
+A seller names the token in each `accepts` entry (`asset`). HPP's facilitator settles three:
+
+| Token | What it is | Decimals | Schemes |
+| --- | --- | --- | --- |
+| **USDC.e** | Bridged USDC — the default | `6` | `exact`, `upto`, `batch-settlement` |
+| **CHIP** | House Chip — the HPP ecosystem credit | `6` | `exact`, `upto`, `batch-settlement` |
+| **HPP** | The HPP network token | `18` | `upto` only |
+
+A payment in any other token is rejected (`asset_not_allowed`) before anything is submitted onchain.
+
+### USDC.e
+
+The contract address is the **same on both networks**:
 
 | Field | Value |
 | --- | --- |
@@ -61,29 +72,66 @@ both networks**:
 | EIP-712 domain name | `Bridged USDC` |
 | EIP-712 domain version | `2` |
 
-Because USDC.e has **6 decimals**, prices in the x402 `accepts` are expressed as integer base units:
+### CHIP
 
-| Human price | `amount` (base units) |
+CHIP has a **different address on each network** — a seller must use the one for the network it prices on:
+
+| Field | Value |
 | --- | --- |
-| `$0.01` | `10000` |
-| `$0.10` | `100000` |
-| `$1.00` | `1000000` |
+| Symbol | CHIP |
+| Address (Mainnet) | `0xEDFC8E6658561C97A3FFc966923d16C1c626083A` |
+| Address (Sepolia) | `0x0Ac610E77ec39AB5c6B402B376548Ac02ACc5a48` |
+| Decimals | `6` |
+| EIP-712 domain name | `House Chip` |
+| EIP-712 domain version | `1` |
 
-> The EIP-712 domain (`Bridged USDC` / version `2`) matters for `exact` (EIP-3009) signatures. Register
-> USDC.e as HPP's default asset in the SDK so it is filled in automatically — see the
-> [Quickstart: Sellers](./quickstart-sellers.mdx#2-register-usdce) snippet.
+CHIP implements EIP-3009 and EIP-2612, and accepts signatures from smart accounts (ERC-1271), so it
+works with `exact`, `upto` and `batch-settlement` exactly like USDC.e.
+
+### HPP
+
+| Field | Value |
+| --- | --- |
+| Symbol | HPP |
+| Address (Mainnet) | `0xB48334E7938367bC24Fe1F19000D6f06C622E6c7` |
+| Address (Sepolia) | `0x8ebCaf48D2D91b8CEcF1668A4519823881Bf8fc3` |
+| Decimals | `18` |
+| EIP-712 domain name | `HousePartyProtocol` |
+| EIP-712 domain version | `1` |
+
+HPP has EIP-2612 `permit` but **no EIP-3009**, so it can only pay **usage-based (`upto`)** prices,
+which settle through Permit2. An `exact` or `batch-settlement` payment in HPP is rejected with
+`asset_scheme_unsupported`.
+
+### Amounts
+
+Prices in `accepts` are integer base units of the token:
+
+| Human price | USDC.e / CHIP (6 decimals) | HPP (18 decimals) |
+| --- | --- | --- |
+| `0.01` | `10000` | `10000000000000000` |
+| `0.10` | `100000` | `100000000000000000` |
+| `1.00` | `1000000` | `1000000000000000000` |
+
+> The EIP-712 domain matters for `exact` (EIP-3009) signatures and for the gasless `upto` approval
+> (EIP-2612). USDC.e is registered as HPP's default asset in the SDK, so its domain is filled in
+> automatically — see the [Quickstart: Sellers](./quickstart-sellers.mdx#2-register-usdce) snippet. For
+> CHIP or HPP, pass the domain in the price's `extra` — see
+> [Price in CHIP or HPP](./quickstart-sellers.mdx#price-in-chip-or-hpp).
 
 ## Funding
 
-Because every payment is denominated in **USDC.e**, a buyer needs a USDC.e balance before it can pay.
-The facilitator submits the settlement transaction and pays the gas, so a **buyer normally needs no ETH**.
+A buyer needs a balance of **the token the seller prices in** — USDC.e for most services — before it can
+pay. The facilitator submits the settlement transaction and pays the gas, so a **buyer normally needs no ETH**.
 
 - **USDC.e.** USDC.e is Bridged USDC. Bring it onto HPP by bridging from the parent chain — see the
   [Bridge guide](/community/bridge). For testnet USDC.e to run the quickstarts, reach out through
   [Official Links](/community/official-links).
+- **CHIP and HPP.** Send them to the paying address on HPP like any ERC-20. The
+  [HPP Smart Wallet](/smart-accounts/wallet) shows all three balances and can send any of them.
 - **ETH (rarely needed).** Only a buyer paying `upto` against a seller *without* EIP-2612 sponsoring
   needs a little ETH, for the one-time Permit2 approval. Get testnet ETH from the
   [HPP Sepolia Faucet](https://faucet.hpp.io/). Sellers/operators also need ETH to deploy contracts.
 
 Verify a balance any time on the [block explorer](https://explorer.hpp.io/) (mainnet) or
-[Sepolia explorer](https://sepolia-explorer.hpp.io/) by looking up the USDC.e contract above.
+[Sepolia explorer](https://sepolia-explorer.hpp.io/) by looking up the token contract above.

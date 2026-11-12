@@ -104,5 +104,6 @@ Details and security model: [Agent permissions](./agent-permissions.mdx).
 | **Fee mode** | `sponsored`, `token`, or `sponsored_then_token` — who pays the gas under a policy |
 | **Payment delegation** | A capped, revocable permission for another key to pay from the account (ERC-7710) |
 | **Session** | A key with rules (contracts, amounts, time) installed on the account |
-| **USDC.e** | Bridged USDC on HPP — the token for payments and the default token-mode gas |
-| **HPP token** | HPP's own ERC-20 on the HPP network — the second token accepted for token-mode gas |
+| **USDC.e** | Bridged USDC on HPP — the default token for payments and for token-mode gas |
+| **CHIP** | House Chip, the HPP ecosystem credit — a payment token (services may price in it) |
+| **HPP token** | HPP's own ERC-20 on the HPP network — the second token accepted for token-mode gas, and a payment token for usage-based prices |

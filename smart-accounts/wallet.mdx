@@ -55,13 +55,23 @@ add a **passkey**.
 
 | Where | What it is |
 | --- | --- |
-| **Balance** | Your USDC.e, and your HPP tokens if you hold any |
-| **N free sends/agent setups left** | How many more sends or agent setups HPP will pay the network fee for. After that, each one costs a small amount of USDC.e (or HPP) |
-| **Pay x402 services: always free** | Paying a service is only your signature — it never uses up a free send and never has a fee |
-| **Free-fee credit this month** · **free sends/setups used today** | The monthly amount and the daily number HPP covers for you. When either runs out, fees are taken in USDC.e (or HPP) until the next day or month |
-| **Pay** · **Send** · **Receive** | The main actions, described below. **Receive** shows your address to copy |
+| **Balances** | One tile per token you can hold here: **USDC.e**, **CHIP** and **HPP**. The address next to the title is yours — click it to copy. **Receive** shows it in full |
+| **The row under the tiles** | What you can do with the token you picked: **Pay** a service, **Send** it, and — for USDC.e and HPP — **Use for fees**. The two small buttons copy the token's contract address and open it in the block explorer |
+| **Fees** mark on a tile | The token your network fees are taken from right now |
+| **Network fees** | How many more sends or agent setups HPP will pay the fee for, the monthly amount and daily number it covers, and which token fees are paid in after that |
 | **Agents** | Agents you have given a budget to |
-| **Recent activity** | Sends, payments, agent payments, and USDC.e you received |
+| **Recent activity** | Sends, payments, agent payments, and tokens you received — each with its token |
+
+The three tokens do different jobs:
+
+| Token | Pay x402 services | Send | Pay network fees |
+| --- | --- | --- | --- |
+| **USDC.e** (Bridged USDC) | ✅ | ✅ | ✅ |
+| **CHIP** (House Chip, the HPP ecosystem credit) | ✅ | ✅ | — |
+| **HPP** | ✅ usage-based prices only | ✅ | ✅ |
+
+The wallet does not add them up into one total: they are different things (a dollar token, a credit and
+the network token), and it shows each balance as it is.
 
 A send, setting up an agent, revoking one, and the one-time setups mentioned below are the things that
 change your account on the network — those are what the free allowance covers. Paying an x402 service is
@@ -69,44 +79,47 @@ only a signature, so it is always free.
 
 The menu on the left has **Home**, **Pay**, **Agents**, **Prepaid**, **Activity**, and **Settings**.
 
-## Receive USDC.e
+## Receive tokens
 
-Choose **Receive** and copy your address. Share it with whoever is sending you USDC.e **on HPP**.
+Choose **Receive** and copy your address. Share it with whoever is sending you USDC.e, CHIP or HPP **on
+HPP** — the same address receives all three.
 
 :::warning
-Only USDC.e **on the HPP network** arrives in this wallet. Tokens sent on another network (Ethereum, Base,
-Arbitrum, …) to this address cannot be recovered.
+Only tokens sent **on the HPP network** arrive in this wallet. Tokens sent on another network (Ethereum,
+Base, Arbitrum, …) to this address cannot be recovered.
 :::
 
-On **Sepolia**, the testnet wallet uses test USDC.e with no real value — ask for some in
+On **Sepolia**, the testnet wallet uses test tokens with no real value — ask for some in
 [HPP Telegram](https://t.me/aergoofficial).
 
-## Send USDC.e
+## Send tokens
 
-1. Choose **Send**, paste the recipient's HPP address, and enter an amount. **Max** sends everything except
+1. Choose **Send** (or pick a token's tile on the home screen and press **Send** there — it opens with
+   that token already chosen). Pick the **Token**, paste the recipient's HPP address, and enter an amount.
+   **Max** sends everything; if the fee is paid in the same token you are sending, it leaves enough for
    the fee.
+
+   ![Sending a token](/img/smart-accounts/wallet-send.png)
 2. **Review** shows the recipient, the network, the fee, and your balance after — before anything happens:
    - while you have free operations, the fee is **none**;
-   - otherwise the fee is a small amount of USDC.e — or of HPP, if **Settings → Pay network fees in** is
-     set to HPP. The wallet shows the most it can be; you are charged the actual amount, which is usually
-     less.
+   - otherwise the fee is a small amount of USDC.e — or of HPP, if that is your fee token. The wallet
+     shows the most it can be; you are charged the actual amount, which is usually less.
 
-     ![Reviewing a send with the fee in HPP](/img/smart-accounts/wallet-send-hpp.png)
+   ![Reviewing a send with the fee in HPP](/img/smart-accounts/wallet-send-hpp.png)
 3. **Send**, and approve the signature prompt. The transfer is done in a few seconds; **View on explorer**
    opens the receipt.
 
-![Reviewing a send](/img/smart-accounts/wallet-send.png)
-
 Double-check the address — a send cannot be reversed. If the address is a contract rather than a personal
-wallet, the wallet asks you to confirm it can receive USDC.e.
+wallet, the wallet asks you to confirm it can receive the token.
 
 ## Pay network fees in HPP
 
 Once your free operations are used up, each send or agent setup pays its network fee from your account.
-By default it is taken in USDC.e; if you hold HPP tokens, you can pay it in HPP instead. Open **Settings**
-and choose the token under **Pay network fees in** — the choice applies to this account on this device.
-The home screen then shows your HPP balance next to your USDC.e, and a send's **Review** step quotes the
-fee in HPP. Agents you issue always pay their gas in USDC.e.
+By default it is taken in USDC.e; if you hold HPP tokens, you can pay it in HPP instead. On the home
+screen, pick the **HPP** tile and press **Use for fees** — or open **Settings** and choose the token under
+**Pay network fees in**. The choice applies to this account on this device. The tile of the token in use
+carries a **Fees** mark, and a send's **Review** step quotes the fee in that token. CHIP cannot pay fees.
+Agents you issue always pay their gas in USDC.e.
 
 ![Choosing the fee token in Settings](/img/smart-accounts/wallet-settings-fees.png)
 
@@ -116,7 +129,9 @@ for a while, fees in HPP are refused until it is — switch back to USDC.e in **
 
 ## Pay an x402 service
 
-[x402](/x402) services are online APIs that charge a small amount of USDC.e per use.
+[x402](/x402) services are online APIs that charge a small amount per use — usually in USDC.e; some
+price in CHIP or HPP. The wallet pays in whichever of the three the service asks for, and shows the token
+on the confirm screen. A service priced in any other token is refused.
 
 The easiest way in is the [x402 Explorer](/x402/explorer/browse): open a service, and press **Pay with
 HPP Smart Wallet** next to the endpoint you want. The wallet opens with the price already checked — you
@@ -133,7 +148,7 @@ To pay by hand:
 3. Approve the signature prompt. There is **no fee** — a payment is only your signature. The service's
    answer appears below, with a link to the receipt.
 
-![Confirming a usage-based payment](/img/smart-accounts/wallet-pay.png)
+![Confirming a payment](/img/smart-accounts/wallet-pay.png)
 
 Services price their work in one of three ways, and the confirm screen tells you which:
 
@@ -143,21 +158,25 @@ Services price their work in one of three ways, and the confirm screen tells you
 | **up to 0.0015 USDC.e** | Usage-based (an LLM gateway, long audio): you approve a cap and are charged only for what the request used — never more. The first time you pay a usage-based service, the wallet does a **one-time setup** (one account operation, free while you have free sends left) that lets these payments go through as signatures afterwards |
 | **Deposit 0.05 USDC.e & pay** | Prepaid: the service bills from a balance you keep with it. You deposit a few calls' worth once, later calls draw from it, and unused balance is yours to take back — see [Prepaid balances](#prepaid-balances) |
 
+The same three forms apply to CHIP. **HPP pays usage-based prices only** — a service asking a fixed or
+prepaid price in HPP is refused with that explanation. The one-time setup for usage-based payments is
+done once **per token**.
+
 ## Prepaid balances
 
 Some services settle in batches instead of per call. The first time you pay one, the wallet deposits a
 small balance with that service (about five calls' worth); later calls are just signatures that draw from
 it, and the service collects in batches.
 
-**Prepaid** lists those balances — how much is left, deposited, and settled so far — and gives you two
-ways to take unused balance back:
+**Prepaid** lists those balances — the token, how much is left, deposited, and settled so far — and gives
+you two ways to take unused balance back:
 
 - **Refund** — one signature; the service co-signs and the balance returns in a single transaction.
 - **Withdraw without seller** — for a service that no longer answers. It is two account operations: start
   the withdrawal, then finish it after the waiting period the service declared (shown on the button).
 
 Balances are read from the network. If you paid a service from another device, pay it once from this
-browser and it appears here.
+browser and it appears here. Prepaid billing works on HPP Mainnet and Sepolia, in USDC.e or CHIP.
 
 ## Give an AI agent a budget
 
@@ -199,7 +218,9 @@ transactions to specific contracts. See [Agent permissions](./agent-permissions.
 ## Activity
 
 **Activity** lists everything that moved through your account — sends, x402 payments, payments your agents
-made, USDC.e you received, and account setup. Click an entry for details and a link to the block explorer.
+made, tokens you received, network fees, and account setup — each with its token. A fee is shown on the
+entry it belongs to; a setup that only cost a fee appears as **Network fee**. Click an entry for details
+and a link to the block explorer.
 
 ![The Activity page](/img/smart-accounts/wallet-activity.png)
 

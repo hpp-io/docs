@@ -14,8 +14,9 @@ USDC.e authorization with your wallet, and retries automatically — your code j
 
 ### Prerequisites
 
-- A wallet (private key) holding **USDC.e** on the target network — payments are denominated in USDC.e,
-  not ETH. See [Networks & Token → Funding](./networks-and-token.mdx#funding) for how to acquire it.
+- A wallet (private key) holding **USDC.e** on the target network — most services price in USDC.e,
+  not ETH. A seller may instead price in CHIP or HPP; the wallet then needs that token (the SDK signs for
+  whichever `asset` the 402 names). See [Networks & Token → Funding](./networks-and-token.mdx#funding) for how to acquire it.
 - The facilitator submits the settlement transaction and pays the gas, so the buyer **does not need ETH**:
   - **`exact`** — the buyer only signs an EIP-3009 authorization; the facilitator relays it. Zero ETH.
   - **`upto`** — also relayed, but it needs a one-time Permit2 approval. On HPP that approval is

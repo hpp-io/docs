@@ -18,7 +18,7 @@ response and a signed message.
 On HPP, the tool that gives your agent this ability is **`hpp-x402`** — a command-line tool plus an
 **MCP bridge** (`@hpp-io/x402-mcp-bridge`). You fund a wallet and set a spend cap; the bridge adds
 payment tools to your agent host so the agent can find and pay for services on its own — always
-within your cap, always in USDC.e, always non-custodial.
+within your cap, in a token you allow (USDC.e by default, also CHIP and HPP), always non-custodial.
 
 :::tip[Which path is this?]
 Building a client or server **in code**? Use the [`@x402` SDK](./quickstart-buyers.mdx) directly.
@@ -59,7 +59,7 @@ the [Model Context Protocol](https://modelcontextprotocol.io).
   or [nvm](https://github.com/nvm-sh/nvm).
 - **An OS keychain** to store the wallet key — macOS Keychain, Linux gnome-keyring, or Windows
   Credential Manager. On a headless server without one, see [Headless & CI](#headless--ci).
-- **A little USDC.e** on the network you'll use (HPP Sepolia to try it, HPP Mainnet for real value).
+- **A little USDC.e** (or CHIP / HPP, if the services you want price in them) on the network you'll use (HPP Sepolia to try it, HPP Mainnet for real value).
   See [Networks & Token](./networks-and-token.mdx).
 
 ## 1. Install
@@ -245,6 +245,27 @@ delegate from the Safe within the on-chain cap before each payment.
 
 </TabItem>
 </Tabs>
+
+## Tokens and what the cap means
+
+The bridge only pays in tokens on its **allowlist**: USDC.e, CHIP and HPP on both networks. A 402 priced
+in anything else is refused before signing; add a token you trust with `HPP_X402_ALLOWED_ASSETS`.
+
+Every cap — the wallet-wide per-call and daily caps, and the per-host limits below — is **one number for
+all tokens, in micro-dollars**: `1000000` = 1 dollar. The default per-call cap is `1000000`.
+
+| Token | How a payment counts against the cap |
+| --- | --- |
+| **USDC.e**, **CHIP** | 1 : 1 — the amount in the 402 is the number compared with the cap |
+| **HPP** | Converted to its dollar value first, at the HPP/USD rate the HPP paymaster publishes (`/wallet/rates`, refreshed every 10 minutes) |
+
+If the HPP rate cannot be read, is more than a day old, or looks implausible, the bridge uses a built-in
+reference price instead — and when in doubt it takes the **higher** price, which makes the cap stricter,
+never looser. A refusal shows the conversion, for example
+`(300 HPP ≈ $1.304685 at 0.004349 USD/HPP (published rate))`.
+
+HPP can only pay **usage-based (`upto`)** prices; a fixed-price 402 in HPP is refused with the reason.
+`wallet_balance` reports the USDC.e balance and, under `balances`, every allowed token the wallet holds.
 
 ## Spending controls
 
