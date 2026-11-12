@@ -1,7 +1,7 @@
 ---
 title: Gas sponsorship
 sidebar_label: Gas sponsorship
-description: Let your users transact on HPP without holding ETH — operations sponsored by HPP's paymaster, or gas charged in USDC.e. How policies and anchors work, what users are charged, and how to apply.
+description: Let your users transact on HPP without holding ETH — operations sponsored by HPP's paymaster, or gas charged in USDC.e or HPP. How policies and anchors work, what users are charged, and how to apply.
 ---
 
 import Tabs from '@theme/Tabs';
@@ -11,10 +11,11 @@ import TabItem from '@theme/TabItem';
 
 Every transaction on HPP costs gas in ETH. With sponsorship, your users do not need ETH: HPP's
 **paymaster** covers the gas for the operations your policy allows, and — if you choose — charges the gas in
-**USDC.e** once the free ones are used up.
+a token the policy accepts (**USDC.e** or **HPP**) once the free ones are used up. The network gas itself is
+always paid in ETH by the paymaster; the user is charged the actual cost in the chosen token afterwards.
 
-This is the mechanism [HPP Smart Wallet](./wallet.mdx) uses for its "first operations free, then USDC.e"
-model.
+This is the mechanism [HPP Smart Wallet](./wallet.mdx) uses for its "first operations free, then USDC.e or
+HPP" model.
 
 :::caution[Early access]
 Sponsorship on HPP Mainnet is set up per app, by application, with limits agreed with you. There is no
@@ -55,11 +56,11 @@ A policy has one of three modes:
 | Mode | Who pays the gas | What the user needs |
 | --- | --- | --- |
 | `sponsored` | HPP | Nothing |
-| `token` | The user, in USDC.e, charged after the operation runs | A USDC.e balance |
-| `sponsored_then_token` | HPP for the first *N* operations per user, then the user in USDC.e | USDC.e once the free ones are used |
+| `token` | The user, in a fee token (USDC.e or HPP), charged after the operation runs | A balance in that token |
+| `sponsored_then_token` | HPP for the first *N* operations per user, then the user in a fee token | A balance in that token once the free ones are used |
 
 The SDK switches automatically: the same `sendCalls` goes through the free paymaster while free operations
-remain, and through the USDC.e paymaster afterwards. Each result tells you which:
+remain, and through the token paymaster afterwards. Each result tells you which:
 
 ```ts
 const r = await user.sendCalls([...]);
@@ -67,11 +68,23 @@ r.fee;   // { mode: "sponsored", freeRemaining: 2 }
          // { mode: "token", symbol: "USDC.e", decimals: 6, maxToken, charged, … }   ← charged = actual USDC.e taken
 ```
 
-### What a user pays in USDC.e
+### What a user pays in USDC.e or HPP
 
-The user pays the operation's actual gas cost, converted to USDC.e at HPP's current ETH/USD rate plus a 5%
-markup. The rate is updated periodically from public market prices. Before signing, the user approves a
-**maximum** (never less than 0.001 USDC.e); the actual charge is usually lower.
+The user pays the operation's actual gas cost, converted to the fee token at HPP's current market rate
+(ETH/USD for USDC.e, ETH/HPP for HPP) plus the policy's markup — 5% for USDC.e and 10% for HPP in HPP Smart
+Wallet, the difference covering HPP's larger price swings. Rates are refreshed every few minutes from public
+market prices; if a rate cannot be confirmed for a while, that token is refused with `fee_price_stale` until
+it is. Before signing, the user approves a **maximum** (never less than 0.001 USDC.e); the actual charge is
+usually lower.
+
+A policy can accept more than one fee token. The first one is the default; an account picks another with
+`setFeeToken`:
+
+```ts
+const tokens = await user.feeTokens();              // [{ token, symbol: "USDC.e", decimals: 6 }, { token, symbol: "HPP", decimals: 18 }]
+user.setFeeToken(tokens[1].token);                  // quote, approve and charge every later operation in HPP
+await user.ensureFeeAllowance({ token: tokens[1].token, calls });   // optional: approve up front in that token
+```
 
 **Show the maximum before the user signs:**
 
@@ -84,8 +97,8 @@ if (q.mode === "token" && q.maxToken !== null) {
 }
 ```
 
-Users need no separate "approve" step. When an operation will be charged in USDC.e and the allowance is not
-enough, `sendCalls` adds a small `approve` for the paymaster to that same operation — one signature in total.
+Users need no separate "approve" step. When an operation will be charged in a fee token and the allowance is
+not enough, `sendCalls` adds a small `approve` for the paymaster to that same operation — one signature in total.
 
 ## Apply
 
@@ -137,7 +150,8 @@ The most common of the rest:
 
 | `reason` | Meaning |
 | --- | --- |
-| `fee_balance_insufficient` | Not enough USDC.e for the fee |
+| `fee_balance_insufficient` | Not enough of the fee token for the fee |
+| `fee_price_stale` | The fee token's market rate has not been confirmed recently — pay in the other token, or retry later |
 | `anchor_budget_exceeded` / `anchor_daily_count_exceeded` | This user's monthly budget or daily count is used up |
 | `budget_exceeded` / `count_exceeded` | The policy's overall budget or count is used up |
 | `would_revert` | The calls would fail on-chain |

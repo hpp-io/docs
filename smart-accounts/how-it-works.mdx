@@ -74,8 +74,8 @@ Everything after setup works the same in both modes.
 | --- | --- | --- |
 | No paymaster | The account, in ETH | A little ETH at the account |
 | A `sponsored` policy | HPP's paymaster | Nothing |
-| A `token` policy | The account, in USDC.e, charged after the run | USDC.e |
-| A `sponsored_then_token` policy | HPP for the first few operations, then USDC.e | USDC.e after the free ones |
+| A `token` policy | The account, in USDC.e or HPP, charged after the run | A balance in that token |
+| A `sponsored_then_token` policy | HPP for the first few operations, then USDC.e or HPP | A balance in that token after the free ones |
 
 Details: [Gas sponsorship](./gas-sponsorship.mdx).
 
@@ -104,4 +104,5 @@ Details and security model: [Agent permissions](./agent-permissions.mdx).
 | **Fee mode** | `sponsored`, `token`, or `sponsored_then_token` — who pays the gas under a policy |
 | **Payment delegation** | A capped, revocable permission for another key to pay from the account (ERC-7710) |
 | **Session** | A key with rules (contracts, amounts, time) installed on the account |
-| **USDC.e** | Bridged USDC on HPP — the token for payments and token-mode gas |
+| **USDC.e** | Bridged USDC on HPP — the token for payments and the default token-mode gas |
+| **HPP token** | HPP's own ERC-20 on the HPP network — the second token accepted for token-mode gas |

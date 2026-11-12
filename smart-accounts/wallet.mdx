@@ -12,7 +12,7 @@ agent a budget to spend from it.
 
 There is nothing to install and no seed phrase: you sign in with your email. You do not need to hold ETH
 in this wallet — your first few operations are covered by HPP, and after that the network fee is taken in
-USDC.e.
+USDC.e, or in HPP tokens if you choose that in **Settings**.
 
 <div className="margin-bottom--md">
   <a href="https://aa.hpp.io" className="button button--primary">Open the wallet (Mainnet) →</a>{' '}
@@ -55,10 +55,10 @@ add a **passkey**.
 
 | Where | What it is |
 | --- | --- |
-| **Balance** | Your USDC.e |
-| **N free sends/agent setups left** | How many more sends or agent setups HPP will pay the network fee for. After that, each one costs a small amount of USDC.e |
+| **Balance** | Your USDC.e, and your HPP tokens if you hold any |
+| **N free sends/agent setups left** | How many more sends or agent setups HPP will pay the network fee for. After that, each one costs a small amount of USDC.e (or HPP) |
 | **Pay x402 services: always free** | Paying a service is only your signature — it never uses up a free send and never has a fee |
-| **Free-fee credit this month** · **free sends/setups used today** | The monthly amount and the daily number HPP covers for you. When either runs out, fees are taken in USDC.e until the next day or month |
+| **Free-fee credit this month** · **free sends/setups used today** | The monthly amount and the daily number HPP covers for you. When either runs out, fees are taken in USDC.e (or HPP) until the next day or month |
 | **Pay** · **Send** · **Receive** | The main actions, described below. **Receive** shows your address to copy |
 | **Agents** | Agents you have given a budget to |
 | **Recent activity** | Sends, payments, agent payments, and USDC.e you received |
@@ -87,8 +87,11 @@ On **Sepolia**, the testnet wallet uses test USDC.e with no real value — ask f
    the fee.
 2. **Review** shows the recipient, the network, the fee, and your balance after — before anything happens:
    - while you have free operations, the fee is **none**;
-   - otherwise the fee is a small amount of USDC.e. The wallet shows the most it can be; you are charged
-     the actual amount, which is usually less.
+   - otherwise the fee is a small amount of USDC.e — or of HPP, if **Settings → Pay network fees in** is
+     set to HPP. The wallet shows the most it can be; you are charged the actual amount, which is usually
+     less.
+
+     ![Reviewing a send with the fee in HPP](/img/smart-accounts/wallet-send-hpp.png)
 3. **Send**, and approve the signature prompt. The transfer is done in a few seconds; **View on explorer**
    opens the receipt.
 
@@ -96,6 +99,20 @@ On **Sepolia**, the testnet wallet uses test USDC.e with no real value — ask f
 
 Double-check the address — a send cannot be reversed. If the address is a contract rather than a personal
 wallet, the wallet asks you to confirm it can receive USDC.e.
+
+## Pay network fees in HPP
+
+Once your free operations are used up, each send or agent setup pays its network fee from your account.
+By default it is taken in USDC.e; if you hold HPP tokens, you can pay it in HPP instead. Open **Settings**
+and choose the token under **Pay network fees in** — the choice applies to this account on this device.
+The home screen then shows your HPP balance next to your USDC.e, and a send's **Review** step quotes the
+fee in HPP. Agents you issue always pay their gas in USDC.e.
+
+![Choosing the fee token in Settings](/img/smart-accounts/wallet-settings-fees.png)
+
+The fee is the operation's actual gas cost, converted to HPP at the current market rate plus a 10% markup
+(5% for USDC.e, the difference covering HPP's larger price swings). If the HPP rate cannot be confirmed
+for a while, fees in HPP are refused until it is — switch back to USDC.e in **Settings** in the meantime.
 
 ## Pay an x402 service
 

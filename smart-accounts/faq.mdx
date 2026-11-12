@@ -14,7 +14,8 @@ using smart-account code, and the address stays the same. (Only browser wallets 
 address — see [How it works](./how-it-works.mdx#same-address-eip-7702).)
 
 ### What happens after my free operations are used?
-The network fee is taken in USDC.e from your balance — you do not need ETH in the wallet. The wallet shows
+The network fee is taken in USDC.e from your balance — or in HPP tokens, if you choose that under
+**Settings → Pay network fees in** — you do not need ETH in the wallet. The wallet shows
 the most the fee can be before you confirm; you are charged the actual amount, usually less. Free operations
 are also limited per day and per month, and those limits may change during early access.
 
@@ -50,8 +51,8 @@ paymaster only, sponsorship is for EntryPoint v0.7, and accounts must be Kernel,
 The SDK also saves you from several HPP-specific traps — see
 [Reference → If you bypass the SDK](./reference.mdx#if-you-bypass-the-sdk).
 
-### Can my users pay gas in USDC.e without a policy from HPP?
-Not yet. Paying gas in USDC.e goes through HPP's token paymaster, which needs a policy. Without a policy, the
+### Can my users pay gas in USDC.e or HPP without a policy from HPP?
+Not yet. Paying gas in a token goes through HPP's token paymaster, which needs a policy. Without a policy, the
 account pays its own gas in ETH.
 
 ### How do I get gas sponsorship?
