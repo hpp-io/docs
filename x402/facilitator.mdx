@@ -41,6 +41,7 @@ curl https://facilitator.hpp.io/supported
 {
   "kinds": [
     { "x402Version": 2, "scheme": "exact", "network": "eip155:190415" },
+    { "x402Version": 2, "scheme": "batch-settlement", "network": "eip155:190415" },
     { "x402Version": 2, "scheme": "upto", "network": "eip155:190415",
       "extra": { "facilitatorAddress": "0xaA03c7BD2fAf554db507D78CD3bF126a3DD2E033" } }
   ],
@@ -58,16 +59,21 @@ The Sepolia facilitator (`https://facilitator-sepolia.hpp.io/supported`) returns
 | --- | --- | --- |
 | `exact` | EIP-3009 (`transferWithAuthorization`) | Fixed-price payments. |
 | `upto` | Permit2 | Authorize a maximum, settle the actual amount. Supports gasless settlement. |
+| `batch-settlement` | Payment channel (EIP-3009 deposit) | Prepaid: the buyer deposits once, each call is a signed voucher with no onchain transaction, and the seller claims in batches. Unused balance is refundable. |
+
+All three are available on HPP Mainnet and Sepolia. A `batch-settlement` seller holds its own
+**receiver authorizer** key (it co-signs refunds and claims) — the facilitator does not sign for it — and
+should use `@x402/evm` 2.26 or later.
 
 See [How it works → Payment schemes](./how-it-works.md#payment-schemes).
 
 ## Supported tokens
 
-| Token | `exact` | `upto` | Notes |
-| --- | --- | --- | --- |
-| **USDC.e** | ✅ | ✅ | The default. Same address on both networks |
-| **CHIP** | ✅ | ✅ | Different address per network |
-| **HPP** | — | ✅ | No EIP-3009, so usage-based prices only |
+| Token | `exact` | `upto` | `batch-settlement` | Notes |
+| --- | --- | --- | --- | --- |
+| **USDC.e** | ✅ | ✅ | ✅ | The default. Same address on both networks |
+| **CHIP** | ✅ | ✅ | ✅ | Different address per network |
+| **HPP** | — | ✅ | — | No EIP-3009, so usage-based prices only |
 
 Addresses, decimals and EIP-712 domains are on [Networks & Token → Tokens](./networks-and-token.mdx#tokens).
 The facilitator checks the token **before** any signature work or onchain call:
@@ -75,7 +81,7 @@ The facilitator checks the token **before** any signature work or onchain call:
 | `invalidReason` | Meaning |
 | --- | --- |
 | `asset_not_allowed` | The `asset` is not a token this facilitator settles on that network (including CHIP or HPP at the *other* network's address) |
-| `asset_scheme_unsupported` | The token cannot do that scheme — an `exact` payment in HPP |
+| `asset_scheme_unsupported` | The token cannot do that scheme — an `exact` or `batch-settlement` payment in HPP |
 | `insufficient_payer_balance` | The payer holds less of the token than the amount |
 
 ## Connecting to it

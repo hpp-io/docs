@@ -79,8 +79,8 @@ resourceServer.register("eip155:181228", new UptoEvmScheme());
 </Tabs>
 
 > **Only register what the facilitator supports.** The resource server throws if you advertise a
-> `(network, scheme)` pair that the facilitator does not return from `/supported`. `exact` and `upto`
-> are supported on both HPP networks. You can pass multiple facilitator clients to
+> `(network, scheme)` pair that the facilitator does not return from `/supported`. `exact`, `upto` and
+> `batch-settlement` are supported on both HPP networks. You can pass multiple facilitator clients to
 > `x402ResourceServer([...])` to serve more than one network from a single process.
 
 ## 4. Price your routes and mount the middleware
@@ -129,7 +129,7 @@ To price a route in another token, change the `price`: the token's address **for
 amount in that token's base units, and its EIP-712 domain in `extra`.
 
 ```ts
-// CHIP — 6 decimals, works with exact and upto. Mainnet address shown; Sepolia is 0x0Ac610E7…5a48.
+// CHIP — 6 decimals, works with exact, upto and batch-settlement. Mainnet address shown; Sepolia is 0x0Ac610E7…5a48.
 price: {
   amount: "10000", // 0.01 CHIP
   asset: "0xEDFC8E6658561C97A3FFc966923d16C1c626083A",

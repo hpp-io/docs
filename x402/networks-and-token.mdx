@@ -54,8 +54,8 @@ A seller names the token in each `accepts` entry (`asset`). HPP's facilitator se
 
 | Token | What it is | Decimals | Schemes |
 | --- | --- | --- | --- |
-| **USDC.e** | Bridged USDC — the default | `6` | `exact`, `upto` |
-| **CHIP** | House Chip — the HPP ecosystem credit | `6` | `exact`, `upto` |
+| **USDC.e** | Bridged USDC — the default | `6` | `exact`, `upto`, `batch-settlement` |
+| **CHIP** | House Chip — the HPP ecosystem credit | `6` | `exact`, `upto`, `batch-settlement` |
 | **HPP** | The HPP network token | `18` | `upto` only |
 
 A payment in any other token is rejected (`asset_not_allowed`) before anything is submitted onchain.
@@ -86,7 +86,7 @@ CHIP has a **different address on each network** — a seller must use the one f
 | EIP-712 domain version | `1` |
 
 CHIP implements EIP-3009 and EIP-2612, and accepts signatures from smart accounts (ERC-1271), so it
-works with `exact` and `upto` exactly like USDC.e.
+works with `exact`, `upto` and `batch-settlement` exactly like USDC.e.
 
 ### HPP
 
@@ -100,7 +100,8 @@ works with `exact` and `upto` exactly like USDC.e.
 | EIP-712 domain version | `1` |
 
 HPP has EIP-2612 `permit` but **no EIP-3009**, so it can only pay **usage-based (`upto`)** prices,
-which settle through Permit2. An `exact` payment in HPP is rejected with `asset_scheme_unsupported`.
+which settle through Permit2. An `exact` or `batch-settlement` payment in HPP is rejected with
+`asset_scheme_unsupported`.
 
 ### Amounts
 
