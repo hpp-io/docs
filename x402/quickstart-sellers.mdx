@@ -123,6 +123,37 @@ app.post("/paid/hello", (_req, res) => {
 app.listen(4021, () => console.log("x402 resource server on :4021"));
 ```
 
+### Price in CHIP or HPP
+
+To price a route in another token, change the `price`: the token's address **for that network**, the
+amount in that token's base units, and its EIP-712 domain in `extra`.
+
+```ts
+// CHIP — 6 decimals, works with exact and upto. Mainnet address shown; Sepolia is 0x0Ac610E7…5a48.
+price: {
+  amount: "10000", // 0.01 CHIP
+  asset: "0xEDFC8E6658561C97A3FFc966923d16C1c626083A",
+  extra: { name: "House Chip", version: "1" },
+},
+
+// HPP — 18 decimals, upto only (scheme: "upto"). Mainnet address shown; Sepolia is 0x8ebCaf48…8fc3.
+price: {
+  amount: "10000000000000000", // up to 0.01 HPP
+  asset: "0xB48334E7938367bC24Fe1F19000D6f06C622E6c7",
+  extra: { name: "HousePartyProtocol", version: "1" },
+},
+```
+
+A route can list several `accepts` — for example USDC.e and CHIP — and the buyer's wallet picks one it
+can pay. All addresses and domains are on [Networks & Token → Tokens](./networks-and-token.mdx#tokens).
+
+:::note
+HPP has no EIP-3009, so an `exact` accept in HPP is rejected by the facilitator
+(`asset_scheme_unsupported`). Buyers that keep a spend cap in dollars (the
+[MCP bridge](./pay-from-an-ai-agent.mdx#tokens-and-what-the-cap-means)) value an HPP price at the current
+HPP/USD rate.
+:::
+
 That's it. An unpaid `POST /paid/hello` now returns `402` with your terms; a request carrying a valid
 `payment-signature` header is verified, served, and settled onchain — and the handler returns the resource.
 

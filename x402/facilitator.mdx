@@ -1,7 +1,7 @@
 ---
 title: HPP Facilitator
 sidebar_label: Facilitator
-description: HPP's hosted x402 facilitator — verify and settle USDC.e payments on HPP Mainnet and Sepolia, with gasless upto settlement.
+description: HPP's hosted x402 facilitator — verify and settle USDC.e, CHIP and HPP payments on HPP Mainnet and Sepolia, with gasless upto settlement.
 ---
 
 import Tabs from '@theme/Tabs';
@@ -59,8 +59,24 @@ The Sepolia facilitator (`https://facilitator-sepolia.hpp.io/supported`) returns
 | `exact` | EIP-3009 (`transferWithAuthorization`) | Fixed-price payments. |
 | `upto` | Permit2 | Authorize a maximum, settle the actual amount. Supports gasless settlement. |
 
-Both schemes settle in **USDC.e** (`0x401eCb1D350407f13ba348573E5630B83638E30D`, 6 decimals) on both
-networks. See [How it works → Payment schemes](./how-it-works.md#payment-schemes).
+See [How it works → Payment schemes](./how-it-works.md#payment-schemes).
+
+## Supported tokens
+
+| Token | `exact` | `upto` | Notes |
+| --- | --- | --- | --- |
+| **USDC.e** | ✅ | ✅ | The default. Same address on both networks |
+| **CHIP** | ✅ | ✅ | Different address per network |
+| **HPP** | — | ✅ | No EIP-3009, so usage-based prices only |
+
+Addresses, decimals and EIP-712 domains are on [Networks & Token → Tokens](./networks-and-token.mdx#tokens).
+The facilitator checks the token **before** any signature work or onchain call:
+
+| `invalidReason` | Meaning |
+| --- | --- |
+| `asset_not_allowed` | The `asset` is not a token this facilitator settles on that network (including CHIP or HPP at the *other* network's address) |
+| `asset_scheme_unsupported` | The token cannot do that scheme — an `exact` payment in HPP |
+| `insufficient_payer_balance` | The payer holds less of the token than the amount |
 
 ## Connecting to it
 
@@ -121,8 +137,8 @@ Buyers don't see these types — they get a non-2xx response instead (see
 
 For the `upto` scheme, HPP's facilitator advertises the **`eip2612GasSponsoring`** extension. This
 lets the facilitator sponsor the buyer's one-time Permit2 approval via
-[EIP-2612](https://eips.ethereum.org/EIPS/eip-2612), so a paying agent needs **only USDC.e and zero
-native ETH** to transact.
+[EIP-2612](https://eips.ethereum.org/EIPS/eip-2612), so a paying agent needs **only the payment token and zero
+native ETH** to transact. This works for USDC.e, CHIP and HPP alike — all three implement EIP-2612.
 
 The **sponsoring signer** — the facilitator's onchain address that pays gas and submits settlement —
 is the same value shown as `signers` and as the `upto` `facilitatorAddress` in `/supported`:

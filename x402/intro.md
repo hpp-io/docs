@@ -27,7 +27,8 @@ wallet with no code.
 - **No accounts, no custody.** Payment moves from the buyer's wallet to the seller's `payTo` address;
   HPP's facilitator never custodies funds — it only verifies the signature and submits the settlement
   transaction (a direct transfer for `exact`, or a Permit2 transfer for `upto`).
-- **Stablecoin-native.** Prices are quoted in USDC.e. What the buyer signs is what the seller receives.
+- **Stablecoin-native.** Prices are quoted in USDC.e by default; a seller can also price in CHIP (the
+  HPP ecosystem credit) or HPP. What the buyer signs is what the seller receives.
 - **Open standard.** x402 is maintained by the [x402 Foundation](https://github.com/x402-foundation/x402),
   and HPP uses the same `@x402` SDK that works on Base, Polygon, and others — pointed at HPP's networks
   and facilitator. One small setup step registers USDC.e as HPP's default asset (shown in the quickstarts).
