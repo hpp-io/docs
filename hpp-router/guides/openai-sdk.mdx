@@ -80,7 +80,8 @@ OpenAI SDKs send the key as `Authorization: Bearer <key>`, which HPP Router acce
 ## What's different
 
 - **Smart-routing metadata** (`X-HPP-Router-*`) is returned as response **headers**, which most OpenAI SDK helpers don't surface directly. Read the raw response headers, or use the [TypeScript SDK](../client-sdk/typescript), which exposes `meta.resolvedModel`.
-- **Image generation** uses the HPP Router endpoint `POST /v1/images/generations` with `gpt-image-1`. See [Image Generation](./image-generation).
+- **Image generation** uses `POST /v1/images/generations`. Pass an enabled `gpt-image-*` model (`gpt-image-1` if omitted). See [Image Generation](./image-generation).
+- **OpenAI text models** stay on `chat.completions`. The gateway translates them to the Responses API internally. `response_format` and `stream_options` are not forwarded on that path. See [Chat Completions](./chat-completions#request-fields).
 - **Wallet (x402) rail** — setting `defaultHeaders: { 'X-Payment-Rail': 'wallet' }` alone is not enough. The OpenAI SDK throws on HTTP **402** and often hides `PAYMENT-REQUIRED`. You must implement a sign-and-retry loop yourself (typically with `fetch`), or switch to [`@hpprouter/sdk`](../client-sdk/typescript#wallet-x402-payment-rail) which handles `paymentRail` + `paymentSigner` automatically.
 
 ## Wallet rail with the OpenAI SDK

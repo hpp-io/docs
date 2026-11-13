@@ -16,7 +16,7 @@ HPP Router meters token usage for every authenticated request. Billing uses one 
 | **Quota** (default) | Prepaid credit on the API key | `GET /api/quota-check`, default `GET /api/usage` |
 | **Wallet (x402)** | On-chain settlement after a signed request (`X-Payment-Rail: wallet`) | `GET /api/usage?rail=wallet` |
 
-All of these endpoints require an API key. Enabling the wallet rail on inference is described in [Authentication](../authentication#x402-wallet) and [Chat Completions — wallet](./chat-completions#wallet). The payment asset is commonly USDC.e; the challenged `accepts[0].asset` (and on-chain settlement) is authoritative for a given deployment.
+All of these endpoints require an API key. Enabling the wallet rail on inference is described in [Authentication](../authentication#x402-wallet) and [Chat Completions — wallet](./chat-completions#basic-request-wallet). The payment asset is commonly USDC.e; the challenged `accepts[0].asset` (and on-chain settlement) is authoritative for a given deployment.
 
 ## Check quota
 
@@ -126,6 +126,12 @@ curl "https://router.hpp.io/api/usage?rail=wallet" \
 | `requests` | Number of requests recorded (scoped by `rail` when set). |
 | `total_tokens` | Total tokens consumed (scoped by `rail` when set). |
 | `total_cost` | Dollar cost; for `rail=wallet`, reflects wallet-settled spend from usage logs. |
+
+<a name="request-logs"></a>
+
+## Request logs
+
+`GET /api/usage` is the summary. The per-request list for the same API key is `GET /api/audit` (`limit`, `offset`, and optional `rail`). To check that a log was anchored on-chain, call `GET /api/logs/:logId/verify` with that log id. See [API Reference](../api-reference/consumer-api#get-apiaudit).
 
 ## How usage is metered
 

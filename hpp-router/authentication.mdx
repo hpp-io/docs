@@ -64,7 +64,8 @@ The Bearer scheme is what most OpenAI-compatible SDKs send by default, which is 
 | `POST /v1/images/generations` | Required for quota/keyed wallet; **optional for [Agent (keyless)](./guides/x402-agent)** | [Image generation](./guides/image-generation) |
 | `GET /api/usage` | Required | [Usage summary](./guides/usage-and-settlement) |
 | `GET /api/quota-check` | Required | [Check prepaid quota](./guides/usage-and-settlement#check-quota) |
-| `GET /api/user/audit/:logId` | Required | [Get user audit log](./api-reference/consumer-api#get-apiuserauditlogid) |
+| `GET /api/audit` | Required | [List usage logs](./api-reference/consumer-api#get-apiaudit) |
+| `GET /api/logs/:logId/verify` | Required | [Verify an audit anchor](./api-reference/consumer-api#get-apilogslogidverify) |
 | `GET /public/v1/agent-activity` | None | Public x402 settlement feed ([Agent guide](./guides/x402-agent#public-settlement-feed)) |
 
 Quota and keyed wallet calls require an API key so Kong can identify the consumer. Keyed wallet payments additionally use `X-Payment-Rail: wallet` and an x402 signature.
@@ -89,7 +90,7 @@ For agents that must call **without** an API key, use the [Agent (keyless) path]
 
 For protocol details, see:
 - [x402 on HPP](/x402)
-- [Chat Completions — wallet](./guides/chat-completions#wallet)
+- [Chat Completions — wallet](./guides/chat-completions#basic-request-wallet)
 - [x402 Agent (keyless)](./guides/x402-agent)
 - [Errors — 402](./guides/errors)
 

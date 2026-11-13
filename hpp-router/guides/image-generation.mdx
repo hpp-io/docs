@@ -1,6 +1,6 @@
 ---
 title: Image Generation
-description: Generate images with gpt-image-1 through HPP Router's OpenAI-compatible endpoint.
+description: Generate images with gpt-image models through HPP Router's OpenAI-compatible endpoint.
 ---
 
 import Tabs from '@theme/Tabs';
@@ -9,7 +9,7 @@ import CodePanel from '@site/src/components/CodePanel';
 
 # Image Generation
 
-HPP Router supports image generation via OpenAI's `gpt-image-1` model through an OpenAI-compatible endpoint.
+HPP Router generates images through an OpenAI-compatible endpoint. `model` defaults to `gpt-image-1`. Other enabled `gpt-image-*` ids from `GET /llm/v1/models` (for example `gpt-image-1-mini` and `gpt-image-1.5`) are accepted. The example below uses `gpt-image-1`.
 
 ```
 POST https://router.hpp.io/v1/images/generations
@@ -47,11 +47,11 @@ curl -X POST https://router.hpp.io/v1/images/generations \
 
 | Parameter | Values | Default |
 | --- | --- | --- |
-| `model` | `gpt-image-1` | required |
+| `model` | enabled `gpt-image-*` id; default `gpt-image-1` | `gpt-image-1` |
 | `prompt` | string | required |
 | `size` | `1024x1024`, `1024x1536`, `1536x1024` | `1024x1024` |
 | `quality` | `low`, `medium`, `high`, `auto` | `auto` |
-| `n` | 1–4 | 1 |
+| `n` | 1–10 | 1 |
 | `background` | string | — |
 | `output_format` | string | — |
 
@@ -89,5 +89,5 @@ Higher `quality` settings consume more **output tokens** — for example, `auto`
 All image generation requests require authentication with an API key.
 
 - **Quota (default):** omit `X-Payment-Rail` and bill against prepaid credit when applicable.
-- **Wallet:** include `X-Payment-Rail: wallet`. For billable image models, a missing payment signature returns **`402 PAYMENT REQUIRED`** with a `PAYMENT-REQUIRED` challenge — sign and retry with `PAYMENT-SIGNATURE` (see [Errors](./errors) and [Chat Completions — wallet](./chat-completions#wallet)).
+- **Wallet:** include `X-Payment-Rail: wallet`. For billable image models, a missing payment signature returns **`402 PAYMENT REQUIRED`** with a `PAYMENT-REQUIRED` challenge — sign and retry with `PAYMENT-SIGNATURE` (see [Errors](./errors) and [Chat Completions — wallet](./chat-completions#basic-request-wallet)).
 - After a successful authorized request, usage is logged and wallet settlement proceeds on-chain. Settlement failures are distinct from the initial **402** challenge.

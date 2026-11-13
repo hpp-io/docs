@@ -34,8 +34,9 @@ For live requests, use the [Router Playground](https://router.hpp.io/playground/
 | `GET` | `/llm/v1/models` | [List available models](#get-llmv1models) |
 | `POST` | `/v1/images/generations` | [Generate images](#post-v1imagesgenerations) |
 | `GET` | `/api/usage` | [Get current consumer usage](#get-apiusage) |
-| `GET` | `/api/quota-check` | [Check prepaid quota](#get-apiquotacheck) |
-| `GET` | `/api/user/audit/:logId` | [Get user audit log](#get-apiuserauditlogid) |
+| `GET` | `/api/quota-check` | [Check prepaid quota](#get-apiquota-check) |
+| `GET` | `/api/audit` | [List usage logs](#get-apiaudit) |
+| `GET` | `/api/logs/:logId/verify` | [Verify an on-chain audit anchor](#get-apilogslogidverify) |
 
 ---
 
@@ -53,11 +54,14 @@ OpenAI-compatible chat completion endpoint with HPP smart-routing headers.
 | `max_tokens` | integer (≥1) | | |
 | `max_completion_tokens` | integer (≥1) | | |
 | `temperature` | number | | |
-| `stream_options` | object | | |
+| `top_p` | number | | |
+| `stream_options` | object | | Forwarded for Anthropic, Moonshot, Ollama, and `gpt-image-*`. Dropped for OpenAI text models. |
+| `tools` | array | | |
+| `tool_choice` | string or object | | |
 
-Additional properties are allowed and passed through.
+Callers always use this path. OpenAI text models (`openai/*` except `gpt-image-*`) are translated inside the gateway to OpenAI `/v1/responses` and mapped back to a chat completion. On that path the forwarded fields are `messages` (text, `image_url`, and tool calls), `stream`, `max_tokens` / `max_completion_tokens` (sent as `max_output_tokens`), `temperature`, `top_p`, `tools`, and `tool_choice`. Fields such as `response_format` and `stream_options` are not sent upstream. `gpt-image-*`, Anthropic, Moonshot, and Ollama keep the chat body.
 
-**Authentication:** Required. Use `apikey` header or `Authorization: Bearer <key>` for billing/usage tracking.
+**Authentication:** Required for quota and keyed wallet. Use `apikey` or `Authorization: Bearer <key>`. The [Agent (keyless)](../guides/x402-agent) path omits the key.
 
 For x402 wallet payments, append the `X-Payment-Rail: wallet` header and sign payments using the x402 protocol.
 
@@ -88,7 +92,7 @@ See [Models & Pricing](../models-and-pricing).
 
 ## `POST /v1/images/generations`
 
-OpenAI-compatible image generation for `gpt-image-1`.
+OpenAI-compatible image generation. `model` defaults to `gpt-image-1`. Other enabled `gpt-image-*` ids from `GET /llm/v1/models` are accepted. `n` is 1–10.
 
 **Request body** (`ImageGenerationRequest`):
 
@@ -96,13 +100,13 @@ OpenAI-compatible image generation for `gpt-image-1`.
 | --- | --- | --- | --- |
 | `prompt` | string | ✅ | — |
 | `model` | string | | `gpt-image-1` |
-| `n` | integer (1–4) | | `1` |
+| `n` | integer (1–10) | | `1` |
 | `size` | `1024x1024` / `1024x1536` / `1536x1024` | | `1024x1024` |
 | `quality` | `low` / `medium` / `high` / `auto` | | `auto` |
 | `background` | string | | — |
 | `output_format` | string | | — |
 
-**Responses:** `200` — `ImageGenerationResponse` (`data[]` with `b64_json`/`url`, plus `usage`); `400`, `401`, `429`, `500` — error envelope.
+**Responses:** `200` — `ImageGenerationResponse` (`data[]` with `b64_json`/`url`, plus `usage`); `400`, `401`, `402` (wallet or Agent), `429`, `500` — error envelope.
 
 See [Image Generation](../guides/image-generation).
 
@@ -135,52 +139,28 @@ See [Usage & Settlement](../guides/usage-and-settlement#check-quota).
 
 ---
 
-## `GET /api/user/audit/:logId`
+## `GET /api/audit`
 
-Get a single audit log entry for the authenticated consumer.
-
-Access control:
-- Personal consumers can only access their own logs
-- Organization members can access any log from their organization's consumers
-
-**Path params:**
-- `logId` — The audit log ID (UUID)
+Usage log rows for the API key, newest first. This is the consumer audit list. The portal route `GET /api/user/audit/:logId` uses a Privy session and is not part of this API-key contract.
 
 **Query params:**
-- `consumerId` — Filter by consumer (organization members only, must have access permission via `organization_members` table)
+- `limit` — 1–500, default 100
+- `offset` — default 0
+- `rail` — optional `wallet` or `quota`
 
-**Response `200`:**
+**Response `200`:** a JSON array. Each row includes `id`, `consumer_id`, `provider`, `model`, `displayName`, token counts, `cost`, `status`, `blockchain_tx_hash`, `payment_rail`, `settle_status`, `settle_amount_micro`, and `created_at` (Unix milliseconds).
 
-```json
-{
-  "id": "log-xyz",
-  "consumer_id": "cons-123",
-  "provider": "openai",
-  "model": "gpt-4",
-  "prompt_tokens": 100,
-  "completion_tokens": 50,
-  "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 0,
-  "total_tokens": 150,
-  "cost": 0.002,
-  "status": "success",
-  "blockchain_tx_hash": "0x...",
-  "payment_rail": "wallet",
-  "settle_status": "settled",
-  "settle_amount_micro": 25000,
-  "scope": "organization",
-  "organization": {
-    "id": "org-abc",
-    "name": "My Organization",
-    "consumerId": "cons-org-123",
-    "role": "admin"
-  }
-}
-```
+**Errors:** `401`, `500`.
 
-**Errors:** `401` (not authenticated), `403` (no access to consumer), `404` (log not found), `500`.
+## `GET /api/logs/:logId/verify`
 
-See [Usage & Settlement](../guides/usage-and-settlement) for more details.
+Checks the Merkle anchor for a log id from `GET /api/audit`. Requires an API key. When blockchain audit is off, the response is **503**.
+
+**Response `200`:** `{ "valid": true, "txHash": "0x...", "batchId": 1, "blockNumber": 1 }` or `{ "valid": false, "reason": "Log not yet recorded to blockchain" }`.
+
+**Errors:** `401`, `503`, `500`.
+
+See [Usage & Settlement](../guides/usage-and-settlement#request-logs).
 
 ---
 
