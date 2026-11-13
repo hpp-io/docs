@@ -158,8 +158,8 @@ paths:
           description: Generated image response.
           content:
             application/json:
-          schema:
-            $ref: "#/components/schemas/ImageGenerationResponse"
+              schema:
+                $ref: "#/components/schemas/ImageGenerationResponse"
         "400":
           $ref: "#/components/responses/ErrorResponse"
         "401":
