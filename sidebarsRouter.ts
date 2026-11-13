@@ -7,6 +7,16 @@ const sidebars: SidebarsConfig = {
   routerSidebar: [
     {type: 'doc', id: 'intro', label: 'Overview'},
     'quickstart',
+    {
+      type: 'category',
+      label: 'Build with AI',
+      collapsed: false,
+      items: [
+        'build-with-ai/start',
+        'build-with-ai/connect',
+        'build-with-ai/rules',
+      ],
+    },
     'authentication',
     'models-and-pricing',
     'smart-routing',
