@@ -42,6 +42,7 @@ HPP Router is the **model router** layer of the HPP stack — an AI-native L2 bu
 ## Next steps
 
 - **[Quickstart](/hpp-router/quickstart)** — make your first request via REST, the TypeScript SDK, or the OpenAI SDK.
+- **[Build with AI](/hpp-router/build-with-ai/start)** — a prompt and rules so a coding agent calls this gateway correctly.
 - **[Authentication](/hpp-router/authentication)** — how to send your API key.
 - **[Models & Pricing](/hpp-router/models-and-pricing)** — list models and understand token-based billing.
 - **[Smart Routing](/hpp-router/smart-routing)** — how `hpprouter/auto` chooses a model.
