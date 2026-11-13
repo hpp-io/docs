@@ -11,6 +11,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'readme/how-hpp-works',
         'readme/noosphere',
+        'readme/hpplite',
         'readme/arenai',
       ],
     },
