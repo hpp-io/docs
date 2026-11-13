@@ -14,7 +14,45 @@ paths:
     post:
       operationId: createChatCompletion
       summary: Create a chat completion
-      description: OpenAI-compatible chat completion endpoint with HPP smart-routing headers.
+      description: >
+        OpenAI-compatible chat completion. Callers always use this path.
+        OpenAI text models (`openai/*` except `gpt-image-*`) are translated
+        inside the gateway to OpenAI `/v1/responses` and mapped back to a chat
+        completion. Forwarded fields on that path: `messages`, `stream`,
+        `max_tokens` / `max_completion_tokens` (as `max_output_tokens`),
+        `temperature`, `top_p`, `tools`, and `tool_choice`.
+        `gpt-image-*`, Anthropic, Moonshot, and Ollama keep the chat body.
+        Wallet rail (`X-Payment-Rail: wallet`) and the keyless Agent path return
+        402 until the client retries with `PAYMENT-SIGNATURE` or `X-PAYMENT`.
+      parameters:
+        - name: X-Payment-Rail
+          in: header
+          description: >
+            Payment rail for keyed callers. `quota` (default) uses API key credit.
+            `wallet` triggers x402 on-chain payment for paid models.
+            Keyless Agent calls omit the API key and are treated as wallet.
+          required: false
+          schema:
+            type: string
+            enum:
+              - quota
+              - wallet
+        - name: PAYMENT-SIGNATURE
+          in: header
+          description: >
+            Base64-encoded payment payload for x402 v2 (`upto` scheme). Send on
+            retry after 402. Mutually exclusive with `X-PAYMENT`.
+          required: false
+          schema:
+            type: string
+        - name: X-PAYMENT
+          in: header
+          description: >
+            Base64-encoded payment payload for x402 v1. Accepted on retry after 402.
+            Prefer `PAYMENT-SIGNATURE`.
+          required: false
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -45,6 +83,12 @@ paths:
               description: Smart-routing tier when available.
               schema:
                 type: string
+            X-PAYMENT-RESPONSE:
+              description: >
+                Base64-encoded on-chain settle receipt when the wallet rail was used.
+                Decode to JSON to inspect the tx hash, settled amount, and network.
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -52,6 +96,24 @@ paths:
             text/event-stream:
               schema:
                 type: string
+                description: >
+                  OpenAI-compatible SSE stream. Each `data:` line is a JSON chunk.
+                  After the final content chunk, a settle event may appear:
+                  `data: {"x402":{"tx":"0x...","amount":"1000","network":"...","payer":"0x..."}}`.
+                  Followed by `data: [DONE]`.
+        "402":
+          description: >
+            Payment required on the wallet rail and the keyless Agent path.
+            Parse `accepts[0]`, sign it, and retry with `PAYMENT-SIGNATURE` or `X-PAYMENT`.
+          headers:
+            PAYMENT-REQUIRED:
+              description: Base64-encoded copy of the 402 response body.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/X402PaymentRequired"
         "400":
           $ref: "#/components/responses/ErrorResponse"
         "401":
@@ -81,7 +143,10 @@ paths:
     post:
       operationId: createImageGeneration
       summary: Generate images
-      description: OpenAI-compatible image generation endpoint for gpt-image-1.
+      description: >
+        OpenAI-compatible image generation. `model` defaults to `gpt-image-1`.
+        Other enabled `gpt-image-*` ids from `GET /llm/v1/models` are accepted.
+        Wallet rail and the keyless Agent path use the same 402 retry as chat.
       requestBody:
         required: true
         content:
@@ -93,12 +158,18 @@ paths:
           description: Generated image response.
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/ImageGenerationResponse"
+          schema:
+            $ref: "#/components/schemas/ImageGenerationResponse"
         "400":
           $ref: "#/components/responses/ErrorResponse"
         "401":
           $ref: "#/components/responses/ErrorResponse"
+        "402":
+          description: Payment required on the wallet rail or keyless Agent path.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/X402PaymentRequired"
         "429":
           $ref: "#/components/responses/ErrorResponse"
         "500":
@@ -147,6 +218,80 @@ paths:
           $ref: "#/components/responses/ErrorResponse"
         "503":
           $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/audit:
+    get:
+      operationId: listAuditLogs
+      summary: List the caller usage logs
+      description: >
+        Usage log rows for the authenticated API key. This is the consumer
+        audit list. `GET /api/user/audit/{logId}` is a portal session route and
+        is not part of this contract.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: rail
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [wallet, quota]
+          description: Optional payment-rail filter.
+      responses:
+        "200":
+          description: Newest-first log rows for this consumer.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/logs/{logId}/verify:
+    get:
+      operationId: verifyAuditLog
+      summary: Verify an on-chain audit anchor
+      description: >
+        Checks the Merkle anchor for a usage log id. Requires an API key.
+        Returns `valid: false` when the log is missing or not yet batched.
+      parameters:
+        - name: logId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verification result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditVerifyResult"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "503":
+          description: Blockchain audit is not configured.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "500":
           $ref: "#/components/responses/ErrorResponse"
 components:
@@ -199,6 +344,9 @@ components:
         stream_options:
           type: object
           additionalProperties: true
+          description: >
+            Forwarded on Anthropic, Moonshot, Ollama, and gpt-image chat calls.
+            Dropped for OpenAI text models, which are translated to the Responses API.
     ChatMessage:
       type: object
       additionalProperties: true
@@ -367,7 +515,7 @@ components:
         n:
           type: integer
           minimum: 1
-          maximum: 4
+          maximum: 10
           default: 1
         size:
           type: string
@@ -477,6 +625,154 @@ components:
           type: number
         remaining:
           type: number
+    AuditLog:
+      type: object
+      description: One row from `GET /api/audit`.
+      properties:
+        id:
+          type: string
+        consumer_id:
+          type: string
+        provider:
+          type: string
+        model:
+          type: string
+        displayName:
+          type: string
+        prompt_tokens:
+          type: integer
+        completion_tokens:
+          type: integer
+        total_tokens:
+          type: integer
+        cost:
+          type: number
+        status:
+          type: string
+        blockchain_tx_hash:
+          type: string
+        payment_rail:
+          type: string
+        settle_status:
+          type: string
+        settle_amount_micro:
+          type: number
+        created_at:
+          type: number
+          description: Unix timestamp in milliseconds.
+    AuditVerifyResult:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        reason:
+          type: string
+          description: Present when `valid` is false.
+        batchId:
+          type: integer
+        txHash:
+          type: string
+        nonce:
+          type: integer
+        blockNumber:
+          type: integer
+        merkleRoot:
+          type: string
+        leafHash:
+          type: string
+    X402PaymentRequired:
+      type: object
+      description: >
+        x402 payment-required body returned with HTTP 402. Parse `accepts[0]`,
+        sign it, encode the payload as base64, and retry with `PAYMENT-SIGNATURE`
+        (v2) or `X-PAYMENT` (v1).
+      required:
+        - x402Version
+        - error
+        - resource
+        - accepts
+      properties:
+        x402Version:
+          type: integer
+          description: x402 protocol version (currently 2).
+          example: 2
+        error:
+          type: string
+          example: Payment required
+        resource:
+          $ref: "#/components/schemas/X402Resource"
+        accepts:
+          type: array
+          items:
+            $ref: "#/components/schemas/X402Accepts"
+        extensions:
+          type: object
+          additionalProperties: true
+    X402Resource:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+        description:
+          type: string
+        mimeType:
+          type: string
+    X402Accepts:
+      type: object
+      required:
+        - scheme
+        - network
+        - asset
+        - amount
+        - payTo
+      properties:
+        scheme:
+          type: string
+          example: upto
+        network:
+          type: string
+          description: CAIP-2 chain identifier.
+          example: eip155:84532
+        asset:
+          type: string
+          description: ERC-20 token contract address.
+        amount:
+          type: string
+          description: Maximum amount in token micro-units.
+          example: "1000"
+        payTo:
+          type: string
+        maxTimeoutSeconds:
+          type: integer
+        extra:
+          type: object
+          additionalProperties: true
+    X402SettleMeta:
+      type: object
+      description: >
+        Settle metadata in the SSE stream after content, as
+        `data: {"x402":{...}}` before `data: [DONE]`.
+      properties:
+        tx:
+          oneOf:
+            - type: string
+            - type: "null"
+        amount:
+          oneOf:
+            - type: string
+            - type: "null"
+        network:
+          oneOf:
+            - type: string
+            - type: "null"
+        payer:
+          oneOf:
+            - type: string
+            - type: "null"
+        error:
+          type: string
     ErrorEnvelope:
       oneOf:
         - type: object

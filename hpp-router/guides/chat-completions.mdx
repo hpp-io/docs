@@ -104,9 +104,11 @@ For production apps and agents, prefer [`@hpprouter/sdk`](../client-sdk/typescri
 | `max_tokens` | integer | Maximum tokens to generate. |
 | `max_completion_tokens` | integer | Maximum completion tokens (newer OpenAI-style field). |
 | `temperature` | number | Sampling temperature. |
-| `stream_options` | object | Streaming options passed through to the provider. |
+| `top_p` | number | Nucleus sampling. |
+| `tools` / `tool_choice` | array / string or object | Tool calls. |
+| `stream_options` | object | Forwarded for Anthropic, Moonshot, Ollama, and `gpt-image-*`. Not sent for OpenAI text models. |
 
-Additional provider-specific fields are passed through to the upstream model.
+The caller always posts a chat completion to this URL. OpenAI text models (`openai/*` except `gpt-image-*`) are translated inside the gateway to OpenAI `/v1/responses`, then mapped back to a chat completion. On that path the forwarded fields are `messages` (including `image_url` parts and tool calls), `stream`, `max_tokens` or `max_completion_tokens` (sent as `max_output_tokens`), `temperature`, `top_p`, `tools`, and `tool_choice`. Other fields, including `response_format` and `stream_options`, are not sent upstream. `gpt-image-*` on this endpoint, plus Anthropic, Moonshot, and Ollama, keep the chat body. Image generation as pictures uses [Image Generation](./image-generation).
 
 ### Message roles
 

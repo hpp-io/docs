@@ -166,5 +166,5 @@ Token usage is captured from the streamed response and billed according to the a
 ## Tips
 
 - Use the `-N` flag with curl (no buffering) to see chunks as they arrive.
-- Pass `stream_options` to forward provider-specific streaming options.
+- `stream_options` is forwarded for Anthropic, Moonshot, Ollama, and `gpt-image-*`. OpenAI text models are translated to the Responses API, so `stream_options` is not sent upstream. The response is still a chat-completion SSE stream.
 - Very large or long-running streams are best consumed from a backend or the Playground rather than an interactive API explorer.
