@@ -1,0 +1,50 @@
+# HPP Router
+
+> OpenAI-compatible LLM gateway at https://router.hpp.io. This index covers the HPP Router guide on https://docs.hpp.io/hpp-router. Hub, x402, HPP Coder, Noosphere, and Smart Accounts are separate guides and are not listed here.
+
+Prefer this file and the linked pages over memorized OpenAI defaults.
+
+## Rules for agents
+
+- OpenAI SDK base URL is https://router.hpp.io/llm/v1. @hpprouter/sdk base URL is https://router.hpp.io. Chat for HTTP clients is POST https://router.hpp.io/llm/v1/chat/completions. Do not call https://api.openai.com or https://router.hpp.io/v1/chat/completions.
+- Model id is hpprouter/auto or a provider/model id from GET /llm/v1/models. For hpprouter/auto, the billed model is the X-HPP-Router-Resolved-Model response header.
+- Authenticate quota and keyed-wallet calls with apikey or Authorization: Bearer. The examples use the HPPROUTER_API_KEY environment variable, issued from https://router.hpp.io or https://hub.hpp.io. Keep the key on the server.
+- Image generation is POST https://router.hpp.io/v1/images/generations with gpt-image-1 or another enabled gpt-image-* id. Do not append /images/generations to the /llm/v1 chat base URL. Vision (reading an image) stays on the chat endpoint.
+- Default rail is prepaid quota (API key, no X-Payment-Rail). Keyed x402 wallet sends X-Payment-Rail: wallet and must sign a 402 and retry once with PAYMENT-SIGNATURE. The OpenAI SDK does not do that loop; use @hpprouter/sdk paymentRail "wallet" and paymentSigner. Keyless Agent (no API key) is a separate path.
+- Callers always use chat completions. OpenAI text models are translated to the Responses API inside the gateway. response_format and stream_options are not forwarded on that path.
+- 402 is a payment challenge. 429 is rate limit or quota exhaustion.
+
+Full write-up: https://docs.hpp.io/hpp-router/build-with-ai/rules
+
+## Build with AI
+
+- [Start here](https://docs.hpp.io/hpp-router/build-with-ai/start): Copy one prompt so a coding agent calls HPP Router with the current base URL, model id, and payment rail.
+- [Connect your agent](https://docs.hpp.io/hpp-router/build-with-ai/connect): Point Cursor, Claude Code, or Codex at this index before it writes integration code.
+- [Rules for agents](https://docs.hpp.io/hpp-router/build-with-ai/rules): Base URL, model ids, auth, image path, and x402 rules.
+
+## Overview
+
+- [HPP Router](https://docs.hpp.io/hpp-router): What HPP Router is, how requests flow through the gateway, and where to go next.
+- [Quickstart](https://docs.hpp.io/hpp-router/quickstart): Make your first HPP Router request — TypeScript SDK, OpenAI SDK, cURL, or Python.
+- [Authentication](https://docs.hpp.io/hpp-router/authentication): How to authenticate requests to HPP Router with an API key or Bearer token.
+- [Models & Pricing](https://docs.hpp.io/hpp-router/models-and-pricing): Discover available models and understand token-based billing (quota or x402 wallet).
+- [Smart Routing](https://docs.hpp.io/hpp-router/smart-routing): How the hpprouter/auto virtual model classifies requests and routes them to a cost-appropriate model.
+
+## Guides
+
+- [Chat Completions](https://docs.hpp.io/hpp-router/guides/chat-completions): Send OpenAI-compatible chat completion requests through HPP Router.
+- [Streaming](https://docs.hpp.io/hpp-router/guides/streaming): Stream chat completions from HPP Router as Server-Sent Events.
+- [Vision / Multimodal](https://docs.hpp.io/hpp-router/guides/vision-multimodal): Send images alongside text to vision-capable models through HPP Router.
+- [Image Generation](https://docs.hpp.io/hpp-router/guides/image-generation): Generate images with gpt-image models through HPP Router's OpenAI-compatible endpoint.
+- [x402 Agent (keyless)](https://docs.hpp.io/hpp-router/guides/x402-agent): Call HPP Router chat and image endpoints with x402 without an API key — keyless Agent path, headers, and the public settlement feed.
+- [Usage & Settlement](https://docs.hpp.io/hpp-router/guides/usage-and-settlement): Check prepaid quota, review usage, and inspect x402 wallet settlement with HPP Router.
+- [Errors](https://docs.hpp.io/hpp-router/guides/errors): HTTP status codes and the error envelope returned by HPP Router.
+- [OpenAI SDK (drop-in)](https://docs.hpp.io/hpp-router/guides/openai-sdk): Use the official OpenAI SDK against HPP Router by changing the base URL and key.
+
+## API Reference
+
+- [API Reference](https://docs.hpp.io/hpp-router/api-reference/consumer-api): HPP Router Consumer API — OpenAI-compatible endpoints, schemas, and authentication.
+
+## Client SDK
+
+- [TypeScript (@hpprouter/sdk)](https://docs.hpp.io/hpp-router/client-sdk/typescript): The official TypeScript client SDK for the HPP Router Consumer API.
