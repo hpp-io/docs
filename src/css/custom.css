@@ -19,7 +19,9 @@
   --ifm-heading-font-family: var(--ifm-font-family-base);
   --ifm-font-size-base: 16px;
   --ifm-line-height-base: 1.75;
-  --ifm-heading-font-weight: 700;
+  /* Hierarchy comes from size; one step of weight is enough. */
+  --ifm-heading-font-weight: 600;
+  --ifm-font-weight-bold: 600;
   --ifm-heading-line-height: 1.25;
   --ifm-h1-font-size: 2.4rem;
   --ifm-h2-font-size: 1.65rem;
@@ -29,6 +31,7 @@
   --ifm-global-radius: 8px;
   --ifm-navbar-shadow: none;
   --ifm-navbar-height: 60px;
+  --ifm-navbar-item-padding-horizontal: 10px;
   --ifm-code-font-size: 90%;
   --ifm-code-border-radius: 6px;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.08);
@@ -48,24 +51,65 @@
 }
 
 /* ---- Flat navbar with a hairline divider ---- */
+/* No backdrop-filter here: it makes .navbar the containing block for the
+   fixed mobile sidebar, which then collapses to the navbar's 60px height. */
 .navbar {
   border-bottom: 1px solid var(--ifm-color-emphasis-200);
-  backdrop-filter: saturate(1.1);
 }
 .navbar__title {
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+.navbar__link {
+  font-size: 15px;
 }
 
-/* The HPP logo is a black symbol; invert it to white in dark mode. */
+/* The HPP mark is a black symbol on transparency; invert it to white in dark mode. */
 [data-theme='dark'] .navbar__logo img {
   filter: invert(1);
 }
 
+/* The search plugin's input doesn't inherit the site font. */
+.navbar__search-input {
+  font-family: inherit;
+}
+
+/* 997–1149px (desktop navbar, before it collapses at 996px): the product
+   links leave no room for the site name, so show the logo alone and a
+   narrower search box instead of letting the title get clipped. */
+@media (min-width: 997px) and (max-width: 1149px) {
+  .navbar__title {
+    display: none;
+  }
+  .navbar__search-input {
+    width: 160px;
+  }
+}
+
+/* ---- GitHub link as an icon (navbar item className: header-github-link) ---- */
+.header-github-link {
+  display: flex;
+  align-items: center;
+}
+.header-github-link::before {
+  /* GitHub mark (Octicons mark-github), tinted by the link color via mask. */
+  --github-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z'/%3E%3C/svg%3E");
+  content: '';
+  width: 20px;
+  height: 20px;
+  background-color: currentColor;
+  -webkit-mask: var(--github-mark) no-repeat center / contain;
+  mask: var(--github-mark) no-repeat center / contain;
+}
+/* In the mobile menu, show the label next to the icon. */
+.menu__link.header-github-link::after {
+  content: 'GitHub';
+  margin-left: 8px;
+}
+
 /* ---- Heading rhythm & polish ---- */
 .markdown h1:first-child {
-  font-size: 2.6rem;
-  letter-spacing: -0.025em;
+  font-size: 2.5rem;
+  letter-spacing: -0.02em;
   margin-bottom: 1.25rem;
 }
 .markdown h2 {
@@ -86,19 +130,19 @@
   font-size: 1rem;
 }
 
-/* ---- Softly rounded, airy sidebar ---- */
+/* ---- Softly rounded, airy sidebar (36px rows on the 4px grid) ---- */
 .menu {
-  padding: 0.75rem 0.6rem !important;
-  font-size: 0.92rem;
+  padding: 12px 8px !important;
+  font-size: 15px;
 }
 .menu__link {
   border-radius: 8px;
-  padding: 0.45rem 0.7rem;
-  line-height: 1.4;
+  padding: 8px 12px;
+  line-height: 20px;
 }
+/* Active page: accent color + a surface step; no weight jump. */
 .menu__link--active:not(.menu__link--sublist) {
   background: var(--ifm-color-emphasis-100);
-  font-weight: 600;
 }
 .menu__list-item-collapsible:hover,
 .menu__link:hover {
@@ -115,9 +159,14 @@
   text-underline-offset: 3px;
 }
 
-/* ---- Refined cards / table of contents ---- */
+/* ---- Table of contents ---- */
 .table-of-contents__link--active {
-  font-weight: 600;
+  font-weight: 500;
+}
+
+/* ---- Tables: headers align with their columns ---- */
+.markdown th:not([align]) {
+  text-align: start;
 }
 
 /* ---- Code blocks ---- */
@@ -131,15 +180,12 @@ pre code {
   border-radius: 12px;
   overflow: hidden;
   background: var(--ifm-background-surface-color) !important;
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    0 4px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+/* Dark: depth from the surface step and hairline, not shadow. */
 [data-theme='dark'] .theme-doc-markdown > .theme-code-block {
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.2),
-    0 8px 24px rgba(0, 0, 0, 0.25);
+  box-shadow: none;
 }
 
 .theme-doc-markdown > .theme-code-block pre,
@@ -162,15 +208,11 @@ pre code {
   border-radius: 12px;
   overflow: hidden;
   background: var(--ifm-background-surface-color);
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    0 4px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 [data-theme='dark'] .code-panel .tabs-container {
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.2),
-    0 8px 24px rgba(0, 0, 0, 0.25);
+  box-shadow: none;
 }
 
 /* Tab bar: monochrome, OpenRouter-style */
@@ -178,7 +220,7 @@ pre code {
   background: var(--ifm-color-emphasis-100);
   border-bottom: 1px solid var(--ifm-color-emphasis-200);
   margin-bottom: 0;
-  padding: 0 5.25rem 0 1rem;
+  padding: 0 84px 0 16px;
 }
 
 [data-theme='dark'] .code-panel .tabs {
@@ -189,9 +231,11 @@ pre code {
   border: 0;
   border-bottom: 2px solid transparent;
   color: var(--ifm-color-emphasis-600);
-  margin: 0 1.5rem 0 0;
-  padding: 0.95rem 0.1rem 0.9rem;
-  font-size: 0.95rem;
+  margin: 0 24px 0 0;
+  /* 16 + 24 + 14 + 2px indicator = 56px tab bar */
+  padding: 16px 0 14px;
+  font-size: 15px;
+  line-height: 24px;
   font-weight: 500;
   background: transparent;
 }
@@ -201,7 +245,7 @@ pre code {
 }
 
 .code-panel [role='tabpanel'] {
-  padding: 0.1rem 1.2rem 1.25rem;
+  padding: 0 20px 20px;
   outline: none;
 }
 
@@ -238,8 +282,9 @@ pre code {
 
 .code-panel [class*='buttonGroup'] {
   position: absolute !important;
-  top: 0.55rem !important;
-  right: 0.85rem !important;
+  /* vertically centered in the 56px tab bar */
+  top: 12px !important;
+  right: 12px !important;
   z-index: 2;
   display: flex !important;
   opacity: 1 !important;
@@ -264,12 +309,12 @@ pre code {
 .code-panel .tabs__item--active {
   border-bottom-color: var(--ifm-font-color-base);
   color: var(--ifm-font-color-base);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .code-panel .tabs__item--active .tabs__item__label {
   color: var(--ifm-font-color-base);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* Keep any future highlighted lines subtle and aligned with Docusaurus line numbers. */
@@ -283,4 +328,13 @@ pre code {
 
 .code-panel .theme-code-block-highlighted-line {
   box-shadow: none;
+}
+
+/* ---- Footer on the page's own neutral, separated by a hairline ---- */
+.footer {
+  --ifm-footer-background-color: var(--ifm-background-color);
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+.footer__title {
+  font-weight: 600;
 }
