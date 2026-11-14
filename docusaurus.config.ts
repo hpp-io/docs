@@ -40,7 +40,7 @@ const config: Config = {
 
   stylesheets: [
     {
-      href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+      href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap',
       type: 'text/css',
     },
   ],
@@ -154,7 +154,9 @@ const config: Config = {
       title: 'HPP Builders',
       logo: {
         alt: 'HPP',
-        src: 'img/hpp-logo.png',
+        // Transparent-background mark, so the dark-mode invert yields a clean
+        // white symbol instead of a black tile.
+        src: 'img/hpp-mark.png',
       },
       items: [
         {
@@ -206,14 +208,16 @@ const config: Config = {
           position: 'right',
         },
         {
+          // Icon-only link; the GitHub mark is drawn in custom.css.
           href: 'https://github.com/hpp-io/docs',
-          label: 'GitHub',
           position: 'right',
+          className: 'header-github-link',
+          'aria-label': 'GitHub repository',
         },
       ],
     },
     footer: {
-      style: 'dark',
+      style: 'light',
       links: [
         {
           title: 'Docs',

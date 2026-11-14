@@ -35,11 +35,11 @@ When your agent calls a tool that costs money, the bridge handles the whole paym
 
 ```mermaid
 flowchart LR
-    A[🤖 Agent calls a tool] --> B[🏷️ Service replies<br/>402 + price]
+    A[Agent calls a tool] --> B[Service replies<br/>402 + price]
     B --> C{Within your<br/>spend cap?}
-    C -->|yes| D[💸 hpp-x402 pays<br/>in USDC.e]
-    C -->|no| X[✋ Blocked —<br/>nothing spent]
-    D --> E[✅ Retried, now paid —<br/>agent gets the result]
+    C -->|yes| D[hpp-x402 pays<br/>in USDC.e]
+    C -->|no| X[Blocked —<br/>nothing spent]
+    D --> E[Retried, now paid —<br/>agent gets the result]
 ```
 
 Three things stay true the whole time:
