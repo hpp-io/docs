@@ -4,8 +4,13 @@
 {
   "extends": "@docusaurus/tsconfig",
   "compilerOptions": {
-    "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
+    // TypeScript 7 removed `baseUrl`, but @docusaurus/tsconfig still sets it.
+    // Unset the inherited value and re-declare `paths` here so `@site/*`
+    // resolves relative to this file (the project root).
+    "baseUrl": null,
+    "paths": {
+      "@site/*": ["./*"]
+    },
     "strict": true
   },
   "exclude": [".docusaurus", "build"]
