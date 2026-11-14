@@ -35,11 +35,11 @@ requests, escrow, and delivery between them.
 ```mermaid
 sequenceDiagram
     autonumber
-    participant C as 📜 Consumer contract
-    participant R as 🧭 Router
-    participant K as 🎛 Coordinator
-    participant A as 🤖 Agent
-    participant D as 🐳 Container
+    participant C as Consumer contract
+    participant R as Router
+    participant K as Coordinator
+    participant A as Agent
+    participant D as Container
     C->>R: createComputeSubscription(containerId, fee, wallet, …)
     Note over C: requestCompute(subscriptionId, inputs)<br/>— inputs stay stored ON THE CLIENT
     C->>R: sendRequest(subscriptionId, interval)
@@ -78,10 +78,10 @@ Router/Coordinator, no compute wallet: the buyer pays per request and the
 ```mermaid
 sequenceDiagram
     autonumber
-    participant B as 🧑‍💻 Buyer (app / AI agent)
-    participant A as 🤖 Agent (paid route)
-    participant D as 🐳 Container
-    participant F as ⚙️ HPP Facilitator
+    participant B as Buyer (app / AI agent)
+    participant A as Agent (paid route)
+    participant D as Container
+    participant F as HPP Facilitator
     B->>A: POST /paid/compute/svc  (no payment)
     A-->>B: 402 + payment terms (price · payTo · asset)
     Note over B: Sign a USDC.e authorization — no gas needed

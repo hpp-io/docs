@@ -26,9 +26,9 @@ until a valid payment is attached.
 ```mermaid
 sequenceDiagram
     autonumber
-    participant B as 🧑‍💻 Buyer (client / agent)
-    participant S as 🏷️ Seller (resource server)
-    participant F as ⚙️ HPP Facilitator
+    participant B as Buyer (client / agent)
+    participant S as Seller (resource server)
+    participant F as HPP Facilitator
     B->>S: GET /paid/resource  (no payment)
     S-->>B: 402 Payment Required<br/>accepts: scheme · price · payTo · asset
     Note over B: Sign a USDC.e authorization<br/>(EIP-3009 or Permit2) — no gas

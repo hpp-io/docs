@@ -46,14 +46,14 @@ wallet with no code.
 
 Pick your side of the payment.
 
-### 💸 I want to pay for services (buyer)
+### I want to pay for services (buyer)
 
 | From… | Start here |
 | --- | --- |
 | an **AI agent** — Claude, Cursor, … (no code) | **[Pay from an AI agent](pay-from-an-ai-agent.mdx)** |
 | my **own code** | **[Quickstart: Buyers](./quickstart-buyers.mdx)** |
 
-### 🏷️ I want to charge for my service (seller)
+### I want to charge for my service (seller)
 
 | How | Start here |
 | --- | --- |
@@ -61,7 +61,7 @@ Pick your side of the payment.
 | Sell any Docker container, no server code (Noosphere agent) | **[Sell from an agent](./sell-from-an-agent.mdx)** |
 | One command, no server code | `hpp-x402 serve` — see the [agent guide](pay-from-an-ai-agent.mdx#sell-from-the-cli) |
 
-### 📖 Learn the concepts
+### Learn the concepts
 
 - **[How it works](./how-it-works.md)** — the `402` flow, the three roles, and the payment schemes.
 - **[Service directory](service-directory.mdx)** — the curated catalog buyers and agents discover.
