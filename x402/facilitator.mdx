@@ -71,9 +71,9 @@ See [How it works → Payment schemes](./how-it-works.md#payment-schemes).
 
 | Token | `exact` | `upto` | `batch-settlement` | Notes |
 | --- | --- | --- | --- | --- |
-| **USDC.e** | ✅ | ✅ | ✅ | The default. Same address on both networks |
-| **CHIP** | ✅ | ✅ | ✅ | Different address per network |
-| **HPP** | — | ✅ | — | No EIP-3009, so usage-based prices only |
+| **USDC.e** | ✓ | ✓ | ✓ | The default. Same address on both networks |
+| **CHIP** | ✓ | ✓ | ✓ | Different address per network |
+| **HPP** | — | ✓ | — | No EIP-3009, so usage-based prices only |
 
 Addresses, decimals and EIP-712 domains are on [Networks & Token → Tokens](./networks-and-token.mdx#tokens).
 The facilitator checks the token **before** any signature work or onchain call:

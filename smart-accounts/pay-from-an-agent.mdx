@@ -17,8 +17,8 @@ holds nothing, and one click in the wallet stops it.
 
 ```mermaid
 flowchart LR
-    W[👛 Your wallet<br/>issues a limit] -->|HPP_PAYMENT_DELEGATION| A[🤖 Agent]
-    A -->|calls a paid tool| S[🏷️ x402 service]
+    W[Your wallet<br/>issues a limit] -->|HPP_PAYMENT_DELEGATION| A[Agent]
+    A -->|calls a paid tool| S[x402 service]
     S -->|402 + price| A
     A -->|signs under your limit| F[HPP facilitator]
     F -->|checks the limit on-chain,<br/>moves USDC.e| S

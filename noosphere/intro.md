@@ -19,9 +19,9 @@ from the consumer's escrow wallet — all in the same on-chain lifecycle.
 
 ```mermaid
 flowchart LR
-    C["📜 Consumer contract<br/>(your dApp)"] -- "subscription +<br/>request" --> P["🧭 Noosphere protocol<br/>Router · Coordinator · Billing"]
-    P -- "request event" --> A["🤖 Agents<br/>(decentralized nodes)"]
-    A --> D["🐳 Containers<br/>(any Docker image)"]
+    C["Consumer contract<br/>(your dApp)"] -- "subscription +<br/>request" --> P["Noosphere protocol<br/>Router · Coordinator · Billing"]
+    P -- "request event" --> A["Agents<br/>(decentralized nodes)"]
+    A --> D["Containers<br/>(any Docker image)"]
     A -- "deliver output" --> P
     P -- "callback + payment" --> C
 ```
@@ -40,7 +40,7 @@ The same agent node — and the same containers — can earn from **two independ
 This documentation covers the on-chain protocol; per-call selling is a separate product with
 its own docs ([x402 on HPP](/x402)).
 
-| | ⛓ Compute network (this docs) | 💰 x402 per-call selling |
+| | Compute network (this docs) | x402 per-call selling |
 | --- | --- | --- |
 | Who buys | **Smart contracts** (subscriptions) | Apps, scripts, AI agents — plain HTTP/MCP |
 | Request path | **On-chain** — Router/Coordinator route it, results return by callback | Off-chain — a normal paid HTTP call; no protocol contracts involved |

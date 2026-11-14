@@ -48,8 +48,8 @@ OpenAI-compatible chat completion endpoint with HPP smart-routing headers.
 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
-| `model` | string | ✅ | e.g. `hpprouter/auto`, `openai/gpt-5`, `anthropic/claude-sonnet-4`, `moonshotai/kimi-k2.6`, `ollama/gpt-oss:120b`, `ollama/solidity-master:2`. |
-| `messages` | `ChatMessage[]` | ✅ | Each has `role` (`system`/`user`/`assistant`/`tool`) and `content` (string or content parts). |
+| `model` | string | Yes | e.g. `hpprouter/auto`, `openai/gpt-5`, `anthropic/claude-sonnet-4`, `moonshotai/kimi-k2.6`, `ollama/gpt-oss:120b`, `ollama/solidity-master:2`. |
+| `messages` | `ChatMessage[]` | Yes | Each has `role` (`system`/`user`/`assistant`/`tool`) and `content` (string or content parts). |
 | `stream` | boolean | | Stream as SSE. |
 | `max_tokens` | integer (≥1) | | |
 | `max_completion_tokens` | integer (≥1) | | |
@@ -98,7 +98,7 @@ OpenAI-compatible image generation. `model` defaults to `gpt-image-1`. Other ena
 
 | Field | Type | Required | Default |
 | --- | --- | --- | --- |
-| `prompt` | string | ✅ | — |
+| `prompt` | string | Yes | — |
 | `model` | string | | `gpt-image-1` |
 | `n` | integer (1–10) | | `1` |
 | `size` | `1024x1024` / `1024x1536` / `1536x1024` | | `1024x1024` |

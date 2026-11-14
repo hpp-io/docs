@@ -4,7 +4,7 @@ description: Sovereign rollups for SQLite applications — the state layer of th
 
 # HPPLite
 
-> **🚧 In development.** HPPLite is targeted for 2027 on the [HPP roadmap](https://paper.hpp.io/HPP_Whitepaper_v2_EN.pdf).
+> **In development.** HPPLite is targeted for 2027 on the [HPP roadmap](https://paper.hpp.io/HPP_Whitepaper_v2_EN.pdf).
 > This page describes the design from the HPP Whitepaper v2.0; there is no public release, SDK or
 > connection string to use yet.
 
