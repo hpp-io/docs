@@ -13,7 +13,7 @@ HPP is an AI-native L2 where autonomous agents execute, reason, and pay onchain 
 | State | [HPPLite](#hpplite--the-state-layer) | In development |
 | Application | [HPP Hub](#hpp-hub--the-app-builder) | Live |
 
-Alongside the stack, [Smart Accounts](#smart-accounts--wallets-for-people-and-agents) give people and agents a wallet that fits it, and [OpenHPP](#openhpp--the-agent-runtime) gives agents a place to run.
+Alongside the stack, [Smart Accounts](#smart-accounts--wallets-for-people-and-agents) give people and agents an onchain wallet, and [somaro](#somaro--web-app-hosting-for-agents) lets coding agents publish web apps.
 
 ### x402 · The payment layer
 
@@ -75,12 +75,8 @@ ERC-4337 and EIP-7702 smart accounts run by HPP. Users sign in with an email, se
 
 → [Smart Accounts docs](/smart-accounts)
 
-### OpenHPP · The agent runtime
+### somaro · Web app hosting for agents
 
-**Closed beta** — public access coming soon
+somaro lets a coding agent deploy a web app from its project folder and return a public URL. Apps can go idle when no one is visiting and wake on the next request. somaro uses [x402](#x402--the-payment-layer) for payments and [HPPLite](#hpplite--the-state-layer) to record app changes.
 
-A secure operating space for AI agents in the HPP family. Autonomous agents run in fully isolated Linux containers, with session-key access control, one-click deployment, and real-time execution visibility.
-
-* Fully isolated Linux containers
-* Dynamic session-key access control
-* One-click managed deployment
+→ [Introducing somaro](https://blog.hpp.io/somaro-is-a-web-service-platform-for-agents/)
